@@ -271,10 +271,16 @@ def load_retriever(kb_path: str | None = None) -> BM25Retriever:
 
     Ví dụ dùng trong main.py (FastAPI):
         from bm25_module import load_retriever
+        from auto_stopwords import search_with_auto_stopwords
 
         @app.on_event("startup")
         async def startup():
             app.state.retriever = load_retriever()
+
+        # Khi search, dùng search_with_auto_stopwords() thay vì retriever.search()
+        # để đảm bảo query/index luôn khớp nhau dù corpus nhỏ hay lớn:
+        #   results = search_with_auto_stopwords(retriever, query, top_k=3)
+        # search_with_auto_stopwords tự detect strategy (có _auto_stopwords hay không)
     """
     if kb_path is None:
         # Đường dẫn mặc định: lên 1 cấp từ server/ → knowledge-base/
@@ -291,6 +297,16 @@ def load_retriever(kb_path: str | None = None) -> BM25Retriever:
     # Đọc toàn bộ JSON vào memory (250 docs ~ vài trăm KB, chấp nhận được)
     with open(kb_path, "r", encoding="utf-8") as f:
         docs = json.load(f)
+
+    # Tự động chọn strategy dựa trên kích thước corpus:
+    #   < 5000 docs → hard-coded STOPWORDS (ổn định, kiểm soát được)
+    #   ≥ 5000 docs → auto STOPWORDS từ IDF (scale tốt hơn)
+    # Xem chi tiết: ai2/docs/auto_stopwords_formula.md
+    AUTO_STOPWORDS_THRESHOLD = 5000
+
+    if len(docs) >= AUTO_STOPWORDS_THRESHOLD:
+        from auto_stopwords import rebuild_retriever_auto
+        return rebuild_retriever_auto(docs, idf_threshold=0.2)
 
     retriever = BM25Retriever()
     retriever.build(docs)
