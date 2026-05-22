@@ -10,6 +10,9 @@ pydantic==2.10.3
 # BM25 search (AI2-02)
 rank-bm25==0.2.2
 
+# Env loading
+python-dotenv==1.0.1
+
 # LLM clients (AI2-06, AI2-08)
 openai==1.57.4
 httpx==0.28.1
