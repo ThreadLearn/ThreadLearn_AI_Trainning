@@ -1,7 +1,10 @@
 # Auto STOPWORDS via IDF Threshold
 
-Tài liệu này ghi lại công thức và code mẫu để **tự động tính STOPWORDS**
+Tài liệu này ghi lại công thức và hướng dẫn dùng **auto STOPWORDS**
 khi knowledge base scale lên lớn (khuyến nghị: 5k+ docs).
+
+**File implementation:** `ai2/server/auto_stopwords.py`
+— chứa code sẵn sàng dùng, không cần viết lại.
 
 Hiện tại `bm25_module.py` dùng hard-coded STOPWORDS — xem comment trong file đó
 để biết khi nào nên chuyển sang cách này.
@@ -49,78 +52,48 @@ Gợi ý threshold theo corpus size:
 
 ---
 
-## Code mẫu — thay thế hard-coded STOPWORDS
+## Cách dùng — file `ai2/server/auto_stopwords.py`
+
+File này chứa 3 hàm sẵn sàng dùng:
+
+### 1. `compute_auto_stopwords(corpus_tokens, idf_threshold)`
+Tính tập STOPWORDS tự động từ corpus.
 
 ```python
-import math
-from collections import Counter
-from typing import List, Set
+from auto_stopwords import compute_auto_stopwords
+from bm25_module import tokenize
 
-
-def compute_auto_stopwords(
-    corpus_tokens: List[List[str]],
-    idf_threshold: float = 0.2,
-) -> Set[str]:
-    """
-    Tự động tính STOPWORDS dựa trên IDF threshold.
-
-    Args:
-        corpus_tokens:  list of token lists (đầu ra của tokenize() cho từng doc)
-        idf_threshold:  từ có IDF < threshold → coi là stopword
-                        Khuyến nghị: 0.2 cho corpus 5k+ docs
-
-    Returns:
-        Set[str] — tập từ nên loại bỏ khi tokenize query
-
-    Ví dụ:
-        corpus = [tokenize(doc["title"] + " " + doc["content"]) for doc in docs]
-        auto_sw = compute_auto_stopwords(corpus, idf_threshold=0.2)
-    """
-    N = len(corpus_tokens)
-    if N == 0:
-        return set()
-
-    # Đếm số doc chứa mỗi từ (df)
-    df: Counter = Counter()
-    for doc_tokens in corpus_tokens:
-        for token in set(doc_tokens):   # set() để chỉ đếm 1 lần/doc
-            df[token] += 1
-
-    # Tính IDF và lọc theo threshold
-    stopwords: Set[str] = set()
-    for token, doc_freq in df.items():
-        idf = math.log((N - doc_freq + 0.5) / (doc_freq + 0.5))
-        if idf < idf_threshold:
-            stopwords.add(token)
-
-    return stopwords
+corpus = [tokenize(f"{doc['title']} {doc['content']}") for doc in docs]
+auto_sw = compute_auto_stopwords(corpus, idf_threshold=0.2)
+print(auto_sw)  # {"use", "call", "run", ...}
 ```
 
----
-
-## Cách tích hợp vào bm25_module.py khi scale
-
-Thay thế đoạn build trong `BM25Retriever.build()`:
+### 2. `rebuild_retriever_auto(docs, idf_threshold)` ← hàm chính
+Thay thế toàn bộ `load_retriever()` khi scale.
 
 ```python
-def build(self, docs, idf_threshold: float = 0.2):
-    self._docs = docs
-    corpus = [tokenize(f"{d.get('title','')} {d.get('content','')}") for d in docs]
+from auto_stopwords import rebuild_retriever_auto, search_with_auto_stopwords
 
-    # Tính auto stopwords từ corpus thực tế
-    auto_sw = compute_auto_stopwords(corpus, idf_threshold)
-
-    # Re-tokenize với auto stopwords bổ sung
-    final_corpus = [
-        [t for t in tokens if t not in auto_sw]
-        for tokens in corpus
-    ]
-
-    self._index = BM25Okapi(final_corpus)
+# Thay load_retriever() bằng dòng này
+retriever = rebuild_retriever_auto(docs, idf_threshold=0.2)
 ```
 
-> **Lưu ý:** Khi dùng auto stopwords, phải lọc query bằng cùng tập `auto_sw`
-> trong `search()`, nếu không query và index sẽ không khớp nhau.
+### 3. `search_with_auto_stopwords(retriever, query, top_k)`
+Phải dùng hàm này thay vì `retriever.search()` — vì query cần lọc cùng tập auto_sw.
+
+```python
+results = search_with_auto_stopwords(retriever, "Promise.all parallel fetch", top_k=3)
+```
+
+> **Lưu ý quan trọng:** Không dùng `retriever.search()` trực tiếp sau `rebuild_retriever_auto()`.
+> Query phải lọc cùng tập `auto_sw`, nếu không query/index sẽ không khớp nhau.
+
+### Quick test
+
+```bash
+cd ai2/server
+python auto_stopwords.py
+```
 
 ---
 
