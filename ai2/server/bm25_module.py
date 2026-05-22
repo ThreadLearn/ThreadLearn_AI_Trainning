@@ -25,6 +25,12 @@ from rank_bm25 import BM25Okapi
 # LƯU Ý: "all" KHÔNG có trong danh sách này vì "all" có nghĩa trong JS code:
 #   - Promise.all(...) → sau khi tách CamelCase còn lại "all"
 #   - fetchAllUsers   → tách ra "fetch", "all", "users"
+#
+# [SCALE NOTE] Hard-code phù hợp cho corpus hiện tại (250 docs).
+# Khi knowledge base đạt 5k+ docs, thay bằng auto STOPWORDS tính từ IDF:
+#   IDF(q) = log((N - df + 0.5) / (df + 0.5))
+#   Từ nào có IDF < 0.2 → loại bỏ tự động.
+# Xem công thức và code mẫu tại: ai2/docs/auto_stopwords_formula.md
 STOPWORDS = {
     "the", "a", "an", "is", "in", "on", "at", "to", "for", "of", "and",
     "or", "with", "this", "that", "it", "be", "are", "was", "were",
