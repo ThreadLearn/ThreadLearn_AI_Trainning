@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Model files (too large for git — share via HuggingFace/Drive)
+ai1/model/*.safetensors
+ai1/model/*.bin
+ai1/model/*.gguf
+*.safetensors
+*.bin
+*.gguf
+
+# Environment
+.env
+.env.local
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Old folder (migrated to ai2/knowledge-base/)
+ai2-knowledge-base/
+
+# Logs
+*.log
+logs/
+
+# Large data files
+ai1/data/raw/*.json
+ai1/data/processed/*.jsonl
