@@ -24,6 +24,7 @@ from schemas import (
     HealthResponse,
 )
 import rag_pipeline
+import cache
 
 
 # ---------------------------------------------------------------------------
@@ -90,28 +91,36 @@ def health_check():
     tags=["AI Analysis"],
     summary="Phân tích race condition trong code",
 )
-def analyze_code(
+async def analyze_code(
     body: AnalyzeRequest,
     user_id: str = Depends(get_current_user),
 ):
     """
-    Nhận code từ FE → chạy RAG pipeline → trả về danh sách Issue.
+    Nhận code từ FE → check Redis cache → (nếu miss) chạy RAG pipeline → trả về danh sách Issue.
 
     Flow:
         1. JWT verify (Depends(get_current_user))
-        2. rag_pipeline.run(): keyword → BM25 → prompt → LLM → issues
-        3. Trả AnalyzeResponse
+        2. Check Redis cache (SHA256 key) → HIT: trả ngay, cached=True
+        3. MISS: rag_pipeline.run() → issues + docs_used
+        4. Lưu kết quả vào Redis (TTL 86400s)
+        5. Trả AnalyzeResponse, cached=False
 
-    Body:
-        code     — source code cần phân tích
-        language — "javascript" | "typescript"
-        user_id  — ID người dùng (dùng để lưu lịch sử ở AI2-09)
-
-    TODO AI2-07: Check Redis cache trước khi chạy pipeline
     TODO AI2-09: Lưu kết quả vào MongoDB sau khi phân tích
     """
     retriever = app.state.retriever
 
+    # Step 2: Cache HIT → trả ngay, bỏ qua pipeline
+    # get_cached đã có graceful degradation bên trong, nhưng wrap thêm ở đây
+    # để đảm bảo bất kỳ exception nào cũng không làm crash route
+    try:
+        cached_response = await cache.get_cached(body.code, body.language)
+    except Exception:
+        cached_response = None
+    if cached_response is not None:
+        cached_response.user_id = user_id   # gán đúng user hiện tại
+        return cached_response
+
+    # Step 3: Cache MISS → chạy RAG pipeline
     try:
         issues, docs_used = rag_pipeline.run(
             code=body.code,
@@ -124,13 +133,18 @@ def analyze_code(
             detail=f"Pipeline error: {exc}",
         )
 
-    return AnalyzeResponse(
+    response = AnalyzeResponse(
         user_id=user_id,
         language=body.language,
         issues=issues,
         docs_used=docs_used,
-        cached=False,   # AI2-07: set True nếu hit Redis cache
+        cached=False,
     )
+
+    # Step 4: Lưu vào Redis (graceful — lỗi không ảnh hưởng response)
+    await cache.set_cached(body.code, body.language, response)
+
+    return response
 
 
 @app.get(

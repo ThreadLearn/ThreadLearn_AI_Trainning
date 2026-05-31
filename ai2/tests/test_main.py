@@ -10,22 +10,25 @@ Tests:
     test_history_other_user     — GET /history/<other_id> → 403
 """
 
-import sys
 import os
 from datetime import datetime, timezone, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from jose import jwt
+from unittest.mock import AsyncMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "server"))
-
-# Patch JWT_SECRET trước khi import app
 TEST_SECRET = "test-secret-for-pytest"
 os.environ["JWT_SECRET"] = TEST_SECRET
-os.environ["LLM_PROVIDER"] = "mock"   # Luôn dùng mock trong tests
+os.environ["LLM_PROVIDER"] = "mock"
 
-from main import app  # noqa: E402
+from main import app   # noqa: E402
+import auth            # noqa: E402
+import cache           # noqa: E402
+
+# Đảm bảo auth.py dùng TEST_SECRET bất kể config.py đã load .env trước
+auth.JWT_SECRET = TEST_SECRET
+
 
 
 # ---------------------------------------------------------------------------
@@ -40,11 +43,24 @@ def _make_token(user_id: str, secret: str = TEST_SECRET, expired: bool = False) 
     return jwt.encode(payload, secret, algorithm="HS256")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def client():
-    """TestClient với lifespan (load BM25 retriever)."""
+    """Function-scoped TestClient. Force mock LLM + no-op Redis for tests."""
+    import llm_client
+    import cache as _cache
+
+    async def _miss(*args, **kwargs): return None
+    async def _ok(*args, **kwargs): return True
+
+    orig_provider = llm_client.LLM_PROVIDER
+    llm_client.LLM_PROVIDER = "mock"        # force mock LLM regardless of .env
+    _cache.get_cached = _miss               # no-op Redis
+    _cache.set_cached = _ok
+
     with TestClient(app) as c:
         yield c
+
+    llm_client.LLM_PROVIDER = orig_provider  # restore
 
 
 # ---------------------------------------------------------------------------
