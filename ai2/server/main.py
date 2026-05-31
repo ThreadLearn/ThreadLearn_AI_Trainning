@@ -11,6 +11,7 @@ Chạy server:
     uvicorn main:app --reload --port 8001
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException, Query, status
@@ -27,6 +28,13 @@ import rag_pipeline
 import cache
 import db
 from config import LLM_PROVIDER
+
+# ---------------------------------------------------------------------------
+# AI2-10: Concurrency control — giới hạn 3 LLM call đồng thời
+# Lý do: Ollama/GPU OOM nếu >3 inference song song; OpenAI rate-limit friendly
+# ---------------------------------------------------------------------------
+_llm_semaphore = asyncio.Semaphore(3)
+LLM_TIMEOUT_SECONDS = 30   # 504 nếu LLM không trả lời trong 30s
 
 
 # ---------------------------------------------------------------------------
@@ -123,12 +131,27 @@ async def analyze_code(
         cached_response.user_id = user_id   # gán đúng user hiện tại
         return cached_response
 
-    # Step 3: Cache MISS → chạy RAG pipeline
+    # Step 3: Cache MISS → chạy RAG pipeline với concurrency control
+    # Semaphore(3): tối đa 3 LLM call đồng thời — tránh GPU OOM / rate limit
+    # asyncio.timeout(30): trả 504 nếu LLM treo quá 30 giây
+    if not _llm_semaphore._value and _llm_semaphore.locked():   # type: ignore[attr-defined]
+        raise HTTPException(
+            status_code=429,
+            detail={"error": "queue_full", "retry_after": 10},
+        )
     try:
-        issues, docs_used = rag_pipeline.run(
-            code=body.code,
-            language=body.language,
-            retriever=retriever,
+        async with asyncio.timeout(LLM_TIMEOUT_SECONDS):
+            async with _llm_semaphore:
+                issues, docs_used = await asyncio.to_thread(
+                    rag_pipeline.run,
+                    body.code,
+                    body.language,
+                    retriever,
+                )
+    except TimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="LLM analysis timed out. Please try again.",
         )
     except Exception as exc:
         raise HTTPException(
