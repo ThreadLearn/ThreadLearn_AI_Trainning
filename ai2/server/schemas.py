@@ -87,6 +87,8 @@ class HistoryResponse(BaseModel):
     user_id: str
     analyses: List[AnalysisRecord] = []
     total: int = 0
+    page: int = 1
+    limit: int = 20
 
 
 # ---------------------------------------------------------------------------

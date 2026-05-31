@@ -13,18 +13,20 @@ Chạy server:
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from auth import get_current_user
 from bm25_module import load_retriever
 from schemas import (
     AnalyzeRequest, AnalyzeResponse,
-    HistoryResponse,
+    AnalysisRecord, HistoryResponse,
     HealthResponse,
 )
 import rag_pipeline
 import cache
+import db
+from config import LLM_PROVIDER
 
 
 # ---------------------------------------------------------------------------
@@ -43,6 +45,7 @@ async def lifespan(app: FastAPI):
         - Không cần cleanup (in-memory, GC tự xử lý)
     """
     app.state.retriever = load_retriever()
+    await db.ensure_indexes()
     yield
     # shutdown: nothing to clean up
 
@@ -144,6 +147,17 @@ async def analyze_code(
     # Step 4: Lưu vào Redis (graceful — lỗi không ảnh hưởng response)
     await cache.set_cached(body.code, body.language, response)
 
+    # Step 5: Lưu vào MongoDB (AI2-09) — graceful degradation
+    await db.save_analysis(
+        user_id=user_id,
+        input_code=body.code,
+        language=body.language,
+        issues=[i.model_dump() for i in issues],
+        docs_used=[d.model_dump() for d in docs_used],
+        model=LLM_PROVIDER,
+        cached=False,
+    )
+
     return response
 
 
@@ -153,17 +167,21 @@ async def analyze_code(
     tags=["AI Analysis"],
     summary="Lịch sử phân tích của user",
 )
-def get_history(
+async def get_history(
     user_id: str,
     current_user: str = Depends(get_current_user),
+    page: int = Query(default=1, ge=1, description="Trang (bắt đầu từ 1)"),
+    limit: int = Query(default=20, ge=1, le=100, description="Số bản ghi mỗi trang"),
 ):
     """
-    Trả về lịch sử phân tích của user_id.
+    Trả về lịch sử phân tích của user_id, phân trang.
 
     Bảo mật: user chỉ xem được lịch sử của chính mình.
-    current_user (từ JWT) phải khớp với user_id trong URL.
+    Sắp xếp: mới nhất trước (created_at DESC).
 
-    TODO AI2-09: Thay mock bằng query MongoDB thật.
+    Query params:
+        page  — trang hiện tại, mặc định 1
+        limit — số bản ghi mỗi trang, mặc định 20, tối đa 100
     """
     if current_user != user_id:
         raise HTTPException(
@@ -171,9 +189,22 @@ def get_history(
             detail="Không có quyền xem lịch sử của user khác",
         )
 
-    # TODO AI2-09: query MongoDB → trả HistoryResponse thật
+    records, total = await db.get_history(user_id=user_id, page=page, limit=limit)
+
+    analyses = [
+        AnalysisRecord(
+            analysis_id=r["analysis_id"],
+            language=r["language"],
+            issues_count=r["issues_count"],
+            created_at=r["created_at"],
+        )
+        for r in records
+    ]
+
     return HistoryResponse(
         user_id=user_id,
-        analyses=[],
-        total=0,
+        analyses=analyses,
+        total=total,
+        page=page,
+        limit=limit,
     )
