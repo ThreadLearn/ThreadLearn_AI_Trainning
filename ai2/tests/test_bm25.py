@@ -4,12 +4,9 @@ Tests: 10 relevance queries + tokenizer + edge cases + build performance
 Run: pytest ai2/tests/test_bm25.py -v
 """
 
-import sys
 import os
 import time
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "server"))
 
 from bm25_module import tokenize, BM25Retriever, load_retriever
 
