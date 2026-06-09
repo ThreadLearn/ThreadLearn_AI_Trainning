@@ -79,8 +79,9 @@ def main():
     training_args = SFTConfig(
         dataset_text_field="text",  # <--- THÊM DÒNG NÀY ĐỂ BÁO CHO SFTTrainer BIẾT CỘT DATA LÀ "text"
         output_dir=OUTPUT_DIR,
-        per_device_train_batch_size=2,
-        gradient_accumulation_steps=4,
+        per_device_train_batch_size=1,      # Hạ xuống 1 để chống tràn RAM GPU T4
+        per_device_eval_batch_size=1,       # <--- THÊM DÒNG NÀY (Chống sập lúc Evaluate)
+        gradient_accumulation_steps=8,      # Tăng lên 8 để bù lại batch size
         optim="paged_adamw_32bit",
         save_steps=50,
         logging_steps=10,
