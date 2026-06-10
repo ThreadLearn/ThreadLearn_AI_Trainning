@@ -92,9 +92,10 @@ def _openai_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue
 
 
 import json
+import os
 import urllib.request
 import urllib.error
-from config import OPENAI_API_KEY # (Sẽ dùng nếu làm _openai_analyze)
+from config import OPENAI_API_KEY
 from output_parser import parse_model_output
 
 # ---------------------------------------------------------------------------
@@ -107,15 +108,16 @@ def _ollama_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue
     (Giữ nguyên tên hàm _ollama_analyze để tương thích với cấu hình cũ)
     """
     API_URL = "https://api-inference.huggingface.co/models/anha12/threadlearn-qwen2.5-coder-1.5b"
-    # LƯU Ý QUAN TRỌNG: Bạn cần tự điền Token HF vào file .env hoặc ghi đè ở đây
-    # Để tránh lộ Token, hiện tại dùng hardcode token theo môi trường test của bạn.
-    # Nên đưa cái này vào .env trong thực tế!
-    HF_TOKEN = os.environ.get("HF_TOKEN", "<YOUR_HF_TOKEN_HERE>")
+    HF_TOKEN = os.environ.get("HF_TOKEN", "")
+    if not HF_TOKEN:
+        return [Issue(line_range="all", severity="medium",
+                      description="Lỗi: Chưa cấu hình HF_TOKEN trong file .env",
+                      fix="Thêm HF_TOKEN=hf_... vào ai2/server/.env")]
     HEADERS = {
         "Authorization": f"Bearer {HF_TOKEN}",
         "Content-Type": "application/json"
     }
-    
+
     prompt = f"Convert to concurrent JavaScript:\n\n{code}\n\n"
     payload = {
         "inputs": prompt,
