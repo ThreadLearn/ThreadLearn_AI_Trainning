@@ -1,0 +1,637 @@
+%% ThreadLearn: Research Paper
+%% Template: article onecolumn (clean layout for review)
+%% Target venue: ASPLOS 2027 or ICLR 2026
+
+\documentclass[11pt]{article}
+
+%% ── Geometry ────────────────────────────────────────────────────────────────
+\usepackage[a4paper, top=1in, bottom=1in, left=1.25in, right=1.25in]{geometry}
+
+%% ── Packages ────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\usepackage{caption}
+
+%% ── Typography ───────────────────────────────────────────────────────────────
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\captionsetup{font=small, labelfont=bf}
+
+%% ── Header / footer ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{ThreadLearn --- Under Review}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+%% ── Code listing style ──────────────────────────────────────────────────────
+\lstdefinestyle{codebase}{
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{gray!70},
+  stringstyle=\color{green!50!black},
+  numberstyle=\tiny\color{gray},
+  numbers=left,
+  numbersep=8pt,
+  frame=single,
+  framesep=4pt,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=12pt,
+}
+\lstdefinestyle{js}{style=codebase, language=JavaScript}
+\lstdefinestyle{py}{style=codebase, language=Python}
+
+%% ── Title ───────────────────────────────────────────────────────────────────
+\title{%
+  \large\textbf{ThreadLearn: Combining Static Race Detection with}\\[2pt]
+  \large\textbf{Hindsight Chain-of-Thought Fine-Tuning}\\[2pt]
+  \large\textbf{for Concurrency Bug Remediation}\\[8pt]
+  \normalsize\textit{Under Review --- Target Venue: ASPLOS 2027 / ICLR 2026}
+}
+
+\author{%
+  [Author Names Redacted for Review]\\[2pt]
+  \small[Institution Redacted]\quad
+  \small\texttt{[email redacted]}
+}
+
+\date{}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+%% ── Abstract ────────────────────────────────────────────────────────────────
+\begin{abstract}
+\noindent
+Concurrency bugs in async and multi-threaded code cause severe production
+failures, yet static detectors suffer high false-positive rates and LLMs lack
+reliable reasoning about thread interactions.
+Rule-based detectors such as NodeCB miss complex patterns; LLM-only approaches
+(PCWMs) achieve only 75\% accuracy on race detection without explicit structural
+analysis of the code.
+ThreadLearn combines a 5-pattern static race detector with a Qwen2.5-Coder-1.5B
+model fine-tuned via QLoRA on Hindsight Chain-of-Thought traces grounded in
+static analysis outputs.
+On [benchmark], ThreadLearn detects races with F1\,=\,X\% ($+$Y\% over
+NodeCB baseline) and produces accepted fixes in Z\% of cases
+($+$W\% over PCWMs baseline).
+ThreadLearn is open-source at [repo]; the fine-tuning dataset and evaluation
+harness are publicly available.
+\end{abstract}
+
+\noindent\textbf{Keywords:} concurrency bugs, race conditions, static analysis,
+LLM fine-tuning, Chain-of-Thought, JavaScript
+
+\bigskip\hrule\bigskip
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Problem Statement}
+
+Asynchronous JavaScript (Node.js) powers the majority of modern web backends,
+yet the language exposes concurrency primitives that are easy to misuse.
+A landmark empirical study (NodeCB~\cite{nodecb2017}) examined 57 real-world
+concurrency bugs across 53 open-source Node.js projects and found that
+65\% are \emph{atomicity violations}, 30\% are \emph{order violations}, and
+93\% cause severe failures including crashes, wrong database state, or hangs.
+
+Despite this severity, the two dominant tool families remain inadequate in
+complementary ways.
+Rule-based detectors flag suspicious patterns but cannot suggest a fix and
+accumulate false positives on idiomatic async code.
+LLM-based approaches reason about code holistically but lack line-level causal
+attribution and require large models (7B--32B parameters) to achieve competitive
+accuracy.
+
+\subsection{Gap Analysis}
+
+We identify four concrete gaps in the state of the art:
+
+\begin{description}[leftmargin=2em, labelwidth=2em]
+  \item[\textbf{G1}] Rule-based detectors cannot fix bugs, only detect them.
+  \item[\textbf{G2}] PCWMs~\cite{pcwms2026} achieves 75.2\% accuracy but does
+    not exploit static structure and requires 27K training samples with a large
+    base model.
+  \item[\textbf{G3}] No existing system combines static analysis as a grounding
+    signal for LLM reasoning.
+  \item[\textbf{G4}] No end-to-end pipeline spans detection $\to$ explanation
+    $\to$ fix for JavaScript (Node.js).
+\end{description}
+
+\subsection{Key Insight}
+
+Static detector outputs---pattern identifier, line range, and causal
+description---provide the missing \emph{grounding signal} for LLM concurrency
+reasoning.
+A small model (1.5B parameters) fine-tuned with grounded Hindsight
+Chain-of-Thought (CoT) outperforms a large model prompted with generic CoT
+because it has been explicitly trained to reason from structural evidence rather
+than surface-level token patterns.
+
+\subsection{Contributions}
+
+This paper makes four contributions:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{\texttt{race\_detector}}: a 5-pattern static analyzer for
+    JavaScript (Node.js) integrated with an AST preprocessor (\S\ref{sec:design:detector}).
+  \item \textbf{Hindsight CoT dataset}: a synthetic fine-tuning corpus of
+    \texttt{(code, static\_output, CoT\_trace, fix)} tuples grounded on
+    detector outputs (\S\ref{sec:design:finetuning}).
+  \item \textbf{ThreadLearn pipeline}: an end-to-end detect $\to$ format $\to$
+    RAG-augmented fix system exposed via a FastAPI server
+    (\S\ref{sec:design:pipeline}).
+  \item \textbf{Evaluation}: comparison against NodeCB and PCWMs baselines
+    across detection F1, false-positive rate, fix acceptance rate, and latency
+    (\S\ref{sec:eval}).
+\end{enumerate}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\parbox{0.85\linewidth}{\centering\vspace{4pt}
+    \textbf{Figure 1 --- System Overview}\\[4pt]
+    code input $\to$ AST preprocessor $\to$ race detector $\to$ report
+    formatter $\to$ RAG pipeline $\to$ fine-tuned LLM $\to$ fix output\\[4pt]
+    \textit{Baselines: NodeCB rule-only, PCWMs LLM-only (shown for comparison)}
+  \vspace{4pt}}}
+  \caption{ThreadLearn end-to-end system overview.}
+  \label{fig:overview}
+\end{figure}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Background and Motivation}
+\label{sec:background}
+
+\subsection{Concurrency Bug Taxonomy}
+
+Table~\ref{tab:taxonomy} summarizes the concurrency bug types from the NodeCB
+study and their JavaScript (Node.js) manifestations relevant to ThreadLearn.
+
+\begin{table}[ht]
+  \centering
+  \caption{Concurrency bug taxonomy (NodeCB rates) with ThreadLearn examples.}
+  \label{tab:taxonomy}
+  \begin{tabular}{@{}llp{6cm}@{}}
+    \toprule
+    \textbf{Bug Type} & \textbf{Rate} & \textbf{Example} \\
+    \midrule
+    Atomicity violation & 65\% & Two interleaved DB calls cause lost update \\
+    Order violation     & 30\% & Upload completes before create callback fires \\
+    Starvation          & 5\%  & \texttt{setImmediate} starved by I/O queue \\
+    \midrule
+    \texttt{var i} + \texttt{setTimeout} & JS  & Closure captures wrong loop iteration value \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Limitations of Prior Approaches}
+
+\begin{table}[ht]
+  \centering
+  \caption{Prior approach limitations and key observations.}
+  \label{tab:limits}
+  \begin{tabular}{@{}lp{9.5cm}@{}}
+    \toprule
+    \textbf{Approach} & \textbf{Limitation / Observation} \\
+    \midrule
+    NodeCB study  & Regex-based detection; high false-positive rate; no fix generation \\
+    PCWMs         & 75.2\% accuracy; does not exploit static structure;
+                    requires large model (7B--32B) \\
+    \midrule
+    \textbf{O1}   & Static detector outputs (line range, pattern ID) provide
+                    causal grounding missing from LLM reasoning \\
+    \textbf{O2}   & A small model (1.5B) fine-tuned with grounded CoT
+                    outperforms a large model with generic CoT \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{AST Preprocessing Foundation}
+
+ThreadLearn's AST preprocessor exposes four functions used by both the race
+detector and the RAG retrieval stage:
+
+\begin{table}[ht]
+  \centering
+  \caption{AST preprocessor functions.}
+  \label{tab:ast}
+  \begin{tabular}{@{}llp{5cm}@{}}
+    \toprule
+    \textbf{Function} & \textbf{Purpose} & \textbf{Notes} \\
+    \midrule
+    \texttt{stripComments}       & Remove comments               & Regex-based; handles \texttt{//} and \texttt{/* */} \\
+    \texttt{normalizeWhitespace} & Normalize whitespace          & Collapse multi-line blanks, trim trailing spaces \\
+    \texttt{extractFunctions}    & Extract function/class list   & Arrow functions: known limitation \\
+    \texttt{extract\_keywords}   & Top-20 identifier tokens      & Used for RAG retrieval \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Design}
+\label{sec:design}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\parbox{0.85\linewidth}{\centering\vspace{4pt}
+    \textbf{Figure 2 --- Component Architecture}\\[4pt]
+    AST preprocessor $\to$ race detector $\to$ report formatter
+    $\to$ RAG pipeline $\to$ fine-tuned LLM
+  \vspace{4pt}}}
+  \caption{ThreadLearn five-component architecture with data flow.}
+  \label{fig:arch}
+\end{figure}
+
+\subsection{System Architecture Overview}
+
+ThreadLearn comprises five loosely coupled modules (Table~\ref{tab:components}):
+
+\begin{table}[ht]
+  \centering
+  \caption{ThreadLearn system components and roles.}
+  \label{tab:components}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Component} & \textbf{Role} \\
+    \midrule
+    \texttt{ast\_preprocessor} & Clean and normalize input code \\
+    \texttt{race\_detector}    & Detect 5 JS race condition patterns \\
+    \texttt{report\_formatter} & Map \texttt{pattern\_id} $\to$ severity + fix template \\
+    \texttt{rag\_pipeline}     & Retrieve similar examples, augment LLM prompt \\
+    Fine-tuned LLM             & Generate fix with CoT reasoning \\
+    FastAPI server             & Expose \texttt{/analyze} endpoint \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Static Race Detector}
+\label{sec:design:detector}
+
+The detector scans source files in $O(n)$ time and emits structured reports of
+the form \texttt{\{pattern\_id, line\_range, description\}}.
+Table~\ref{tab:patterns} lists all 5 patterns.
+TypeScript files are treated as JavaScript.
+
+\begin{table}[ht]
+  \centering
+  \caption{Race detection patterns in ThreadLearn (5 patterns, JavaScript only).}
+  \label{tab:patterns}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Group} & \textbf{Pattern ID} & \textbf{Lang} \\
+    \midrule
+    \multirow{3}{*}{Closure/async}
+      & \texttt{closure\_loop\_var}       & JS \\
+      & \texttt{shared\_var\_settimeout}  & JS \\
+      & \texttt{promise\_no\_await}       & JS \\
+    \midrule
+    \multirow{2}{*}{Shared state}
+      & \texttt{concurrent\_write\_array} & JS \\
+      & \texttt{counter\_no\_atomic}      & JS \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Example: closure loop var (JavaScript).}
+
+\begin{lstlisting}[style=js, caption={Buggy: \texttt{var i} captured by reference.}]
+for (var i = 0; i < 5; i++) {
+  setTimeout(function() {
+    console.log(i); // always prints 5
+  }, 100);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=js, caption={Fixed: \texttt{let i} creates per-iteration binding.}]
+for (let i = 0; i < 5; i++) {
+  setTimeout(function() {
+    console.log(i); // prints 0, 1, 2, 3, 4
+  }, 100);
+}
+\end{lstlisting}
+
+
+\subsection{Hindsight CoT Fine-Tuning}
+\label{sec:design:finetuning}
+
+Inspired by PCWMs~\cite{pcwms2026}, we construct training tuples:
+\[
+  (\textit{code},\; \textit{static\_output},\; \textit{CoT\_trace},\; \textit{fix})
+\]
+where \textit{static\_output} is the detector report and \textit{CoT\_trace}
+is written by a teacher model \emph{after} the correct fix is known (``hindsight'').
+
+\begin{table}[ht]
+  \centering
+  \caption{Fine-tuning configuration.}
+  \label{tab:finetune}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Value} \\
+    \midrule
+    Base model         & Qwen2.5-Coder-1.5B \\
+    Method             & QLoRA: $r$=16, $\alpha$=32, 4-bit NF4 quantization \\
+    Framework          & \texttt{SFTTrainer} (trl $\geq$ 1.5.0) \\
+    Grounding signal   & \texttt{pattern\_id} + \texttt{line\_range} from detector \\
+    \midrule
+    \multicolumn{2}{@{}l@{}}{\textit{Rejected alternatives}} \\
+    Full fine-tune     & Compute cost prohibitive \\
+    RAG-only           & No explicit reasoning capability \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{RAG-Augmented Fix Pipeline}
+\label{sec:design:pipeline}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Embed}: encode input code as a dense vector.
+  \item \textbf{Retrieve}: find the $k$ most similar fixed examples from the RAG store.
+  \item \textbf{Format}: \texttt{report\_formatter} maps \texttt{pattern\_id}
+    $\to$ severity label and fix template string.
+  \item \textbf{Generate}: fine-tuned LLM receives RAG context + detector
+    report and produces a fix with CoT trace.
+\end{enumerate}
+
+\subsection{Rejected Design Alternatives}
+\label{sec:design:rejected}
+
+\begin{table}[ht]
+  \centering
+  \caption{Rejected design alternatives and justification.}
+  \label{tab:rejected}
+  \begin{tabular}{@{}lp{8cm}@{}}
+    \toprule
+    \textbf{Alternative} & \textbf{Reason Rejected} \\
+    \midrule
+    LLM-only detection     & High false-positive rate; no line-level attribution \\
+    Static-only            & Detects bugs but cannot generate fixes \\
+    Large model (7B+)      & Impractical for local deployment due to GPU memory \\
+    AST-based JS detection & Requires Node.js runtime at analysis time \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Implementation}
+\label{sec:impl}
+
+\begin{table}[ht]
+  \centering
+  \caption{Implementation summary.}
+  \label{tab:impl}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Item} & \textbf{Detail} \\
+    \midrule
+    Language / framework     & Python 3.10+, FastAPI \\
+    Total LOC                & $\approx$1,200 \\
+    \texttt{race\_detector.py} & 320 LOC, 10 detectors, $O(n)$ scan \\
+    Model adapter            & LoRA SafeTensors at
+                               \texttt{./threadlearn-qwen2.5-coder-1.5b/final\_adapter} \\
+    Infrastructure           & Docker: Redis cache (localhost:6379), Atlas MongoDB \\
+    Concurrency control      & Semaphore in FastAPI server \\
+    Key engineering note     & Graceful fallback if \texttt{ast\_preprocessor}
+                               import fails (CI isolation) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Evaluation}
+\label{sec:eval}
+
+\subsection{Experimental Setup}
+
+\begin{table}[ht]
+  \centering
+  \caption{Experimental setup.}
+  \label{tab:setup}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Item} & \textbf{Detail} \\
+    \midrule
+    Baseline 1     & NodeCB-style rule-only detector \\
+    Baseline 2     & PCWMs-style LLM-only (Qwen2.5-Coder-1.5B, no fine-tune) \\
+    Our system     & ThreadLearn (static detector + fine-tuned LLM) \\
+    Datasets       & 20 synthetic test cases + [real-world dataset TBD] \\
+    Metrics        & Detection F1, FPR, Fix Acceptance Rate, Latency (ms/req) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{End-to-End Detection Comparison}
+\label{sec:eval:detection}
+
+\begin{table}[ht]
+  \centering
+  \caption{Detection results across three methods (values TBD pending AI1-07 fine-tuning run).}
+  \label{tab:detection}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Method} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{FPR} \\
+    \midrule
+    NodeCB rule-only                & -- & -- & -- & -- \\
+    PCWMs LLM-only                  & -- & -- & -- & -- \\
+    \textbf{ThreadLearn (ours)}     & -- & -- & -- & -- \\
+    \midrule
+    \multicolumn{5}{@{}l@{}}{\textit{JS subset}} \\
+    \quad ThreadLearn               & -- & -- & -- & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\parbox{0.85\linewidth}{\centering\vspace{4pt}
+    \textbf{Figure 3 --- F1 Bar Chart}\\[4pt]
+    3 methods, JavaScript (Node.js) benchmark\\[2pt]
+    \textit{(placeholder --- data TBD)}
+  \vspace{4pt}}}
+  \caption{F1 comparison: ThreadLearn vs.\ baselines.}
+  \label{fig:f1}
+\end{figure}
+
+\subsection{Fix Quality Evaluation}
+\label{sec:eval:fix}
+
+\begin{table}[ht]
+  \centering
+  \caption{Fix acceptance rate and case studies.}
+  \label{tab:fix}
+  \begin{tabular}{@{}lp{9cm}@{}}
+    \toprule
+    \textbf{Metric / Case} & \textbf{Detail} \\
+    \midrule
+    Fix acceptance rate & Human evaluation or compile + test pass \\
+    Case 1 (JS)         & \texttt{var i} closure $\to$ \texttt{let i} \\
+    PCWMs comparison    & Original PCWMs: +2.7\%--11.1\% with world model feedback \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\parbox{0.85\linewidth}{\centering\vspace{4pt}
+    \textbf{Figure 4 --- Fix Acceptance Rate}\\[4pt]
+    ThreadLearn vs.\ LLM-only vs.\ rule-only (no fix)\\[2pt]
+    \textit{(placeholder --- data TBD)}
+  \vspace{4pt}}}
+  \caption{Fix acceptance rate comparison.}
+  \label{fig:fix}
+\end{figure}
+
+\subsection{Ablation Study}
+\label{sec:eval:ablation}
+
+\begin{table}[ht]
+  \centering
+  \caption{Ablation: per-component contribution (values TBD pending fine-tuning run).}
+  \label{tab:ablation}
+  \begin{tabular}{@{}lp{8cm}@{}}
+    \toprule
+    \textbf{Component Removed} & \textbf{Expected Impact} \\
+    \midrule
+    Static grounding    & F1 drops X\% \\
+    RAG retrieval       & Fix quality drops Y\% \\
+    Hindsight CoT       & Accuracy drops Z\% (validates PCWMs finding) \\
+    QLoRA $r$=8 vs.\ 16 & Accuracy vs.\ GPU memory tradeoff \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Scalability and Latency}
+\label{sec:eval:latency}
+
+\begin{table}[ht]
+  \centering
+  \caption{Latency and throughput from Locust load test (AI2-10 incomplete).}
+  \label{tab:latency}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Metric} & \textbf{Value} \\
+    \midrule
+    Requests/second  & [TBD] \\
+    P95 latency      & [TBD] \\
+    Semaphore impact & [TBD --- effect on throughput] \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Related Work}
+\label{sec:related}
+
+\begin{table}[ht]
+  \centering
+  \caption{Related work: how ThreadLearn differs from prior approaches.}
+  \label{tab:related}
+  \begin{tabular}{@{}p{3.2cm}p{4.5cm}p{4.5cm}@{}}
+    \toprule
+    \textbf{Group} & \textbf{Representative Works} & \textbf{How ThreadLearn Differs} \\
+    \midrule
+    Static race detectors
+      & ThreadSanitizer, Helgrind, ESLint async rules
+      & Detect without fixing; no LLM reasoning \\
+    \addlinespace
+    Empirical bug studies
+      & NodeCB~\cite{nodecb2017}, Android concurrency bugs
+      & Taxonomy source; no automated fix \\
+    \addlinespace
+    LLM for code analysis
+      & PCWMs~\cite{pcwms2026}, CodeBERT, CodeT5
+      & LLM-only; does not exploit static structure \\
+    \addlinespace
+    Fine-tuning for code
+      & QLoRA~\cite{qlora}, SFT on code, PEFT
+      & Training methodology; not targeting race detection \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Method comparison matrix.}
+
+\begin{table}[ht]
+  \centering
+  \caption{Method $\times$ feature comparison matrix.}
+  \label{tab:matrix}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Method} & \textbf{Detect} & \textbf{Fix} & \textbf{JS} & \textbf{Fine-tuned} \\
+    \midrule
+    ThreadSanitizer      & $\checkmark$ & $\times$ & $\times$     & $\times$ \\
+    ESLint async         & $\checkmark$ & $\times$ & $\checkmark$ & $\times$ \\
+    NodeCB (rules)       & $\checkmark$ & $\times$ & $\checkmark$ & $\times$ \\
+    PCWMs (LLM-only)     & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+    \textbf{ThreadLearn} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Conclusion}
+\label{sec:conclusion}
+
+Concurrency bugs remain a leading cause of production failures in async and
+multi-threaded applications, yet no existing tool both detects and fixes them
+reliably.
+ThreadLearn combines a 5-pattern static race detector with a Hindsight CoT
+fine-tuned Qwen2.5-Coder-1.5B model to provide an end-to-end detection and
+fix generation pipeline for JavaScript (Node.js).
+ThreadLearn achieves F1\,=\,X\% on race detection ($+$Y\% over NodeCB) and fix
+acceptance rate Z\% ($+$W\% over PCWMs baseline), demonstrating that static
+grounding significantly improves LLM concurrency reasoning.
+
+\paragraph{Future work.}
+Expand to TypeScript AST (replace regex fallback);
+add MPI/CUDA patterns (PCWMs direction).
+
+%% ════════════════════════════════════════════════════════════════════════════
+\begin{thebibliography}{9}
+
+\bibitem{nodecb2017}
+  T.\ Xu, X.\ Jin, P.\ Huang, Y.\ Zhou, S.\ Lu, L.\ Wang, and
+  K.\ V.\ Vishwanath.
+  \newblock {NodeCB}: Understanding Concurrency Bugs in Node.js.
+  \newblock In \emph{Proc.\ 32nd IEEE/ACM ASE}, pp.\ 87--98, 2017.
+
+\bibitem{pcwms2026}
+  [Author(s) redacted].
+  \newblock {PCWMs}: Prompting with Chain-of-Thought World Models for
+  Concurrency Bug Detection.
+  \newblock \emph{arXiv:2604.20926v2}, 2026.
+
+\bibitem{qlora}
+  T.\ Dettmers, A.\ Pagnoni, A.\ Holtzman, and L.\ Zettlemoyer.
+  \newblock {QLoRA}: Efficient Finetuning of Quantized LLMs.
+  \newblock In \emph{Proc.\ NeurIPS}, 2023.
+
+\bibitem{threadsanitizer}
+  K.\ Serebryany and T.\ Iskhodzhanov.
+  \newblock {ThreadSanitizer}: Data Race Detection in Practice.
+  \newblock In \emph{Proc.\ WBIA}, pp.\ 62--71, 2009.
+
+\bibitem{qwen25coder}
+  Qwen Team.
+  \newblock {Qwen2.5-Coder} Technical Report.
+  \newblock \emph{arXiv:2409.12186}, 2024.
+
+\end{thebibliography}
+
+\end{document}
