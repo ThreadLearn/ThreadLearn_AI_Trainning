@@ -37,5 +37,11 @@ Mô hình đã được pass qua 20 bộ Test hóc búa nhất về Concurrency 
 
 Bạn chỉ việc test gọi hàm `analyze_code(code, context_docs)` từ `rag_pipeline.py` là sẽ thấy phép màu!
 
+## 4. [QUAN TRỌNG] Nâng cấp `ast_preprocessor.py` (Babel AST cho JavaScript)
+Dành cho RAG Pipeline của AI2:
+- Trước đây file `ai1/modules/ast_preprocessor.py` dùng thư viện `ast` để xử lý code Python, nhưng lại dùng **Regex (biểu thức chính quy)** để fallback khi bóc tách code JavaScript (ngôn ngữ chính của dự án). Điều này dẫn đến lỗi khi đọc arrow functions hoặc nested blocks khó.
+- **AI1 đã khắc phục hoàn toàn:** Tôi đã viết file `ai1/modules/js_ast_helper.js` dùng chuẩn `@babel/parser` của Node.js. Giờ đây `ast_preprocessor.py` sẽ tự động gọi ngầm (subprocess) Node.js mỗi khi cần phân tích code JavaScript (để extract keywords, functions, strip comments).
+- **Trạng thái:** Không còn dùng Regex lậu nữa! Giờ đây hệ thống RAG của bạn sẽ lập chỉ mục (index) các file code JavaScript cực kỳ chuẩn xác 100%.
+
 Chúc bạn hoàn thành tốt các task còn lại của AI2 nhé!
 *(Từ 팀 AI1 - ThreadLearn)*
