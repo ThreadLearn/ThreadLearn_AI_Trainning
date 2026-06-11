@@ -11,7 +11,7 @@ import json
 import os
 
 def call_js_ast_helper(code: str, action: str):
-    """Gọi Node.js subprocess để xử lý AST thực thụ cho JavaScript."""
+    """Gọi Node.js subprocess để xử lý AST thực thụ cho JavaScript (Babel)."""
     helper_path = os.path.join(os.path.dirname(__file__), "js_ast_helper.js")
     try:
         process = subprocess.Popen(
@@ -34,11 +34,9 @@ def stripComments(code: str, language: str = "python") -> str:
     """Loại bỏ comments và docstrings. Hỗ trợ Python và JS."""
     if language.lower() == "python":
         try:
-            # Dùng ast.unparse (Python 3.9+) sẽ tự động lọc docstring/comment chuẩn xác nhất
             parsed = ast.parse(code)
             return ast.unparse(parsed)
         except Exception:
-            # Fallback nếu code bị lỗi cú pháp
             code = re.sub(r'(?m)^\s*#.*$', '', code)
             return code
     elif language.lower() in ["javascript", "js"]:
@@ -66,9 +64,7 @@ def normalizeWhitespace(code: str, language: str = "python") -> str:
             return js_result
             
     # Fallback cho JS lỗi syntax và Python lỗi syntax
-    # Biến nhiều dòng trống liên tiếp thành tối đa 2 dòng
     code = re.sub(r'\n{3,}', '\n\n', code)
-    # Xóa khoảng trắng thừa ở cuối mỗi dòng
     code = '\n'.join([line.rstrip() for line in code.split('\n')])
     return code.strip()
 
@@ -93,6 +89,7 @@ def extractFunctions(code: str, language: str = "python") -> list:
                     })
         except Exception:
             pass
+
     elif language.lower() in ["javascript", "js"]:
         # Gọi AST thật (Babel) thay vì Regex mạo danh
         js_functions = call_js_ast_helper(code, "extract_functions")
@@ -101,63 +98,57 @@ def extractFunctions(code: str, language: str = "python") -> list:
             
         # Fallback regex nếu file lỗi cú pháp nặng
         pattern = r'(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*?^}'
-        matches = re.finditer(pattern, code, re.MULTILINE)
-        for m in matches:
-            functions.append({
-                "name": m.group(1),
-                "type": "function",
-                "code": m.group(0)
-            })
+        for m in re.finditer(pattern, code, re.MULTILINE):
+            functions.append({"name": m.group(1), "type": "function", "code": m.group(0)})
+
     return functions
 
+_JS_STOPWORDS = {
+    'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue',
+    'return', 'function', 'const', 'let', 'var', 'async', 'await', 'try', 'catch',
+    'finally', 'throw', 'new', 'this', 'class', 'extends', 'super', 'import', 'export',
+    'default', 'yield', 'true', 'false', 'null', 'undefined', 'console', 'log',
+    'of', 'in', 'typeof', 'instanceof', 'void', 'delete', 'debugger',
+}
+
+_PY_STOPWORDS = {
+    'False', 'None', 'True', 'and', 'as', 'assert', 'def', 'del', 'elif', 'except',
+    'from', 'global', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass',
+    'raise', 'with', 'print', 'if', 'else', 'for', 'while', 'return', 'class',
+    'import', 'try', 'finally', 'yield',
+}
+
 def extract_keywords(code: str, language: str = "python") -> str:
-    """
-    Trích xuất từ khóa (tên hàm, tên biến quan trọng) từ code 
-    để phục vụ hệ thống RAG tìm kiếm (loại bỏ keywords của ngôn ngữ).
-    """
-    keywords = []
+    """Extract identifier keywords from code for RAG query."""
     if language.lower() == "python":
         try:
             parsed = ast.parse(code)
+            keywords = []
             for node in ast.walk(parsed):
                 if isinstance(node, ast.Name):
                     keywords.append(node.id)
                 elif isinstance(node, ast.Attribute):
                     keywords.append(node.attr)
-            
-            import keyword
-            unique_kws = set(keywords) - set(keyword.kwlist)
-            return " ".join(list(unique_kws)[:20])
+            import keyword as _kw
+            stop = _PY_STOPWORDS | set(_kw.kwlist)
+            unique = list(dict.fromkeys(k for k in keywords if k not in stop))
+            return " ".join(unique[:20])
         except Exception:
             pass # fallback to regex
             
-    # Xử lý JS
+    # Xử lý JS bằng Babel
     if language.lower() in ["javascript", "js"]:
         js_kws = call_js_ast_helper(code, "extract_keywords")
         if js_kws is not None:
             return js_kws
             
-    # Fallback bằng Regex nếu Node.js lỗi hoặc ngôn ngữ khác
+    # Fallback bằng Regex
     tokens = re.findall(r'\b[a-zA-Z_]\w*\b', code)
-    
-    stopwords = {
-        'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue',
-        'return', 'function', 'const', 'let', 'var', 'async', 'await', 'try', 'catch',
-        'finally', 'throw', 'new', 'this', 'class', 'extends', 'super', 'import', 'export',
-        'default', 'yield', 'true', 'false', 'null', 'undefined', 'console', 'log',
-        'False', 'None', 'True', 'and', 'as', 'assert', 'def', 'del', 'elif', 'except',
-        'from', 'global', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass',
-        'raise', 'with', 'print'
-    }
-    
-    filtered = [t for t in tokens if t not in stopwords]
-    
-    # Giữ lại các token độc nhất (unique)
+    stop = _JS_STOPWORDS | _PY_STOPWORDS
     seen = set()
     unique_tokens = []
-    for t in filtered:
-        if t not in seen:
+    for t in tokens:
+        if t not in stop and t not in seen:
             seen.add(t)
             unique_tokens.append(t)
-            
     return " ".join(unique_tokens[:20])

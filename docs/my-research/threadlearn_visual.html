@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ThreadLearn — Interactive Research Visualization</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#ffffff;--surface:#f0f6ff;--surface2:#e1eeff;--border:#b8d4f8;
+  --text:#0f1f3d;--muted:#5a7ba8;--accent:#1565c0;--accent2:#1976d2;
+  --accent3:#1e88e5;--green:#0d7a3e;--red:#c0392b;--orange:#e67e22;
+  --yellow:#f39c12;--radius:10px;--shadow:0 2px 12px rgba(21,101,192,.12);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);
+  color:var(--text);line-height:1.6;font-size:15px}
+/* ── Nav ─────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;
+  background:var(--accent);color:#fff;display:flex;gap:0;overflow-x:auto}
+nav a{padding:12px 18px;color:rgba(255,255,255,.8);text-decoration:none;
+  font-size:13px;white-space:nowrap;border-bottom:3px solid transparent;
+  transition:all .2s}
+nav a:hover,nav a.active{color:#fff;border-bottom-color:#fff;
+  background:rgba(255,255,255,.1)}
+/* ── Hero ────────────────────────────────────────────────── */
+.hero{background:linear-gradient(135deg,#0d47a1,#1565c0,#1976d2);
+  color:#fff;padding:80px 40px 60px;text-align:center;margin-top:44px}
+.hero h1{font-size:2.4rem;font-weight:800;margin-bottom:8px}
+.hero .sub{font-size:1.1rem;opacity:.85;margin-bottom:32px}
+.hero .badge-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600}
+/* ── Section ─────────────────────────────────────────────── */
+section{padding:60px 40px;max-width:1100px;margin:0 auto}
+section h2{font-size:1.6rem;color:var(--accent);margin-bottom:24px;
+  padding-bottom:10px;border-bottom:2px solid var(--border)}
+section h3{font-size:1.15rem;color:var(--text);margin:28px 0 12px;font-weight:700}
+/* ── Cards ───────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.stat-card{background:var(--accent);color:#fff;border-radius:var(--radius);
+  padding:24px;text-align:center;box-shadow:var(--shadow)}
+.stat-card .num{font-size:2.4rem;font-weight:800}
+.stat-card .label{font-size:.85rem;opacity:.85;margin-top:4px}
+/* ── Pipeline ────────────────────────────────────────────── */
+.pipeline{display:flex;align-items:center;gap:0;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;overflow:hidden}
+.pipe-step{background:var(--accent);color:#fff;border-radius:8px;
+  padding:10px 18px;font-size:13px;font-weight:600;text-align:center;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;min-width:120px}
+.pipe-step:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(21,101,192,.3)}
+.pipe-step.active{background:#0d47a1;box-shadow:0 4px 16px rgba(21,101,192,.4)}
+.pipe-arrow{color:var(--accent);font-size:1.4rem;padding:0 6px;font-weight:700}
+.pipe-detail{margin-top:16px;padding:16px;background:#fff;
+  border:1px solid var(--border);border-radius:8px;min-height:80px;
+  transition:opacity .3s}
+/* ── Code block ──────────────────────────────────────────── */
+pre{background:#f8faff;border:1px solid var(--border);border-radius:8px;
+  padding:18px;overflow-x:auto;font-size:13px;line-height:1.7;
+  font-family:'Fira Code','Cascadia Code','Consolas',monospace}
+.kw{color:#c0392b;font-weight:700}
+.fn{color:#1565c0;font-weight:600}
+.str{color:#0d7a3e}
+.cm{color:#7a98ba;font-style:italic}
+.num-lit{color:#8e44ad}
+.hl{background:#fff3cd;border-radius:3px;padding:0 2px} /* highlight bug */
+.hl-fix{background:#d4edda;border-radius:3px;padding:0 2px} /* highlight fix */
+/* ── Diff view ───────────────────────────────────────────── */
+.diff{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.diff-panel h4{font-size:12px;font-weight:700;padding:6px 12px;
+  border-radius:6px 6px 0 0;margin:0}
+.diff-panel.bad h4{background:#fdecea;color:var(--red)}
+.diff-panel.good h4{background:#e8f5e9;color:var(--green)}
+.diff-panel pre{border-radius:0 0 8px 8px;margin:0}
+/* ── Race demo ───────────────────────────────────────────── */
+.race-demo{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px}
+.timeline{display:grid;grid-template-columns:100px 1fr;gap:8px;margin-top:16px}
+.tl-label{font-size:12px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center}
+.tl-row{display:flex;gap:4px;align-items:center}
+.tl-block{height:32px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:600;color:#fff;
+  transition:opacity .4s,transform .4s;min-width:80px}
+.tl-gap{flex:1}
+.db-state{display:flex;gap:16px;margin-top:16px;align-items:center}
+.db-val{background:#fff;border:2px solid var(--border);border-radius:8px;
+  padding:10px 20px;font-size:1.3rem;font-weight:800;text-align:center;
+  transition:background .5s,color .5s,border-color .5s}
+.db-val.race{background:#fdecea;border-color:var(--red);color:var(--red)}
+.db-val.ok{background:#e8f5e9;border-color:var(--green);color:var(--green)}
+/* ── Pattern cards ───────────────────────────────────────── */
+.pattern-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.pattern-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);
+  transition:transform .2s}
+.pattern-card:hover{transform:translateY(-3px)}
+.pattern-card .phead{background:var(--accent);color:#fff;padding:14px 18px}
+.pattern-card .phead h4{font-size:.95rem;margin-bottom:2px}
+.pattern-card .phead .pid{font-size:11px;opacity:.8;font-family:monospace}
+.pattern-card .pbody{padding:16px}
+/* ── Fix strategies tabs ─────────────────────────────────── */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:0}
+.tab{padding:8px 16px;border:1px solid var(--border);border-radius:6px 6px 0 0;
+  cursor:pointer;font-size:13px;background:var(--surface);color:var(--muted);
+  border-bottom:none;transition:all .2s}
+.tab.active{background:#fff;color:var(--accent);font-weight:700;
+  border-color:var(--border)}
+.tab-content{background:#fff;border:1px solid var(--border);
+  border-radius:0 8px 8px 8px;padding:24px;min-height:300px}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+/* ── Event loop animation ────────────────────────────────── */
+.el-container{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.el-queues{display:flex;flex-direction:column;gap:8px}
+.el-queue{border:2px solid;border-radius:8px;padding:10px 14px;
+  display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;
+  min-height:48px;transition:background .3s}
+.el-queue.tick{background:#fff9e6 !important;animation:pulse .5s ease}
+.el-queue.q-nexttick{border-color:#e67e22;color:#e67e22}
+.el-queue.q-promise{border-color:#8e44ad;color:#8e44ad}
+.el-queue.q-timer{border-color:#1565c0;color:#1565c0}
+.el-queue.q-io{border-color:#0d7a3e;color:#0d7a3e}
+.el-queue.q-check{border-color:#16a085;color:#16a085}
+.el-items{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.el-item{background:currentColor;color:#fff!important;
+  border-radius:4px;padding:3px 8px;font-size:11px;opacity:.9;
+  animation:slideIn .3s ease}
+.el-log{background:#f0f6ff;border:1px solid var(--border);border-radius:8px;
+  padding:14px;height:280px;overflow-y:auto;font-family:monospace;font-size:12px}
+.el-log .log-line{padding:2px 0;border-bottom:1px solid var(--border)}
+.el-log .log-line span{font-weight:700}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:6px;
+  padding:10px 22px;cursor:pointer;font-size:14px;font-weight:600;
+  transition:background .2s;margin:4px}
+.btn:hover{background:#0d47a1}
+.btn.secondary{background:var(--surface);color:var(--accent);
+  border:1px solid var(--border)}
+.btn.secondary:hover{background:var(--surface2)}
+/* ── Priority demo ───────────────────────────────────────── */
+.priority-out{background:#0f1f3d;color:#e8f4f8;border-radius:8px;
+  padding:20px;font-family:monospace;font-size:13px;min-height:180px}
+.priority-out .po-line{padding:3px 0;opacity:0;transform:translateX(-10px);
+  transition:opacity .4s,transform .4s}
+.priority-out .po-line.show{opacity:1;transform:translateX(0)}
+.tag{display:inline-block;border-radius:4px;padding:1px 8px;
+  font-size:11px;font-weight:700;margin-right:6px}
+.tag-nexttick{background:#e67e22;color:#fff}
+.tag-promise{background:#8e44ad;color:#fff}
+.tag-timer{background:#1565c0;color:#fff}
+.tag-immed{background:#16a085;color:#fff}
+.tag-io{background:#0d7a3e;color:#fff}
+/* ── Chart ───────────────────────────────────────────────── */
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:200px 1fr 60px;gap:10px;
+  align-items:center}
+.bar-label{font-size:13px;font-weight:600;text-align:right;color:var(--text)}
+.bar-track{background:var(--surface2);border-radius:4px;height:28px;
+  overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;
+  padding-left:10px;color:#fff;font-size:12px;font-weight:700;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-size:13px;font-weight:700;color:var(--accent)}
+/* ── CoT demo ────────────────────────────────────────────── */
+.cot-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.cot-step{background:var(--surface);border:2px solid var(--border);
+  border-radius:8px;padding:16px;text-align:center;position:relative}
+.cot-step.active{border-color:var(--accent);background:var(--surface2)}
+.cot-step h5{font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.cot-step p{font-size:.85rem}
+.cot-arrow{display:flex;align-items:center;justify-content:center;
+  color:var(--accent);font-size:1.5rem;margin-top:12px}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(21,101,192,.3)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.fade-up{animation:fadeUp .6s ease forwards}
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* ── Responsive ──────────────────────────────────────────── */
+@media(max-width:700px){
+  .hero h1{font-size:1.6rem}
+  .diff{grid-template-columns:1fr}
+  .el-container{grid-template-columns:1fr}
+  .cot-flow{grid-template-columns:1fr 1fr}
+  section{padding:40px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ────────────────────────────────────────────────────────── -->
+<nav id="nav">
+  <a href="#overview" class="active">Overview</a>
+  <a href="#problem">Problem</a>
+  <a href="#eventloop">Event Loop</a>
+  <a href="#patterns">Patterns</a>
+  <a href="#pipeline">Pipeline</a>
+  <a href="#finetuning">Fine-tuning</a>
+  <a href="#demo">Live Demo</a>
+  <a href="#eval">Evaluation</a>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────── -->
+<div class="hero">
+  <h1>ThreadLearn</h1>
+  <div class="sub">Static Race Detection + Hindsight CoT Fine-Tuning<br>for Concurrency Bug Remediation in Node.js</div>
+  <div class="badge-row">
+    <span class="badge">Target: ASPLOS 2027 / ICLR 2026</span>
+    <span class="badge">5 JS Patterns</span>
+    <span class="badge">Qwen2.5-Coder-1.5B + QLoRA</span>
+    <span class="badge">RAG-augmented Fix</span>
+  </div>
+</div>
+
+<!-- ── §1 Overview ────────────────────────────────────────────────── -->
+<section id="overview">
+  <h2>1. Tổng quan nghiên cứu</h2>
+  <div class="card-grid">
+    <div class="stat-card"><div class="num" data-target="57">0</div><div class="label">Real-world bugs (NodeCB study)</div></div>
+    <div class="stat-card"><div class="num" data-target="93">0</div><div class="label">% gây lỗi nghiêm trọng</div></div>
+    <div class="stat-card"><div class="num" data-target="65">0</div><div class="label">% là atomicity violation</div></div>
+    <div class="stat-card"><div class="num" data-target="5">0</div><div class="label">JS race patterns detected</div></div>
+  </div>
+
+  <h3>Vấn đề cốt lõi</h3>
+  <div class="card" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+    <div>
+      <div style="color:var(--red);font-weight:700;margin-bottom:8px">⚠ Rule-only (NodeCB)</div>
+      <ul style="color:var(--muted);font-size:13px;padding-left:16px;line-height:2">
+        <li>Detect được bug</li>
+        <li>❌ Không fix được</li>
+        <li>❌ False positive cao</li>
+        <li>❌ Không có reasoning</li>
+      </ul>
+    </div>
+    <div>
+      <div style="color:var(--orange);font-weight:700;margin-bottom:8px">⚠ LLM-only (PCWMs)</div>
+      <ul style="color:var(--muted);font-size:13px;padding-left:16px;line-height:2">
+        <li>Fix được bug</li>
+        <li>❌ 75.2% accuracy</li>
+        <li>❌ Cần model 7B–32B</li>
+        <li>❌ Không dùng static info</li>
+      </ul>
+    </div>
+    <div>
+      <div style="color:var(--green);font-weight:700;margin-bottom:8px">✅ ThreadLearn</div>
+      <ul style="color:var(--muted);font-size:13px;padding-left:16px;line-height:2">
+        <li>Detect + Fix</li>
+        <li>Model 1.5B (nhẹ)</li>
+        <li>Grounded CoT reasoning</li>
+        <li>RAG-augmented pipeline</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Kiến trúc ThreadLearn</h3>
+  <div class="pipeline" id="pipeline-vis">
+    <div class="pipe-step" onclick="showPipeDetail(0)">AST Preprocessor</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showPipeDetail(1)">Race Detector</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showPipeDetail(2)">Report Formatter</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showPipeDetail(3)">RAG Pipeline</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showPipeDetail(4)">Fine-tuned LLM</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" style="background:var(--green)">Fix Output</div>
+  </div>
+  <div class="pipe-detail" id="pipe-detail">
+    👆 Click vào một bước để xem chi tiết
+  </div>
+</section>
+
+<!-- ── §2 Problem ─────────────────────────────────────────────────── -->
+<section id="problem">
+  <h2>2. Concurrency Bugs trong Node.js</h2>
+
+  <h3>Race Condition — Lost Update Demo</h3>
+  <div class="race-demo">
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px">
+      Hai request đồng thời cùng read-modify-write một giá trị trong DB. Kết quả: một write bị mất.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn" onclick="runRaceDemo()">▶ Run Race Demo</button>
+      <button class="btn secondary" onclick="resetRaceDemo()">↺ Reset</button>
+    </div>
+    <div class="timeline">
+      <div class="tl-label">Request A</div>
+      <div class="tl-row" id="tl-a"></div>
+      <div class="tl-label">Request B</div>
+      <div class="tl-row" id="tl-b"></div>
+    </div>
+    <div class="db-state" style="margin-top:20px">
+      <div style="font-weight:700;color:var(--muted)">DB balance:</div>
+      <div class="db-val" id="db-val">$100</div>
+      <div id="db-status" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <h3>Bug taxonomy từ NodeCB (57 bugs thực tế)</h3>
+  <div class="bar-chart" id="taxonomy-chart" style="max-width:600px">
+    <div class="bar-row">
+      <div class="bar-label">Atomicity Violation</div>
+      <div class="bar-track"><div class="bar-fill" style="background:#c0392b;width:0%" data-w="65%">Atomicity</div></div>
+      <div class="bar-val">65%</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Order Violation</div>
+      <div class="bar-track"><div class="bar-fill" style="background:#1565c0;width:0%" data-w="30%">Order</div></div>
+      <div class="bar-val">30%</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Starvation</div>
+      <div class="bar-track"><div class="bar-fill" style="background:#e67e22;width:0%" data-w="5%">Starv.</div></div>
+      <div class="bar-val">5%</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Severity (severe)</div>
+      <div class="bar-track"><div class="bar-fill" style="background:#8e44ad;width:0%" data-w="93%">Severe</div></div>
+      <div class="bar-val">93%</div>
+    </div>
+  </div>
+
+  <h3>Await Trap — Interleaving giữa các await</h3>
+  <div class="card">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+      Mỗi <code>await</code> là điểm nhường CPU. Request B có thể chạy xen giữa hai await của Request A → atomicity violation dù dùng async/await.
+    </p>
+    <div class="diff">
+      <div class="diff-panel bad">
+        <h4>❌ Buggy — Atomicity Violation</h4>
+<pre><span class="kw">async function</span> <span class="fn">transferMoney</span>(fromId, toId, amount) {
+  <span class="cm">// await 1 — yield point!</span>
+  <span class="kw">const</span> from = <span class="kw">await</span> <span class="fn">db.get</span>(fromId);
+  <span class="cm">// ← Request B chạy vào đây!</span>
+  <span class="kw">const</span> to   = <span class="kw">await</span> <span class="fn">db.get</span>(toId);
+  <span class="cm">// await 2 — yield point!</span>
+  <span class="hl">from.balance -= amount;</span>
+  <span class="hl">to.balance   += amount;</span>
+  <span class="kw">await</span> <span class="fn">db.set</span>(fromId, from); <span class="cm">// stale!</span>
+  <span class="kw">await</span> <span class="fn">db.set</span>(toId,   to);
+}</pre>
+      </div>
+      <div class="diff-panel good">
+        <h4>✅ Fixed — Atomic Transaction</h4>
+<pre><span class="kw">async function</span> <span class="fn">transferMoney</span>(fromId, toId, amount) {
+  <span class="cm">// Toàn bộ read-modify-write trong 1 transaction</span>
+  <span class="kw">await</span> <span class="fn">db.transaction</span>(<span class="kw">async</span> (tx) => {
+    <span class="kw">const</span> from = <span class="kw">await</span> tx.<span class="fn">get</span>(fromId);
+    <span class="kw">const</span> to   = <span class="kw">await</span> tx.<span class="fn">get</span>(toId);
+    <span class="hl-fix">from.balance -= amount;</span>
+    <span class="hl-fix">to.balance   += amount;</span>
+    <span class="kw">await</span> tx.<span class="fn">set</span>(fromId, from);
+    <span class="kw">await</span> tx.<span class="fn">set</span>(toId,   to);
+  });
+  <span class="cm">// Nếu bất kỳ bước nào fail → rollback toàn bộ</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── §3 Event Loop ───────────────────────────────────────────────── -->
+<section id="eventloop">
+  <h2>3. Node.js Event Loop — Tại sao bugs xảy ra</h2>
+  <div class="el-container">
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn" onclick="startEventLoop()">▶ Simulate</button>
+        <button class="btn secondary" onclick="resetEventLoop()">↺ Reset</button>
+      </div>
+      <div class="el-queues" id="el-queues">
+        <div class="el-queue q-nexttick"><span style="width:130px">nextTick queue</span><div class="el-items" id="q-nexttick"></div></div>
+        <div class="el-queue q-promise"><span style="width:130px">Promise micro</span><div class="el-items" id="q-promise"></div></div>
+        <div class="el-queue q-timer"><span style="width:130px">Timers (setTimeout)</span><div class="el-items" id="q-timer"></div></div>
+        <div class="el-queue q-io"><span style="width:130px">I/O callbacks</span><div class="el-items" id="q-io"></div></div>
+        <div class="el-queue q-check"><span style="width:130px">Check (setImmediate)</span><div class="el-items" id="q-check"></div></div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+        Priority: nextTick &gt; Promise &gt; setTimeout(0) ≈ setImmediate &gt; I/O
+      </div>
+    </div>
+    <div>
+      <div class="el-log" id="el-log">
+        <div class="log-line" style="color:var(--muted)">Click ▶ để simulate event loop...</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Priority Order Demo</h3>
+  <div class="card">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Code sau in ra theo thứ tự nào?</p>
+<pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'1. Sync'</span>);
+
+<span class="fn">setTimeout</span>(() => <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'4. setTimeout(0)'</span>), <span class="num-lit">0</span>);
+<span class="fn">setImmediate</span>(() => <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'5. setImmediate'</span>));
+
+<span class="kw">Promise</span>.<span class="fn">resolve</span>().<span class="fn">then</span>(() => <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'3. Promise.resolve'</span>));
+<span class="fn">process</span>.<span class="fn">nextTick</span>(() => <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'2. process.nextTick'</span>));</pre>
+    <div style="margin:12px 0">
+      <button class="btn" onclick="runPriorityDemo()">▶ Run</button>
+      <button class="btn secondary" onclick="resetPriorityDemo()">↺ Reset</button>
+    </div>
+    <div class="priority-out" id="priority-out">
+      <div style="color:rgba(255,255,255,.4);font-size:12px">// output sẽ hiện ở đây</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── §4 Patterns ────────────────────────────────────────────────── -->
+<section id="patterns">
+  <h2>4. 5 Race Condition Patterns (JavaScript)</h2>
+  <div class="pattern-grid">
+
+    <div class="pattern-card">
+      <div class="phead">
+        <h4>Closure Loop Variable</h4>
+        <div class="pid">closure_loop_var</div>
+      </div>
+      <div class="pbody">
+        <div class="diff">
+          <div class="diff-panel bad">
+            <h4>❌ Bug</h4>
+<pre style="font-size:11px"><span class="kw">for</span> (<span class="kw">var</span> <span class="hl">i</span> = <span class="num-lit">0</span>; i &lt; <span class="num-lit">3</span>; i++) {
+  <span class="fn">setTimeout</span>(() =>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="hl">i</span>), <span class="num-lit">0</span>
+  );
+}
+<span class="cm">// Prints: 3, 3, 3</span></pre>
+          </div>
+          <div class="diff-panel good">
+            <h4>✅ Fix</h4>
+<pre style="font-size:11px"><span class="kw">for</span> (<span class="kw">let</span> <span class="hl-fix">i</span> = <span class="num-lit">0</span>; i &lt; <span class="num-lit">3</span>; i++) {
+  <span class="fn">setTimeout</span>(() =>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="hl-fix">i</span>), <span class="num-lit">0</span>
+  );
+}
+<span class="cm">// Prints: 0, 1, 2</span></pre>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">
+          <code>var</code> có function scope — tất cả closures share cùng <code>i</code>. <code>let</code> tạo binding mới cho mỗi iteration.
+        </p>
+      </div>
+    </div>
+
+    <div class="pattern-card">
+      <div class="phead">
+        <h4>Shared Var + setTimeout</h4>
+        <div class="pid">shared_var_settimeout</div>
+      </div>
+      <div class="pbody">
+        <div class="diff">
+          <div class="diff-panel bad">
+            <h4>❌ Bug</h4>
+<pre style="font-size:11px"><span class="kw">let</span> <span class="hl">counter</span> = <span class="num-lit">0</span>;
+
+<span class="kw">async function</span> <span class="fn">inc</span>() {
+  <span class="kw">const</span> tmp = <span class="hl">counter</span>;
+  <span class="kw">await</span> <span class="fn">delay</span>(<span class="num-lit">1</span>);
+  <span class="hl">counter</span> = tmp + <span class="num-lit">1</span>;
+}
+<span class="cm">// race: lost increment</span></pre>
+          </div>
+          <div class="diff-panel good">
+            <h4>✅ Fix</h4>
+<pre style="font-size:11px"><span class="kw">let</span> <span class="hl-fix">counter</span> = <span class="num-lit">0</span>;
+
+<span class="kw">async function</span> <span class="fn">inc</span>() {
+  <span class="cm">// atomic read-modify-write</span>
+  <span class="hl-fix">counter++</span>;
+}
+<span class="cm">// hoặc dùng queue/mutex</span></pre>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">
+          Shared state bị modified sau await — interleaving làm lost update.
+        </p>
+      </div>
+    </div>
+
+    <div class="pattern-card">
+      <div class="phead">
+        <h4>Promise No Await</h4>
+        <div class="pid">promise_no_await</div>
+      </div>
+      <div class="pbody">
+        <div class="diff">
+          <div class="diff-panel bad">
+            <h4>❌ Bug</h4>
+<pre style="font-size:11px"><span class="kw">async function</span> <span class="fn">save</span>(data) {
+  <span class="cm">// MISSING await!</span>
+  <span class="hl">db.<span class="fn">insert</span>(data)</span>;
+  <span class="fn">sendResponse</span>(<span class="str">'ok'</span>);
+  <span class="cm">// insert chưa xong</span>
+}</pre>
+          </div>
+          <div class="diff-panel good">
+            <h4>✅ Fix</h4>
+<pre style="font-size:11px"><span class="kw">async function</span> <span class="fn">save</span>(data) {
+  <span class="kw">await</span> <span class="hl-fix">db.<span class="fn">insert</span>(data)</span>;
+  <span class="fn">sendResponse</span>(<span class="str">'ok'</span>);
+  <span class="cm">// insert đã xong ✓</span>
+}</pre>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">
+          Fire-and-forget promise → order violation, response trả về trước khi data được lưu.
+        </p>
+      </div>
+    </div>
+
+    <div class="pattern-card">
+      <div class="phead">
+        <h4>Concurrent Write Array</h4>
+        <div class="pid">concurrent_write_array</div>
+      </div>
+      <div class="pbody">
+        <div class="diff">
+          <div class="diff-panel bad">
+            <h4>❌ Bug</h4>
+<pre style="font-size:11px"><span class="kw">const</span> results = [];
+
+<span class="kw">await</span> <span class="fn">Promise</span>.<span class="fn">all</span>(
+  items.<span class="fn">map</span>(<span class="kw">async</span> item => {
+    <span class="kw">const</span> r = <span class="kw">await</span> <span class="fn">fetch</span>(item);
+    <span class="hl">results.<span class="fn">push</span>(r)</span>; <span class="cm">// race!</span>
+  })
+);</pre>
+          </div>
+          <div class="diff-panel good">
+            <h4>✅ Fix</h4>
+<pre style="font-size:11px"><span class="cm">// Return values, không mutate</span>
+<span class="kw">const</span> results = <span class="kw">await</span> <span class="fn">Promise</span>.<span class="fn">all</span>(
+  items.<span class="fn">map</span>(<span class="kw">async</span> item => {
+    <span class="kw">const</span> r = <span class="kw">await</span> <span class="fn">fetch</span>(item);
+    <span class="kw">return</span> <span class="hl-fix">r</span>; <span class="cm">// safe!</span>
+  })
+);</pre>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">
+          Push vào shared array từ concurrent async callbacks → interleaved writes.
+        </p>
+      </div>
+    </div>
+
+    <div class="pattern-card">
+      <div class="phead">
+        <h4>Counter No Atomic</h4>
+        <div class="pid">counter_no_atomic</div>
+      </div>
+      <div class="pbody">
+        <div class="diff">
+          <div class="diff-panel bad">
+            <h4>❌ Bug</h4>
+<pre style="font-size:11px"><span class="kw">let</span> <span class="hl">count</span> = <span class="num-lit">0</span>;
+
+app.<span class="fn">get</span>(<span class="str">'/visit'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> c = <span class="hl">count</span>;
+  <span class="kw">await</span> <span class="fn">log</span>(c);
+  <span class="hl">count</span> = c + <span class="num-lit">1</span>; <span class="cm">// stale!</span>
+  res.<span class="fn">json</span>({count});
+});</pre>
+          </div>
+          <div class="diff-panel good">
+            <h4>✅ Fix</h4>
+<pre style="font-size:11px"><span class="kw">let</span> <span class="hl-fix">count</span> = <span class="num-lit">0</span>;
+
+app.<span class="fn">get</span>(<span class="str">'/visit'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="hl-fix">count++</span>; <span class="cm">// increment trước await</span>
+  <span class="kw">await</span> <span class="fn">log</span>(count);
+  res.<span class="fn">json</span>({count});
+});</pre>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">
+          Non-atomic read-modify-write xung quanh await → lost increments dưới concurrent load.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §5 Pipeline ────────────────────────────────────────────────── -->
+<section id="pipeline">
+  <h2>5. ThreadLearn Pipeline — Luồng xử lý</h2>
+
+  <h3>Bước 1: AST Preprocessor</h3>
+  <div class="card">
+<pre><span class="cm">// Input: raw JS code</span>
+<span class="kw">function</span> <span class="fn">preprocessCode</span>(source) {
+  <span class="kw">const</span> stripped = <span class="fn">stripComments</span>(source);     <span class="cm">// xóa // và /* */</span>
+  <span class="kw">const</span> normalized = <span class="fn">normalizeWhitespace</span>(stripped); <span class="cm">// chuẩn hóa indent</span>
+  <span class="kw">const</span> functions = <span class="fn">extractFunctions</span>(normalized); <span class="cm">// list function names</span>
+  <span class="kw">const</span> keywords = <span class="fn">extract_keywords</span>(normalized);  <span class="cm">// top-20 identifiers → RAG</span>
+  <span class="kw">return</span> { stripped, normalized, functions, keywords };
+}</pre>
+  </div>
+
+  <h3>Bước 2: Race Detector — Pattern Matching O(n)</h3>
+  <div class="card">
+<pre><span class="cm">// race_detector.py — detect closure_loop_var pattern</span>
+<span class="kw">def</span> <span class="fn">detect_closure_loop_var</span>(code):
+  lines = code.<span class="fn">splitlines</span>()
+  results = []
+  <span class="kw">for</span> i, line <span class="kw">in</span> <span class="fn">enumerate</span>(lines):
+    <span class="cm"># Tìm "for (var i" hoặc "for(var i"</span>
+    <span class="kw">if</span> <span class="fn">re.search</span>(<span class="str">r'for\s*\(\s*var\s+\w+'</span>, line):
+      <span class="cm"># Kiểm tra body có closure với async callback</span>
+      block = <span class="str">'\n'</span>.<span class="fn">join</span>(lines[i:i+<span class="num-lit">10</span>])
+      <span class="kw">if</span> <span class="fn">re.search</span>(<span class="str">r'setTimeout|setInterval|\.then|async'</span>, block):
+        results.<span class="fn">append</span>({
+          <span class="str">'pattern_id'</span>: <span class="str">'closure_loop_var'</span>,
+          <span class="str">'line_range'</span>: [i+<span class="num-lit">1</span>, i+<span class="num-lit">10</span>],
+          <span class="str">'description'</span>: <span class="str">'var i shared across async callbacks'</span>
+        })
+  <span class="kw">return</span> results</pre>
+  </div>
+
+  <h3>Bước 3: Report Formatter → severity + fix template</h3>
+  <div class="card">
+<pre><span class="cm">// Output của detector → structured report</span>
+<span class="kw">const</span> report = {
+  pattern_id:  <span class="str">'closure_loop_var'</span>,
+  line_range:  [<span class="num-lit">3</span>, <span class="num-lit">8</span>],
+  severity:    <span class="str">'HIGH'</span>,           <span class="cm">// từ report_formatter</span>
+  description: <span class="str">'var i shared across async callbacks'</span>,
+  fix_template:<span class="str">'Replace var with let in for loop header'</span>
+};
+<span class="cm">// → đây là "grounding signal" cho LLM</span></pre>
+  </div>
+
+  <h3>Bước 4: RAG Pipeline</h3>
+  <div class="card">
+<pre><span class="cm"># Encode input code → vector → retrieve similar fixed examples</span>
+<span class="kw">def</span> <span class="fn">rag_retrieve</span>(code, detector_report, k=<span class="num-lit">3</span>):
+  query_vec = <span class="fn">embed</span>(code + <span class="fn">str</span>(detector_report))
+  similar   = vector_store.<span class="fn">search</span>(query_vec, k=k)
+  <span class="cm"># similar = [(buggy_code, fix_code, pattern_id), ...]</span>
+  context   = <span class="fn">format_rag_context</span>(similar)
+  <span class="kw">return</span> context   <span class="cm"># → inject vào LLM prompt</span></pre>
+  </div>
+
+  <h3>Bước 5: Fine-tuned LLM → Fix với CoT</h3>
+  <div class="card">
+<pre><span class="cm">// Prompt structure gửi cho Qwen2.5-Coder-1.5B (fine-tuned)</span>
+<span class="kw">const</span> prompt = `
+<span class="cm">### Static Analysis Report:</span>
+${<span class="fn">JSON.stringify</span>(report, <span class="kw">null</span>, <span class="num-lit">2</span>)}
+
+<span class="cm">### Similar Fixed Examples (RAG):</span>
+${ragContext}
+
+<span class="cm">### Buggy Code:</span>
+${buggyCode}
+
+<span class="cm">### Task: Explain the bug (Chain-of-Thought), then provide the fix.</span>
+`;
+
+<span class="cm">// LLM response (Hindsight CoT):</span>
+<span class="cm">// "The bug is at line 3: var i is captured by reference...</span>
+<span class="cm">//  Because setTimeout callbacks execute after the loop completes...</span>
+<span class="cm">//  Fix: change var to let to create per-iteration binding."</span>
+<span class="cm">// ```fix</span>
+<span class="cm">// for (let i = 0; i &lt; 5; i++) { ... }</span>
+<span class="cm">// ```</span></pre>
+  </div>
+</section>
+
+<!-- ── §6 Fine-tuning ─────────────────────────────────────────────── -->
+<section id="finetuning">
+  <h2>6. Hindsight CoT Fine-Tuning</h2>
+
+  <h3>Training tuple format</h3>
+  <div class="cot-flow">
+    <div class="cot-step">
+      <h5>INPUT</h5>
+      <p>Buggy JS code</p>
+    </div>
+    <div class="cot-step">
+      <h5>GROUNDING</h5>
+      <p>Static detector output<br><small style="color:var(--muted)">{pattern_id, line_range}</small></p>
+    </div>
+    <div class="cot-step">
+      <h5>CoT TRACE</h5>
+      <p>Teacher reasoning<br><small style="color:var(--muted)">(hindsight)</small></p>
+    </div>
+    <div class="cot-step">
+      <h5>TARGET</h5>
+      <p>Fixed code</p>
+    </div>
+  </div>
+  <div class="cot-arrow">↓ SFTTrainer fine-tune Qwen2.5-Coder-1.5B với QLoRA r=16 ↓</div>
+
+  <h3>QLoRA Configuration</h3>
+  <div class="card">
+<pre><span class="cm"># Fine-tuning config (trl >= 1.5.0)</span>
+<span class="kw">from</span> trl <span class="kw">import</span> SFTTrainer
+<span class="kw">from</span> peft <span class="kw">import</span> LoraConfig
+
+lora_config = <span class="fn">LoraConfig</span>(
+    r=<span class="num-lit">16</span>,           <span class="cm"># rank</span>
+    lora_alpha=<span class="num-lit">32</span>,   <span class="cm"># scaling</span>
+    target_modules=[<span class="str">"q_proj"</span>, <span class="str">"v_proj"</span>],
+    lora_dropout=<span class="num-lit">0.05</span>,
+    bias=<span class="str">"none"</span>,
+    task_type=<span class="str">"CAUSAL_LM"</span>
+)
+
+<span class="cm"># 4-bit NF4 quantization → chạy được trên GPU thường</span>
+bnb_config = <span class="fn">BitsAndBytesConfig</span>(
+    load_in_4bit=<span class="kw">True</span>,
+    bnb_4bit_quant_type=<span class="str">"nf4"</span>,
+    bnb_4bit_compute_dtype=torch.bfloat16
+)
+
+trainer = <span class="fn">SFTTrainer</span>(
+    model=model,
+    train_dataset=dataset,
+    peft_config=lora_config,
+    dataset_text_field=<span class="str">"text"</span>,
+    <span class="cm"># SFTTrainer tự gọi get_peft_model() — không cần manual</span>
+)</pre>
+  </div>
+
+  <h3>Tại sao Hindsight CoT tốt hơn?</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-weight:700;color:var(--red);margin-bottom:8px">Generic CoT (PCWMs)</div>
+      <p style="font-size:13px;color:var(--muted)">Teacher model suy luận từ code thuần — không biết bug ở đâu. Trace chứa nhiều nhiễu, accuracy 75.2%.</p>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:var(--green);margin-bottom:8px">Hindsight CoT (ThreadLearn)</div>
+      <p style="font-size:13px;color:var(--muted)">Teacher model biết trước kết quả đúng (hindsight) VÀ được cung cấp static detector output → trace chính xác, causal, grounded.</p>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:8px">Insight O2</div>
+      <p style="font-size:13px;color:var(--muted)">Model 1.5B fine-tuned với grounded CoT outperforms model 7B+ với generic CoT — nhờ structural evidence, không phải model size.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── §7 Live Demo ───────────────────────────────────────────────── -->
+<section id="demo">
+  <h2>7. Live Demo — Analyze JS Code</h2>
+  <div class="card">
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px">
+      Dán code JS vào đây — ThreadLearn detector sẽ phân tích (simulated) và đề xuất fix:
+    </p>
+    <textarea id="demo-input" style="width:100%;height:160px;font-family:monospace;
+      font-size:13px;padding:12px;border:1px solid var(--border);border-radius:8px;
+      background:#f8faff;color:var(--text);resize:vertical"
+    >for (var i = 0; i < 5; i++) {
+  setTimeout(function() {
+    console.log(i);
+  }, 100);
+}</textarea>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="runAnalysis()">🔍 Analyze</button>
+      <button class="btn secondary" onclick="loadExample('closure')">Example: closure_loop_var</button>
+      <button class="btn secondary" onclick="loadExample('promise')">Example: promise_no_await</button>
+      <button class="btn secondary" onclick="loadExample('counter')">Example: counter_no_atomic</button>
+    </div>
+    <div id="analysis-result" style="margin-top:16px;display:none">
+      <div id="analysis-out"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── §8 Evaluation ─────────────────────────────────────────────── -->
+<section id="eval">
+  <h2>8. Evaluation Plan</h2>
+
+  <div class="card-grid" style="margin-bottom:24px">
+    <div class="card">
+      <div style="font-weight:700;color:var(--muted);font-size:12px">BASELINE 1</div>
+      <div style="font-weight:700;margin:4px 0">NodeCB Rule-only</div>
+      <div style="font-size:13px;color:var(--muted)">Detect only, no fix</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;color:var(--muted);font-size:12px">BASELINE 2</div>
+      <div style="font-weight:700;margin:4px 0">PCWMs LLM-only</div>
+      <div style="font-size:13px;color:var(--muted)">Qwen2.5-Coder-1.5B, no fine-tune</div>
+    </div>
+    <div class="card" style="border-color:var(--accent)">
+      <div style="font-weight:700;color:var(--accent);font-size:12px">OUR SYSTEM</div>
+      <div style="font-weight:700;margin:4px 0">ThreadLearn</div>
+      <div style="font-size:13px;color:var(--muted)">Static + fine-tuned LLM</div>
+    </div>
+  </div>
+
+  <h3>Method × Feature Matrix</h3>
+  <div class="card" style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--surface2)">
+          <th style="padding:10px 14px;text-align:left">Method</th>
+          <th style="padding:10px;text-align:center">Detect</th>
+          <th style="padding:10px;text-align:center">Fix</th>
+          <th style="padding:10px;text-align:center">JS</th>
+          <th style="padding:10px;text-align:center">Fine-tuned</th>
+          <th style="padding:10px;text-align:center">Grounded</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 14px;font-weight:600">ThreadSanitizer</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 14px;font-weight:600">ESLint async rules</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 14px;font-weight:600">NodeCB (rules)</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 14px;font-weight:600">PCWMs LLM-only</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--red)">✗</td>
+        </tr>
+        <tr style="background:var(--surface2)">
+          <td style="padding:10px 14px;font-weight:800;color:var(--accent)">ThreadLearn ★</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+          <td style="text-align:center;color:var(--green)">✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Metrics (TBD sau fine-tuning run AI1-07)</h3>
+  <div class="bar-chart" style="max-width:600px" id="eval-chart">
+    <div class="bar-row">
+      <div class="bar-label">ThreadLearn F1</div>
+      <div class="bar-track"><div class="bar-fill" style="background:var(--accent);width:0%" data-w="85%">TBD</div></div>
+      <div class="bar-val">~85%?</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">PCWMs baseline</div>
+      <div class="bar-track"><div class="bar-fill" style="background:var(--muted);width:0%" data-w="75%">75.2%</div></div>
+      <div class="bar-val">75.2%</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Rule-only F1</div>
+      <div class="bar-track"><div class="bar-fill" style="background:#e67e22;width:0%" data-w="55%">TBD</div></div>
+      <div class="bar-val">~55%?</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-top:8px">* Giá trị hiển thị là estimates — sẽ cập nhật sau khi chạy fine-tuning (AI1-07) và load test (AI2-10)</p>
+</section>
+
+<div style="background:var(--accent);color:#fff;padding:32px;text-align:center;margin-top:40px">
+  <div style="font-weight:700;font-size:1.1rem">ThreadLearn Research</div>
+  <div style="opacity:.8;font-size:13px;margin-top:4px">
+    Target: ASPLOS 2027 / ICLR 2026 &nbsp;·&nbsp; Qwen2.5-Coder-1.5B + QLoRA &nbsp;·&nbsp; Node.js Concurrency Bug Detection
+  </div>
+</div>
+
+<script>
+// ── Count-up animation ────────────────────────────────────────────
+function countUp(el, target, suffix='') {
+  let n=0, step=Math.ceil(target/40);
+  const iv = setInterval(()=>{
+    n = Math.min(n+step, target);
+    el.textContent = n + suffix;
+    if(n>=target) clearInterval(iv);
+  }, 35);
+}
+document.querySelectorAll('[data-target]').forEach(el=>{
+  const obs = new IntersectionObserver(entries=>{
+    if(entries[0].isIntersecting){
+      countUp(el, +el.dataset.target);
+      obs.disconnect();
+    }
+  });
+  obs.observe(el);
+});
+
+// ── Bar chart animation ───────────────────────────────────────────
+function animateBars(chartId) {
+  document.querySelectorAll('#'+chartId+' .bar-fill').forEach(bar=>{
+    const obs = new IntersectionObserver(entries=>{
+      if(entries[0].isIntersecting){
+        setTimeout(()=>{ bar.style.width = bar.dataset.w; }, 100);
+        obs.disconnect();
+      }
+    });
+    obs.observe(bar);
+  });
+}
+animateBars('taxonomy-chart');
+animateBars('eval-chart');
+
+// ── Nav highlight ─────────────────────────────────────────────────
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+window.addEventListener('scroll', ()=>{
+  let cur='';
+  sections.forEach(s=>{ if(window.scrollY >= s.offsetTop-100) cur=s.id; });
+  navLinks.forEach(a=>{ a.classList.toggle('active', a.getAttribute('href')==='#'+cur); });
+});
+
+// ── Pipeline detail ───────────────────────────────────────────────
+const pipeDetails = [
+  '<strong>AST Preprocessor</strong>: stripComments(), normalizeWhitespace(), extractFunctions(), extract_keywords(). Output: clean normalized code + keyword list for RAG.',
+  '<strong>Race Detector</strong>: 5 pattern matchers chạy O(n). Output: [{pattern_id, line_range, description}]. False-positive suppression tích hợp.',
+  '<strong>Report Formatter</strong>: map pattern_id → severity (HIGH/MEDIUM/LOW) + fix_template string. Tạo structured report làm grounding signal cho LLM.',
+  '<strong>RAG Pipeline</strong>: embed(code + report) → vector search → retrieve k=3 similar fixed examples → format_rag_context() → inject vào LLM prompt.',
+  '<strong>Fine-tuned LLM (Qwen2.5-Coder-1.5B)</strong>: nhận RAG context + detector report + buggy code → sinh CoT explanation + fixed code. Fine-tuned với QLoRA r=16 trên Hindsight CoT dataset.',
+];
+function showPipeDetail(i) {
+  document.querySelectorAll('.pipe-step').forEach((s,j)=>s.classList.toggle('active',j===i));
+  const d = document.getElementById('pipe-detail');
+  d.style.opacity='0';
+  setTimeout(()=>{ d.innerHTML = pipeDetails[i]; d.style.opacity='1'; }, 150);
+}
+
+// ── Race demo ─────────────────────────────────────────────────────
+function makeBlock(txt, color, delay) {
+  const b = document.createElement('div');
+  b.className = 'tl-block';
+  b.style.background = color;
+  b.style.opacity = '0';
+  b.style.transform = 'scale(.8)';
+  b.textContent = txt;
+  setTimeout(()=>{ b.style.opacity='1'; b.style.transform='scale(1)'; }, delay);
+  return b;
+}
+function resetRaceDemo() {
+  ['tl-a','tl-b'].forEach(id=>document.getElementById(id).innerHTML='');
+  const dv=document.getElementById('db-val');
+  dv.textContent='$100'; dv.className='db-val';
+  document.getElementById('db-status').textContent='';
+}
+async function runRaceDemo() {
+  resetRaceDemo();
+  const a=document.getElementById('tl-a'), b=document.getElementById('tl-b');
+  const dv=document.getElementById('db-val'), ds=document.getElementById('db-status');
+  // A: read $100
+  a.appendChild(makeBlock('READ $100','#1565c0',0));
+  // B: read $100 (concurrent — A hasn't written yet)
+  b.appendChild(makeBlock('READ $100','#e67e22',400));
+  // A: modify → $110
+  await new Promise(r=>setTimeout(r,900));
+  a.appendChild(makeBlock('→ $110','#0d47a1',0));
+  // B: modify → $90
+  b.appendChild(makeBlock('→ $90','#c0390b',200));
+  // A: write $110
+  await new Promise(r=>setTimeout(r,700));
+  a.appendChild(makeBlock('WRITE $110','#0d7a3e',0));
+  dv.textContent='$110'; dv.className='db-val ok';
+  // B: write $90 — OVERWRITES A!
+  await new Promise(r=>setTimeout(r,500));
+  b.appendChild(makeBlock('WRITE $90 ⚠','#c0392b',0));
+  dv.textContent='$90'; dv.className='db-val race';
+  ds.textContent='❌ Lost update! A\'s write was overwritten by B\'s stale read.';
+  ds.style.color='var(--red)';
+}
+
+// ── Event loop simulation ─────────────────────────────────────────
+let elTimer=null;
+function addLog(msg, color='var(--text)') {
+  const log=document.getElementById('el-log');
+  const line=document.createElement('div');
+  line.className='log-line';
+  line.innerHTML=`<span style="color:${color}">${msg}</span>`;
+  log.appendChild(line);
+  log.scrollTop=log.scrollHeight;
+}
+function addItem(queueId, label) {
+  const q=document.getElementById(queueId);
+  const item=document.createElement('div');
+  item.className='el-item';
+  item.textContent=label;
+  q.appendChild(item);
+}
+function drainQueue(queueId, delay) {
+  return new Promise(res=>{
+    const q=document.getElementById(queueId);
+    const parent=q.closest('.el-queue');
+    if(!q.children.length){res();return;}
+    parent.classList.add('tick');
+    setTimeout(()=>{
+      while(q.firstChild) q.removeChild(q.firstChild);
+      parent.classList.remove('tick');
+      res();
+    }, delay);
+  });
+}
+function resetEventLoop() {
+  clearTimeout(elTimer);
+  ['q-nexttick','q-promise','q-timer','q-io','q-check'].forEach(id=>{
+    const q=document.getElementById(id);
+    while(q.firstChild) q.removeChild(q.firstChild);
+  });
+  document.getElementById('el-log').innerHTML='<div class="log-line" style="color:var(--muted)">Click ▶ để simulate...</div>';
+}
+async function startEventLoop() {
+  resetEventLoop();
+  const s=300;
+  addLog('=== Sync code chạy ===','#1565c0');
+  await new Promise(r=>setTimeout(r,s));
+  addItem('q-timer','cb1: setTimeout(0)');
+  addLog('  setTimeout(0) → timer queue','#e67e22');
+  await new Promise(r=>setTimeout(r,s));
+  addItem('q-check','cb2: setImmediate');
+  addLog('  setImmediate → check queue','#16a085');
+  await new Promise(r=>setTimeout(r,s));
+  addItem('q-promise','p1: Promise.resolve');
+  addLog('  Promise.resolve → microtask','#8e44ad');
+  await new Promise(r=>setTimeout(r,s));
+  addItem('q-nexttick','nt1: nextTick');
+  addLog('  process.nextTick → nextTick queue','#e67e22');
+  await new Promise(r=>setTimeout(r,s));
+  addLog('=== Sync done → drain queues ===','#1565c0');
+  await new Promise(r=>setTimeout(r,s));
+  addLog('  [1] Drain nextTick queue first','#e67e22');
+  await drainQueue('q-nexttick', 600);
+  addLog('  ✓ nextTick cb ran','#e67e22');
+  await new Promise(r=>setTimeout(r,s));
+  addLog('  [2] Drain Promise microtask','#8e44ad');
+  await drainQueue('q-promise', 600);
+  addLog('  ✓ Promise cb ran','#8e44ad');
+  await new Promise(r=>setTimeout(r,s));
+  addLog('  [3] Timers phase','#1565c0');
+  await drainQueue('q-timer', 600);
+  addLog('  ✓ setTimeout cb ran','#1565c0');
+  await new Promise(r=>setTimeout(r,s));
+  addLog('  [4] Check phase (setImmediate)','#16a085');
+  await drainQueue('q-check', 600);
+  addLog('  ✓ setImmediate cb ran','#16a085');
+  await new Promise(r=>setTimeout(r,s));
+  addLog('=== Output order: sync → nextTick → Promise → setTimeout → setImmediate ===','#0d7a3e');
+}
+
+// ── Priority demo ─────────────────────────────────────────────────
+const priorityLines = [
+  { text:'1. Sync', tag:'', color:'#e8f4f8' },
+  { text:'2. process.nextTick', tag:'nextTick', color:'#e67e22' },
+  { text:'3. Promise.resolve', tag:'Promise', color:'#8e44ad' },
+  { text:'4. setTimeout(0)', tag:'Timer', color:'#1565c0' },
+  { text:'5. setImmediate', tag:'Check', color:'#16a085' },
+];
+const tagClass = {'nextTick':'tag-nexttick','Promise':'tag-promise','Timer':'tag-timer','Check':'tag-immed','':`tag`};
+function resetPriorityDemo() {
+  const out=document.getElementById('priority-out');
+  out.innerHTML='<div style="color:rgba(255,255,255,.4);font-size:12px">// output sẽ hiện ở đây</div>';
+}
+function runPriorityDemo() {
+  const out=document.getElementById('priority-out');
+  out.innerHTML='';
+  priorityLines.forEach((l,i)=>{
+    const div=document.createElement('div');
+    div.className='po-line';
+    div.innerHTML = l.tag
+      ? `<span class="tag tag-${l.tag.toLowerCase()}">${l.tag}</span><span style="color:${l.color}">${l.text}</span>`
+      : `<span style="color:#fff">${l.text}</span>`;
+    out.appendChild(div);
+    setTimeout(()=>div.classList.add('show'), i*500+300);
+  });
+}
+
+// ── Live demo analysis ────────────────────────────────────────────
+const examples = {
+  closure: `for (var i = 0; i < 5; i++) {\n  setTimeout(function() {\n    console.log(i);\n  }, 100);\n}`,
+  promise: `async function saveUser(data) {\n  db.insert(data); // missing await!\n  sendResponse('ok');\n}`,
+  counter: `let count = 0;\napp.get('/visit', async (req, res) => {\n  const c = count;\n  await logVisit(c);\n  count = c + 1; // stale!\n  res.json({count});\n});`,
+};
+function loadExample(key) {
+  document.getElementById('demo-input').value = examples[key];
+  document.getElementById('analysis-result').style.display='none';
+}
+const detectorRules = [
+  { id:'closure_loop_var',      regex:/for\s*\(\s*var\s+\w+.*\)[\s\S]{0,200}(setTimeout|setInterval|\.then|async)/,
+    severity:'HIGH', desc:'var captured by reference in async closure', fix:'Change var → let in for loop header' },
+  { id:'promise_no_await',      regex:/\bdb\.\w+\([^)]*\)[^;]*;(?!\s*\/\/.*await)(?![\s\S]*await)/,
+    severity:'HIGH', desc:'Promise returned by db call not awaited', fix:'Add await before db call' },
+  { id:'counter_no_atomic',     regex:/(const|let|var)\s+\w+\s*=\s*\w+;[\s\S]{0,100}await[\s\S]{0,100}\w+\s*=\s*\w+\s*\+\s*\d+/,
+    severity:'MEDIUM', desc:'Read-modify-write pattern split across await', fix:'Move increment before first await' },
+  { id:'concurrent_write_array',regex:/Promise\.all\s*\([\s\S]{0,200}\.push\s*\(/,
+    severity:'MEDIUM', desc:'Concurrent push to shared array inside Promise.all', fix:'Return values instead of mutating shared array' },
+  { id:'shared_var_settimeout', regex:/(let|var)\s+\w+\s*=[\s\S]{0,100}await[\s\S]{0,100}\w+\s*=\s*\w+\s*[+-]/,
+    severity:'HIGH', desc:'Shared variable modified after await', fix:'Use atomic operation or move mutation before yield' },
+];
+function runAnalysis() {
+  const code = document.getElementById('demo-input').value;
+  const out = document.getElementById('analysis-out');
+  const resultDiv = document.getElementById('analysis-result');
+  const found = detectorRules.filter(r=>r.regex.test(code));
+  resultDiv.style.display='block';
+  if(!found.length){
+    out.innerHTML=`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:16px;color:var(--green)">
+      ✅ <strong>No race patterns detected</strong> — code looks clean.
+    </div>`;
+    return;
+  }
+  const sevColor = {'HIGH':'var(--red)','MEDIUM':'var(--orange)','LOW':'var(--yellow)'};
+  out.innerHTML = found.map(p=>`
+    <div style="border:2px solid ${sevColor[p.severity]};border-radius:8px;margin-bottom:12px;overflow:hidden">
+      <div style="background:${sevColor[p.severity]};color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center">
+        <strong>${p.severity}</strong>
+        <code style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px;font-size:12px">${p.id}</code>
+      </div>
+      <div style="padding:14px;background:#fff">
+        <div style="margin-bottom:6px"><strong>Bug:</strong> ${p.desc}</div>
+        <div style="color:var(--green)"><strong>Fix suggestion:</strong> ${p.fix}</div>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+          → ThreadLearn LLM sẽ sinh CoT explanation + fixed code dựa trên report này
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
