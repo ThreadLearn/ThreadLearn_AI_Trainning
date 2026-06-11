@@ -6,6 +6,29 @@
 
 import ast
 import re
+import subprocess
+import json
+import os
+
+def call_js_ast_helper(code: str, action: str):
+    """Gọi Node.js subprocess để xử lý AST thực thụ cho JavaScript."""
+    helper_path = os.path.join(os.path.dirname(__file__), "js_ast_helper.js")
+    try:
+        process = subprocess.Popen(
+            ["node", helper_path, action],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8"
+        )
+        stdout, stderr = process.communicate(input=code)
+        res = json.loads(stdout)
+        if "error" in res:
+            return None # Fallback nếu lỗi syntax
+        return res["result"]
+    except Exception as e:
+        return None
 
 def stripComments(code: str, language: str = "python") -> str:
     """Loại bỏ comments và docstrings. Hỗ trợ Python và JS."""
@@ -19,9 +42,13 @@ def stripComments(code: str, language: str = "python") -> str:
             code = re.sub(r'(?m)^\s*#.*$', '', code)
             return code
     elif language.lower() in ["javascript", "js"]:
-        # Xóa // comments
+        # Gọi AST thật bằng Babel qua Node.js Subprocess
+        js_result = call_js_ast_helper(code, "strip_comments")
+        if js_result is not None:
+            return js_result
+            
+        # Fallback nếu lỗi Syntax
         code = re.sub(r'(?m)^\s*//.*$', '', code)
-        # Xóa /* */ comments
         code = re.sub(r'/\*[\s\S]*?\*/', '', code)
         return code
     return code
@@ -33,8 +60,12 @@ def normalizeWhitespace(code: str, language: str = "python") -> str:
             return ast.unparse(ast.parse(code))
         except Exception:
             pass
-    
-    # Fallback cho JS và Python bị lỗi syntax
+    elif language.lower() in ["javascript", "js"]:
+        js_result = call_js_ast_helper(code, "normalize_whitespace")
+        if js_result is not None:
+            return js_result
+            
+    # Fallback cho JS lỗi syntax và Python lỗi syntax
     # Biến nhiều dòng trống liên tiếp thành tối đa 2 dòng
     code = re.sub(r'\n{3,}', '\n\n', code)
     # Xóa khoảng trắng thừa ở cuối mỗi dòng
@@ -63,9 +94,12 @@ def extractFunctions(code: str, language: str = "python") -> list:
         except Exception:
             pass
     elif language.lower() in ["javascript", "js"]:
-        # Tạm dùng regex bắt function JS cơ bản. (Phù hợp với RAG Pipeline)
-        # pattern bắt cả async/await, arrow function là rất khó bằng regex, 
-        # nhưng đây là bản nhẹ để backend gọi nhanh không cần Node.js
+        # Gọi AST thật (Babel) thay vì Regex mạo danh
+        js_functions = call_js_ast_helper(code, "extract_functions")
+        if js_functions is not None:
+            return js_functions
+            
+        # Fallback regex nếu file lỗi cú pháp nặng
         pattern = r'(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*?^}'
         matches = re.finditer(pattern, code, re.MULTILINE)
         for m in matches:
@@ -97,8 +131,13 @@ def extract_keywords(code: str, language: str = "python") -> str:
         except Exception:
             pass # fallback to regex
             
-    # Chung cho JS / Fallback Python
-    # Tìm tất cả identifier hợp lệ (chữ cái/số/dấu gạch dưới, không bắt đầu bằng số)
+    # Xử lý JS
+    if language.lower() in ["javascript", "js"]:
+        js_kws = call_js_ast_helper(code, "extract_keywords")
+        if js_kws is not None:
+            return js_kws
+            
+    # Fallback bằng Regex nếu Node.js lỗi hoặc ngôn ngữ khác
     tokens = re.findall(r'\b[a-zA-Z_]\w*\b', code)
     
     stopwords = {
@@ -113,7 +152,7 @@ def extract_keywords(code: str, language: str = "python") -> str:
     
     filtered = [t for t in tokens if t not in stopwords]
     
-    # Giữ lại các token độc nhất (unique) nhưng vẫn duy trì thứ tự xuất hiện ban đầu
+    # Giữ lại các token độc nhất (unique)
     seen = set()
     unique_tokens = []
     for t in filtered:
@@ -122,4 +161,3 @@ def extract_keywords(code: str, language: str = "python") -> str:
             unique_tokens.append(t)
             
     return " ".join(unique_tokens[:20])
-
