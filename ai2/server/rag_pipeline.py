@@ -2,12 +2,10 @@
 AI2-05/06: RAG Pipeline
 Flow: code → keyword extraction → BM25 top-3 docs → build prompt → LLM → List[Issue]
 
-Keyword extraction dùng ast_preprocessor.extract_keywords() (AST-based, esprima).
-Fallback sang bm25_module.tokenize() nếu import fail.
+Keyword extraction hiện tại dùng tokenize() từ bm25_module (đơn giản, không cần AST).
+Khi AI1-03 (ast_preprocessor.py từ Ân) hoàn thành → swap vào mà không sửa phần còn lại.
 """
 
-import os
-import sys
 from typing import List, TYPE_CHECKING
 
 from bm25_module import tokenize
@@ -17,42 +15,30 @@ import llm_client
 if TYPE_CHECKING:
     from bm25_module import BM25Retriever
 
-# AST-based keyword extraction từ AI1
-try:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "ai1", "modules"))
-    from ast_preprocessor import extract_keywords as _ast_extract_keywords
-    _HAS_AST = True
-except ImportError:
-    _HAS_AST = False
-
 
 # ---------------------------------------------------------------------------
 # Keyword Extraction
 # ---------------------------------------------------------------------------
 
+import sys
+import os
+# Thêm đường dẫn tới ai1/modules để import ast_preprocessor
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai1/modules')))
+import ast_preprocessor
+
 def _extract_keywords(code: str) -> str:
     """
     Trích keyword từ code để làm BM25 query.
-
-    Dùng ast_preprocessor.extract_keywords() (esprima AST):
-        - Chỉ lấy Identifier tokens thật — tên hàm, tên biến, API calls
-        - Bỏ JS keywords (if/for/const/async...) chính xác hơn regex
-        - Giữ nguyên CamelCase (setTimeout, Promise, appendFile)
-          để khớp với BM25 index đã tách CamelCase
-
-    Fallback sang tokenize() nếu esprima không có.
-
-    Ví dụ:
-        code = "setTimeout(() => { sharedVar++; }, 100);"
-        tokenize()          → "set timeout shared var"   (tách CamelCase, loãng)
-        ast extract_keywords → "setTimeout sharedVar"    (giữ nguyên, khớp tốt hơn)
+    Sử dụng Babel AST thực thụ thông qua ast_preprocessor (AI1-03).
     """
-    if _HAS_AST:
-        kw = _ast_extract_keywords(code, language="javascript")
-        if kw.strip():
-            return kw
-    # Fallback
-    return " ".join(tokenize(code)[:20])
+    try:
+        # Lấy tối đa 20 keywords từ cây AST
+        return ast_preprocessor.extract_keywords(code, language="js")
+    except Exception as e:
+        # Fallback nếu gặp lỗi
+        tokens = tokenize(code)
+        return " ".join(tokens[:20])
+
 
 
 # ---------------------------------------------------------------------------
