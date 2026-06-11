@@ -1,0 +1,130 @@
+{
+  "model": "Qwen2.5-Coder-1.5B-Instruct (no fine-tune)",
+  "total": 20,
+  "pass": 8,
+  "partial": 9,
+  "fail": 3,
+  "pass_rate": "40%",
+  "results": [
+    {
+      "id": "test_01",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `setTimeout` function is asynchronous, meaning it does not block the execution of other code. However, in this case, both calls to `increment` are executed simultaneously, leading to a race condition where the final value of `counter` may be unpredictable.\n"
+    },
+    {
+      "id": "test_02",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `setTimeout` function is asynchronous, which means it will not block the execution of other code until it completes. However, in this case, the `db.setBalance` function is also asynchronous, so there is a potential race condition where the `balance` variabl"
+    },
+    {
+      "id": "test_03",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `checkAndCreateUser` function is vulnerable to a race condition because it uses the `db.find()` method to check if a user exists in the database before creating a new one. If another request comes in while the first request is still processing, the second r"
+    },
+    {
+      "id": "test_04",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The function `getCache` is designed to fetch data from a server and store it in the `cache`. However, there's a potential race condition where another request could come in before the first one completes, leading to inconsistent or outdated data.\n\nFixed Code Sn"
+    },
+    {
+      "id": "test_05",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `appendLog` function reads the current content of a file named 'log.txt' using `fs.readFile`, then appends a new message to it using `fs.writeFile`. However, there is no mechanism to ensure that these operations do not overlap or interfere with each other.\n"
+    },
+    {
+      "id": "test_06",
+      "category": "Event Loop Blocking",
+      "verdict": "fail",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `processHugeArray` function processes a large array by iterating over each element using a `for` loop. However, the `heavyMath` function is called within the loop without any synchronization mechanism, which can lead to race conditions if multiple threads o"
+    },
+    {
+      "id": "test_07",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `forEach` method is synchronous in nature, meaning it will execute each iteration of the loop sequentially. If multiple users are being processed at the same time, there's a risk that one user's password hash might be calculated before another user's passwo"
+    },
+    {
+      "id": "test_08",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Event Loop Blocking\n\nExplanation: The `parseJSONLines` function is synchronous and will block the event loop while parsing each line of JSON data. This can lead to performance issues if there are many lines of JSON data to be parsed.\n\nFixed Code Snippet:\n\n```javascript\nconst parseJSONLines"
+    },
+    {
+      "id": "test_09",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `renderPages` function maps each page to a synchronous rendering operation using the `renderSync` function. However, if multiple pages are rendered simultaneously, there is a risk of race condition where the order of rendering can be unpredictable.\n\nFixed C"
+    },
+    {
+      "id": "test_10",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `backupLogs` function reads the contents of each file in the `files` array and writes them to a new file with the `.bak` extension. However, if multiple instances of the `backupLogs` function run concurrently, there is a risk that two or more processes will"
+    },
+    {
+      "id": "test_11",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Event Loop Blocking\n\nExplanation: The `db.query()` function is a synchronous operation that blocks the event loop until it completes. This means that while the query is running, no other requests can be processed by the server. As a result, the response to the `/` request will not be sent "
+    },
+    {
+      "id": "test_12",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The function `getUser` is asynchronous and relies on the database to find a user by ID. However, there's no mechanism in place to handle concurrent requests or ensure that the database operation completes before proceeding.\n\nFixed Code Snippet:\n\n```javascript\nf"
+    },
+    {
+      "id": "test_13",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The function `fetchObj` is asynchronous but does not handle the case where another request might come in while it's still processing the current one. This can lead to a race condition where the second request might overwrite the result of the first request befo"
+    },
+    {
+      "id": "test_14",
+      "category": "Context Loss",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Event Loop Blocking\n\nExplanation: The `setTimeout` function is used to delay the execution of a function by a specified number of milliseconds. However, in this case, the function passed to `setTimeout` does not have access to the `this` context of the `Service` class instance. As a result"
+    },
+    {
+      "id": "test_15",
+      "category": "Callback Hell",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The function `doTask` is asynchronous and relies on callbacks to execute its steps. However, the order of execution is not guaranteed due to the nature of asynchronous operations in JavaScript. This can lead to unexpected behavior if the order of events matters"
+    },
+    {
+      "id": "test_16",
+      "category": "Resource Exhaustion",
+      "verdict": "fail",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `downloadAll` function uses `Promise.all` to download all URLs concurrently. However, the order in which the promises resolve is not guaranteed because of the asynchronous nature of the `fetch` operation. This can lead to unexpected results if the order mat"
+    },
+    {
+      "id": "test_17",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `getDashboard` function is asynchronous and uses `await` to wait for the results of three database operations (`getUser`, `getStats`, and `getFriends`). However, these operations may not complete in a predictable order due to the nature of asynchronous prog"
+    },
+    {
+      "id": "test_18",
+      "category": "Missing Promise.all",
+      "verdict": "partial",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: The `sendEmails` function is asynchronous and uses the `await` keyword to wait for each email to be sent before moving on to the next user. However, if there are multiple users in the list, they may be processed concurrently by different threads or processes, l"
+    },
+    {
+      "id": "test_19",
+      "category": "Buffer Leak",
+      "verdict": "fail",
+      "response_preview": "Bug Type: Event Loop Blocking\n\nExplanation: The `fs.createReadStream` function is a blocking operation that reads data from the file system. This means it will pause the execution of the rest of the code until the file has been fully read. In this case, if the file is very large or the server is und"
+    },
+    {
+      "id": "test_20",
+      "category": "Event Loop Ordering",
+      "verdict": "pass",
+      "response_preview": "Bug Type: Race Condition\n\nExplanation: In the given code, `init` is set to `true` using `process.nextTick`, which schedules the execution of the function immediately after the current event loop cycle completes. However, `setTimeout` is scheduled to log the value of `init` after a delay of 0 millise"
+    }
+  ]
+}

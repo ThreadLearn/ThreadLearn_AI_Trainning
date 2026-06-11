@@ -1,0 +1,301 @@
+{
+  "model": "ThreadLearn (Qwen2.5-Coder-1.5B fine-tuned)",
+  "prompt_format": "Convert to concurrent JavaScript (training format)",
+  "rag_enabled": true,
+  "raw": {
+    "pass": 14,
+    "partial": 6,
+    "fail": 0,
+    "pass_rate": "70%",
+    "results": [
+      {
+        "id": "test_01",
+        "category": "Race Condition",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'await']",
+        "response": "console.log(counter); // random value between 0 and 2\nlet counter = 0;\nconst incrementPromise = new Promise(resolve => {\n  setTimeout(() => {\n    counter++;\n    resolve();\n  }, Math.random() * 100);\n});\nasync function main() {\n  await incrementPromise;\n  console.log(counter);\n}\nmain();\nconsole.log(c"
+      },
+      {
+        "id": "test_02",
+        "category": "Race Condition",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'await', 'setbalance']",
+        "response": "const updateAccount = async (id, amount) => {\n  const balance = await db.getBalance(id);\n  await new Promise(resolve => setTimeout(() => db.setBalance(id, balance + amount), 10));\n};\nconst updateAccount = async (id, amount) => {\n  const balance = await db.getBalance(id);\n  await new Promise(r => set"
+      },
+      {
+        "id": "test_03",
+        "category": "Race Condition",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "const checkAndCreateUser = async (email) => {\n  const user = await db.findOne({email});\n  if (!user) await db.create({email});\n};\nconst checkAndCreateUser = async (email) => {\n  const user = await db.findOne({email});\n  if (!user) await db.create({email});\n};\nconst checkAndCreateUser = async (email)"
+      },
+      {
+        "id": "test_04",
+        "category": "Race Condition",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function getCache() {\n  if (!cache) {\n    cache = await fetchData();\n  }\n  return cache;\n}\nlet promise = null;\nfunction getCache() {\n  if (!promise) {\n    promise = fetchData().then(d => (cache = d));\n  }\n  return promise;\n}\nasync function getCache() {\n  if (!promise) {\n    promise = fetchData"
+      },
+      {
+        "id": "test_05",
+        "category": "Race Condition",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['appendfile']",
+        "response": "let logs = '';\nasync function appendLog(msg) {\n  const data = await fs.promises.readFile('log.txt', 'utf8');\n  await fs.promises.writeFile('log.txt', data + msg);\n}\nlet logs = '';\nconst fs = require('fs').promises;\nasync function appendLog(msg) {\n  const data = await fs.readFile('log.txt', 'utf8');\n"
+      },
+      {
+        "id": "test_06",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['yield']",
+        "response": "async function* generateHugeArray(arr) {\n  for(const item of arr) {\n    yield await heavyMath(item);\n  }\n}\nasync function processHugeArray(arr) {\n  for await (const result of generateHugeArray(arr)) {\n    console.log(result);\n  }\n}\nasync function main() {\n  const arr = Array.from({length: 1000000}, "
+      },
+      {
+        "id": "test_07",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['pbkdf2(']",
+        "response": "const crypto = require('crypto');\nfunction encryptPasswords(users) {\n  for (const u of users) {\n    u.hash = crypto.pbkdf2Sync(u.password, 'salt', 100000, 64, 'sha512').toString('hex');\n  }\n}\nconst crypto = require('crypto');\nasync function encryptPasswords(users) {\n  for (const u of users) {\n    u."
+      },
+      {
+        "id": "test_08",
+        "category": "Event Loop Blocking",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "const parseJSONLines = (lines, callback) => {\n  lines.forEach(line => {\n    callback(JSON.parse(line));\n  });\n};\nconst parseJSONLines = (lines, callback) => {\n  lines.forEach(line => {\n    try {\n      const parsed = JSON.parse(line);\n      callback(parsed);\n    } catch (error) {\n      console.error("
+      },
+      {
+        "id": "test_09",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['renderasync']",
+        "response": "async function* generatePages(pages) {\n  for (const page of pages) {\n    yield await renderAsync(page);\n  }\n}\nasync function renderPages(pages) {\n  for await (const result of generatePages(pages)) {\n    console.log(result);\n  }\n}\nasync function main() {\n  const pages = [1, 2, 3];\n  await renderPages"
+      },
+      {
+        "id": "test_10",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['readfile(']",
+        "response": "const fs = require('fs').promises;\nasync function backupLogs(files) {\n  for (const f of files) {\n    const data = await fs.readFile(f);\n    await fs.writeFile(f + '.bak', data);\n  }\n}\nconst fs = require('fs').promises;\nasync function backupLogs(files, concurrency = 4) {\n  const results = [];\n  for ("
+      },
+      {
+        "id": "test_11",
+        "category": "Unhandled Rejection",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['try {']",
+        "response": "app.get('/', async (req, res, next) => {\n  try {\n    const data = await db.query();\n    res.json(data);\n  } catch (error) {\n    next(error);\n  }\n});\napp.use((err, req, res, next) => {\n  console.error(err.stack);\n  res.status(500).send('Something broke!');\n});\nasync function* streamData(dbQuery) {\n  "
+      },
+      {
+        "id": "test_12",
+        "category": "Double Callback",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function getUser(id) {\n  const user = await db.findById(id);\n  if (!user) throw new Error('Not found');\n  return user;\n}\nasync function* streamUser(id) {\n  const users = await db.findUsersByIds([id]);\n  yield* users;\n}\nasync function main() {\n  for await (const user of streamUser(123)) {\n    c"
+      },
+      {
+        "id": "test_13",
+        "category": "Zalgo",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "const cache = new Map();\nlet inflight = new Map();\nasync function fetchObj(id) {\n  if (cache.has(id)) return Promise.resolve(cache.get(id));\n  if (inflight.has(id)) return inflight.get(id);\n  const promise = networkFetch(id).then(data => {\n    cache.set(id, data);\n    inflight.delete(id);\n    return"
+      },
+      {
+        "id": "test_14",
+        "category": "Context Loss",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['=>']",
+        "response": "class Service {\n  constructor(name) { this.name = name; }\n  run() {\n    setTimeout(() => {\n      console.log(this.name + ' running');\n    }, 100);\n  }\n}\nclass Service {\n  constructor(name) { this.name = name; }\n  run() {\n    const self = this;\n    setTimeout(function() {\n      console.log(self.name "
+      },
+      {
+        "id": "test_15",
+        "category": "Callback Hell",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'await', 'step']",
+        "response": "async function doTask() {\n  const r1 = await step1();\n  const r2 = await step2(r1);\n  const r3 = await step3(r2);\n  return r3;\n}\nasync function* generateTask() {\n  const r1 = yield await step1();\n  const r2 = yield await step2(r1);\n  const r3 = yield await step3(r2);\n  return r3;\n}\nasync function do"
+      },
+      {
+        "id": "test_16",
+        "category": "Resource Exhaustion",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['slice']",
+        "response": "async function downloadAll(urls) {\n  return Promise.all(urls.map(url => fetch(url)));\n}\nasync function downloadAll(urls, concurrency = 4) {\n  const results = [];\n  for (let i = 0; i < urls.length; i += concurrency) {\n    const batch = urls.slice(i, i + concurrency);\n    const batchResults = await Pr"
+      },
+      {
+        "id": "test_17",
+        "category": "Sequential Awaits",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['promise.all(']",
+        "response": "async function getDashboard(id) {\n  const [user, stats, friends] = await Promise.all([db.getUser(id), db.getStats(id), db.getFriends(id)]);\n  return {user, stats, friends};\n}\nasync function getDashboard(id) {\n  const [user, stats, friends] = await Promise.all([db.getUser(id), db.getStats(id), db.get"
+      },
+      {
+        "id": "test_18",
+        "category": "Missing Promise.all",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['promise.all(']",
+        "response": "async function* generateEmails(users) {\n  for(const user of users) {\n    yield await emailService.send(user.email);\n  }\n}\nasync function sendEmails(users) {\n  for await (const result of generateEmails(users)) {\n    console.log(result);\n  }\n}\nasync function sendEmails(users, concurrency = 4) {\n  cons"
+      },
+      {
+        "id": "test_19",
+        "category": "Buffer Leak",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.pipe(res);\n}\nasync function* streamData() {\n  const rs = fs.createReadStream('file.mp4');\n  for await (const chunk of rs) {\n    yield chunk;\n  }\n}\nasync function streamData(req, res) {\n  const rs = fs.createRead"
+      },
+      {
+        "id": "test_20",
+        "category": "Event Loop Ordering",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['init', 'true']",
+        "response": "let init = false;\nPromise.resolve().then(() => {\n  init = true;\n}).then(() => setTimeout(() => console.log(init), 0));\nlet init = false;\nPromise.resolve().then(() => {\n  init = true;\n}).then(() => Promise.resolve().then(() => setTimeout(() => console.log(init), 0)));\nlet init = false;\nPromise.resolv"
+      }
+    ]
+  },
+  "rag": {
+    "pass": 15,
+    "partial": 5,
+    "fail": 0,
+    "pass_rate": "75%",
+    "results": [
+      {
+        "id": "test_01",
+        "category": "Race Condition",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'await']",
+        "response": "increment();\nsetTimeout(() => {\n  console.log(counter); // always 3\n}, 500);\nlet counter = 0;\nconst incrementPromise = new Promise(resolve => setTimeout(() => resolve(++counter), Math.random() * 100));\nasync function main() {\n  await Promise.all([incrementPromise, incrementPromise, incrementPromise]"
+      },
+      {
+        "id": "test_02",
+        "category": "Race Condition",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'await', 'setbalance']",
+        "response": "const updateAccount = async (id, amount) => {\n  const balance = await db.getBalance(id);\n  await db.setBalance(id, balance + amount);\n};\nconst updateAccount = async (id, amount) => {\n  const balance = await db.getBalance(id);\n  await Promise.resolve().then(() => db.setBalance(id, balance + amount));"
+      },
+      {
+        "id": "test_03",
+        "category": "Race Condition",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['upsert']",
+        "response": "const validateEmail = async (email) => {\n  if (!email.includes('@')) throw new Error('Invalid email format');\n  return email;\n};\nconst enrichWithCountryCode = async (email) => {\n  const ip = getEmailIP(email);\n  return geoLookup(ip);\n};\nconst normalizeEmail = async (email) => {\n  return email.toLowe"
+      },
+      {
+        "id": "test_04",
+        "category": "Race Condition",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function getData(concurrency = 4) {\n  if (!cache) {\n    const results = [];\n    for (let i = 0; i < concurrency; i++) {\n      results.push(fetchData());\n    }\n    cache = await Promise.any(results);\n  }\n  return cache;\n}\nasync function getData(concurrency = 4) {\n  if (!cache) {\n    const resul"
+      },
+      {
+        "id": "test_05",
+        "category": "Race Condition",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "Promise.all([appendLog('A'), appendLog('B')])\n  .then(() => console.log('done'));\nlet logs = '';\nfunction appendLog(msg) {\n  fs.readFile('log.txt', 'utf8', (err, data) => {\n    fs.writeFile('log.txt', data + msg, () => {});\n  });\n}\nPromise.all([appendLog('A'), appendLog('B')])\n  .then(() => console."
+      },
+      {
+        "id": "test_06",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['yield']",
+        "response": "async function* generateHugeArray(arr) {\n  for(const x of arr) {\n    yield await heavyMath(x);\n  }\n}\nasync function processHugeArray(arr) {\n  for await (const result of generateHugeArray(arr)) {\n    console.log(result);\n  }\n}\nasync function main() {\n  const hugeArr = await fetch('huge-array.json').t"
+      },
+      {
+        "id": "test_07",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'pbkdf2']",
+        "response": "async function* streamUsers(concurrency = 4) {\n  const results = [];\n  for (const user of users) {\n    results.push(new Promise(resolve => setTimeout(() => resolve(encryptPassword(user)), Math.random() * 500)));\n  }\n  for (const p of results) yield await p;\n}\nasync function encryptPasswords(users, c"
+      },
+      {
+        "id": "test_08",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'json.parse']",
+        "response": "const processLargeFile = async (fileContent) => {\n  const WORKER_COUNT = navigator.hardwareConcurrency || 4;\n  const lines = fileContent.split('\\n');\n  const chunkSize = Math.ceil(lines.length / WORKER_COUNT);\n  const workers = Array.from({ length: WORKER_COUNT }, () =>\n    new Worker('./file-parser"
+      },
+      {
+        "id": "test_09",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['renderasync']",
+        "response": "async function renderPages(pages) {\n  return Promise.all(pages.map(page => renderAsync(page)));\n}\nfunction renderSync(page) {\n  return new Promise((resolve, reject) => {\n    setTimeout(() => resolve(render(page)), 500);\n  });\n}\nasync function renderAsync(page) {\n  return new Promise(resolve => setTi"
+      },
+      {
+        "id": "test_10",
+        "category": "Event Loop Blocking",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['fs.promises']",
+        "response": "async function backupLogs(files) {\n  for (const f of files) {\n    const data = await fs.promises.readFile(f);\n    await fs.promises.writeFile(f + '.bak', data);\n  }\n}\nconst fs = require('fs').promises;\nasync function backupLogs(files) {\n  for (const f of files) {\n    const data = await fs.readFile(f"
+      },
+      {
+        "id": "test_11",
+        "category": "Unhandled Rejection",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['try {']",
+        "response": "app.get('/', async (req, res, next) => {\n  try {\n    const data = await db.query();\n    res.json(data);\n  } catch (error) {\n    next(error);\n  }\n});\napp.use((err, req, res, next) => {\n  console.error(err.stack);\n  res.status(500).json({ error: 'Internal server error' });\n});\napp.listen(3000, () => c"
+      },
+      {
+        "id": "test_12",
+        "category": "Double Callback",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function* streamUsers(concurrency = 4) {\n  while (true) {\n    const batch = [];\n    for (let i = 0; i < concurrency; i++) {\n      const id = yield;\n      if (id == null) break;\n      batch.push(db.findById(id));\n    }\n    const results = await Promise.all(batch);\n    for (const [i, user] of re"
+      },
+      {
+        "id": "test_13",
+        "category": "Zalgo",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function* streamObjs(ids) {\n  for (const id of ids) yield await new Promise((resolve, reject) => {\n    if (cache[id]) resolve(cache[id]);\n    else networkFetch(id, (data) => {\n      cache[id] = data; resolve(data);\n    });\n  });\n}\nasync function main() {\n  const results = [];\n  for await (cons"
+      },
+      {
+        "id": "test_14",
+        "category": "Context Loss",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['=>']",
+        "response": "class Service {\n  constructor(name) { this.name = name; }\n  run() {\n    setTimeout(() => {\n      console.log(this.name + ' running');\n    }, 100);\n  }\n}\nconst service = new Service('Serv');\nservice.run();\nclass Service {\n  constructor(name) { this.name = name; }\n  run() {\n    setTimeout(() => {\n    "
+      },
+      {
+        "id": "test_15",
+        "category": "Callback Hell",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['async', 'await', 'step']",
+        "response": "async function* doTask() {\n  const r1 = yield step1();\n  const r2 = yield step2(r1);\n  const r3 = yield step3(r2);\n  yield cb(r3);\n}\nasync function main() {\n  const task = doTask();\n  const r1 = await task.next();\n  const r2 = await task.next(r1.value);\n  const r3 = await task.next(r2.value);\n  awai"
+      },
+      {
+        "id": "test_16",
+        "category": "Resource Exhaustion",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['limit']",
+        "response": "async function downloadWithLimit(urls, limit = 3) {\n  const results = new Array(urls.length);\n  const sem = new Semaphore(limit);\n\n  await Promise.all(\n    urls.map((url, i) => sem.run(async () => {\n      results[i] = await fetch(url);\n    }))\n  );\n\n  return results;\n}\nasync function downloadAll(url"
+      },
+      {
+        "id": "test_17",
+        "category": "Sequential Awaits",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['promise.all(']",
+        "response": "async function getDashboard(id) {\n  const [user, stats, friends] = await Promise.all([db.getUser(id), db.getStats(id), db.getFriends(id)]);\n  return {user, stats, friends};\n}\nasync function getDashboard(id) {\n  const [user, stats, friends] = await Promise.all([db.getUser(id), db.getStats(id), db.get"
+      },
+      {
+        "id": "test_18",
+        "category": "Missing Promise.all",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['promise.all(']",
+        "response": "async function sendEmails(users) {\n  for(const user of users) {\n    await emailService.send(user.email);\n  }\n}\nasync function* streamUsers(users) {\n  for(const user of users) {\n    yield await emailService.send(user.email);\n  }\n}\nasync function sendEmails(users) {\n  for await (const result of stream"
+      },
+      {
+        "id": "test_19",
+        "category": "Buffer Leak",
+        "verdict": "partial",
+        "reason": "has code but fix pattern not matched",
+        "response": "async function streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.pipe(res);\n}\nasync function streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.pipe(res);\n}\nasync function streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.pipe(re"
+      },
+      {
+        "id": "test_20",
+        "category": "Event Loop Ordering",
+        "verdict": "pass",
+        "reason": "fix pattern matched: ['init', 'true']",
+        "response": "init = true;\n\nlet init = false;\nPromise.resolve().then(() => init = true).then(() => setTimeout(() => console.log(init), 0));\ninit = true;\n\nlet init = false;\nPromise.resolve().then(() => init = true).then(() => new Promise(resolve => setTimeout(() => resolve(console.log(init)), 0)));\ninit = true;\n\nl"
+      }
+    ]
+  }
+}

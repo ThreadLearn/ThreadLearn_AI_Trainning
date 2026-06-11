@@ -1,7 +1,7 @@
 # ThreadLearn: Outline Bài Báo Nghiên Cứu (Tiếng Việt)
 
 **Đóng góp một câu:**
-> ThreadLearn kết hợp phát hiện race condition tĩnh dựa trên quy tắc với mô hình Qwen2.5-Coder-1.5B được fine-tune bằng Hindsight CoT để vừa phát hiện vừa sửa lỗi concurrency trong JavaScript và Python, cải thiện F1 phát hiện X% và tỷ lệ chấp nhận bản sửa Y% so với baseline chỉ dùng quy tắc và baseline chỉ dùng LLM.
+> ThreadLearn kết hợp bộ phát hiện race tĩnh 5 pattern với mô hình Qwen2.5-Coder-1.5B fine-tune bằng Hindsight CoT và RAG pipeline BM25 để sửa lỗi concurrency JavaScript, đạt 75% pass rate (15/20) trên benchmark 20 case — +35 pp so với base model chưa fine-tune (40%) và +45 pp so với GPT-3.5-turbo zero-shot (30%).
 
 **Venue mục tiêu:** ASPLOS 2027 hoặc ICLR 2026 — 11–12 trang
 
@@ -14,7 +14,7 @@
 | S1 | Lỗi concurrency trong code async/đa luồng gây ra các sự cố nghiêm trọng trên môi trường production, trong khi các công cụ phát hiện tĩnh có tỷ lệ false positive cao và LLM thiếu khả năng suy luận đáng tin cậy về tương tác luồng. |
 | S2 | Bộ phát hiện dựa trên quy tắc (NodeCB) bỏ sót các pattern phức tạp; phương pháp chỉ dùng LLM (PCWMs) chỉ đạt 75% độ chính xác khi phát hiện race mà không có phân tích cấu trúc rõ ràng. |
 | S3 | ThreadLearn kết hợp bộ phát hiện tĩnh 10 pattern với mô hình Qwen2.5-Coder-1.5B được fine-tune bằng QLoRA trên các trace Hindsight Chain-of-Thought được căn bản hóa từ đầu ra của phân tích tĩnh. |
-| S4 | Trên [benchmark], ThreadLearn phát hiện race với F1=X% (+Y% so với baseline NodeCB) và tạo bản sửa được chấp nhận trong Z% trường hợp (+W% so với baseline PCWM). |
+| S4 | Trên benchmark 20 case JS concurrency, ThreadLearn+RAG đạt 75% pass rate (15/20), so với 40% base model chưa fine-tune và 30% GPT-3.5-turbo zero-shot (+35 pp so với base, +45 pp so với GPT-3.5). |
 | S5 | ThreadLearn là mã nguồn mở tại [repo]; bộ dữ liệu fine-tune và harness đánh giá được công khai. |
 
 ---
@@ -169,44 +169,60 @@
 
 | Hạng mục | Chi tiết |
 |---------|---------|
-| Baseline 1 | Chỉ dùng quy tắc kiểu NodeCB |
-| Baseline 2 | Chỉ dùng LLM kiểu PCWM (Qwen2.5-Coder-1.5B không fine-tune) |
-| Hệ thống của chúng tôi | ThreadLearn (tĩnh + LLM fine-tuned) |
-| Bộ dữ liệu | 20 test case tổng hợp + [bộ dữ liệu thực tế TBD] |
-| Metric | Detection F1, False Positive Rate, Fix Acceptance Rate, Latency (ms/request) |
+| Baseline 1 | Qwen2.5-Coder-1.5B base, không fine-tune, cùng prompt format |
+| Baseline 2 | GPT-3.5-turbo zero-shot, temp=0, OpenAI API |
+| Hệ thống RAW | ThreadLearn fine-tuned, không RAG |
+| Hệ thống RAG | ThreadLearn fine-tuned + BM25 top-3 docs |
+| Test suite | 20 case JS concurrency thủ công, 8 loại lỗi |
+| Prompt format | `"Convert to concurrent JavaScript:\n\n{code}\n"` (training format) |
+| Scoring | Fix-pattern matching: PASS/PARTIAL/FAIL |
+| Hardware | RTX 4060 Laptop GPU, float16 |
+| Ngày | 2026-06-11 ✅ |
 
-**Bảng 1**: Kết quả phát hiện — Phương pháp × (Precision / Recall / F1 / FPR)
+**Bảng 1**: Pass rate — Phương pháp × (Pass / Partial / Fail / Rate)
 
-### §5.2 So sánh Phát Hiện End-to-End (1 trang)
+### §5.2 Kết quả End-to-End (1 trang)
 
-| So sánh | Giả thuyết |
-|--------|-----------|
-| ThreadLearn vs chỉ-quy tắc | Cải thiện F1 trên pattern phức tạp (vi phạm thứ tự, API misuse) |
-| ThreadLearn vs chỉ-LLM | Cải thiện F1 với CoT có căn bản vs suy luận generic |
+| Phương pháp | Pass | Partial | Fail | Rate |
+|------------|------|---------|------|------|
+| GPT-3.5-turbo zero-shot | 6 | 11 | 3 | 30% |
+| Qwen2.5-Coder-1.5B base | 8 | 9 | 3 | 40% |
+| ThreadLearn RAW | 14 | 6 | 0 | 70% |
+| **ThreadLearn + RAG** | **15** | **5** | **0** | **75%** |
 
-**Hình 3**: Biểu đồ cột F1 — 3 phương pháp × phân tách JS/Python
+**Hình 3**: Biểu đồ cột — 4 cấu hình, so sánh pass rate
 
-### §5.3 Đánh giá Chất lượng Sửa Lỗi (1 trang)
+### §5.3 Chất lượng Sửa Lỗi Theo Danh mục (1 trang)
 
-| Metric | Phương pháp đo |
-|--------|--------------|
-| Fix Acceptance Rate | Đánh giá người dùng hoặc compile + test pass |
-| Case study 1 | `var i` closure → sửa thành `let i` |
-| Case study 2 | Global var trong thread → thêm Lock |
-| So sánh | PCWM gốc: +2.7%–11.1% với world model feedback |
+| Danh mục | Pass/Tổng | Rate |
+|---------|----------|------|
+| Race Condition | 3/5 | 60% |
+| Event Loop Blocking | 5/5 | 100% |
+| Unhandled Rejection | 1/1 | 100% |
+| Double Callback | 0/1 | 0% |
+| Zalgo | 0/1 | 0% |
+| Context Loss | 1/1 | 100% |
+| Callback Hell | 1/1 | 100% |
+| Resource Exhaustion | 1/1 | 100% |
+| Sequential Awaits | 1/1 | 100% |
+| Missing Promise.all | 1/1 | 100% |
+| Buffer Leak | 0/1 | 0% |
+| Event Loop Ordering | 1/1 | 100% |
 
-**Hình 4**: Tỷ lệ chấp nhận bản sửa — ThreadLearn vs chỉ-LLM vs chỉ-quy tắc (không có fix)
+**Hình 4**: Biểu đồ cột ngang theo danh mục
 
 ### §5.4 Ablation Study (1 trang)
 
-| Thành phần bị loại | Tác động dự kiến |
-|------------------|----------------|
-| Loại bỏ căn bản tĩnh | F1 giảm X% |
-| Loại bỏ RAG | Chất lượng sửa giảm Y% |
-| Loại bỏ Hindsight CoT | Độ chính xác giảm Z% (xác nhận kết quả PCWMs) |
-| QLoRA r=8 vs r=16 | Đánh đổi độ chính xác vs bộ nhớ |
+| Cấu hình | Pass | Rate | Delta |
+|---------|------|------|-------|
+| Base model (không fine-tune, không RAG) | 8 | 40% | baseline |
+| Chỉ fine-tune (RAW, không RAG) | 14 | 70% | +30 pp |
+| Fine-tune + RAG | 15 | 75% | +35 pp |
+| Prompt sai (chat template) | 7 | 35% | −5 pp so với base |
 
-**Bảng 2**: Ablation — Component × Metric
+Phát hiện then chốt: prompt format sai mất −35 pp (35% vs 70%).
+
+**Bảng 2**: Ablation — Cấu hình × Pass Rate
 
 ### §5.5 Khả năng Mở Rộng & Độ Trễ (0.5 trang)
 
@@ -237,7 +253,7 @@
 |-----|----------|
 | S1 | Lỗi concurrency vẫn là nguyên nhân hàng đầu gây sự cố production trong ứng dụng async và đa luồng, nhưng chưa có công cụ nào vừa phát hiện vừa sửa chúng một cách đáng tin cậy. |
 | S2 | ThreadLearn kết hợp bộ phát hiện race tĩnh 10 pattern với mô hình Qwen2.5-Coder-1.5B fine-tune bằng Hindsight CoT để cung cấp pipeline phát hiện và tạo bản sửa end-to-end cho JavaScript và Python. |
-| S3 | ThreadLearn đạt F1=X% khi phát hiện race (+Y% so với NodeCB) và tỷ lệ chấp nhận bản sửa Z% (+W% so với baseline PCWMs), chứng minh rằng căn bản tĩnh cải thiện đáng kể khả năng suy luận concurrency của LLM. |
+| S3 | ThreadLearn+RAG đạt 75% pass rate (15/20) trên benchmark 20 case, so với 40% base model và 30% GPT-3.5-turbo, chứng minh rằng prompt format đúng và fine-tune có domain grounding cải thiện đáng kể chất lượng sửa lỗi concurrency của LLM. |
 
 **Công việc tương lai:** Mở rộng sang TypeScript AST (thay regex), thêm pattern MPI/CUDA, phân tích đa file đa ngôn ngữ.
 
@@ -261,7 +277,11 @@
 
 | Hạng mục | Trạng thái |
 |---------|-----------|
-| Fine-tune model | Chưa chạy (AI1-07 blocked — cần GPU) → F1 TBD |
+| Eval model fine-tuned (RAW) | ✅ Hoàn thành — 14/20 (70%), 2026-06-11 |
+| Eval model fine-tuned (RAG) | ✅ Hoàn thành — 15/20 (75%), 2026-06-11 |
+| Baseline GPT-3.5-turbo | ✅ Hoàn thành — 6/20 (30%), 2026-06-10 |
+| Baseline Qwen2.5 base | ✅ Hoàn thành — 8/20 (40%), 2026-06-11 |
+| Phát hiện prompt format mismatch | ✅ Ghi nhận — chat template = 35%, completion format = 70% |
 | Bộ dữ liệu thực tế | Chưa chọn |
 | Load test | AI2-10 chưa hoàn chỉnh |
-| 20 test case tổng hợp | Hoàn thành ✅ (`test_race_detector.py`) |
+| 20 test case tổng hợp | ✅ Hoàn thành (`eval_rag_merged.py`, `eval_rag_results.json`) |
