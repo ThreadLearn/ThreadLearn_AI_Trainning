@@ -1,7 +1,7 @@
 # ThreadLearn: Research Paper Outline (English)
 
 **One-sentence contribution:**
-> ThreadLearn combines rule-based static race detection with a Hindsight CoT fine-tuned Qwen2.5-Coder-1.5B model to simultaneously detect and fix concurrency bugs in JavaScript and Python, improving detection F1 by X% and fix acceptance rate by Y% over rule-only and LLM-only baselines.
+> ThreadLearn combines a 5-pattern static race detector with a Hindsight CoT fine-tuned Qwen2.5-Coder-1.5B model and BM25 RAG pipeline to fix JavaScript concurrency bugs, achieving 75% pass rate (15/20) on a 20-case benchmark — +35 pp over the untuned base model (40%) and +45 pp over GPT-3.5-turbo zero-shot (30%).
 
 **Target venue:** ASPLOS 2027 or ICLR 2026 — 11–12 pages
 
@@ -14,7 +14,7 @@
 | S1 | Concurrency bugs in async and multi-threaded code cause severe production failures, yet static detectors suffer high false-positive rates and LLMs lack reliable reasoning about thread interactions. |
 | S2 | Rule-based detectors (NodeCB) miss complex patterns; LLM-only approaches (PCWMs) achieve only 75% accuracy on race detection without explicit structural analysis of the code. |
 | S3 | ThreadLearn combines a 10-pattern static race detector with a Qwen2.5-Coder-1.5B model fine-tuned via QLoRA on Hindsight Chain-of-Thought traces grounded in static analysis outputs. |
-| S4 | On [benchmark], ThreadLearn detects races with F1=X% (+Y% over NodeCB baseline) and produces accepted fixes in Z% of cases (+W% over PCWM baseline). |
+| S4 | On a 20-case JS concurrency benchmark, ThreadLearn+RAG achieves 75% pass rate (15/20), vs. 40% for the untuned base model and 30% for GPT-3.5-turbo zero-shot (+35 pp over base, +45 pp over GPT-3.5). |
 | S5 | ThreadLearn is open-source at [repo]; the fine-tuning dataset and evaluation harness are publicly available. |
 
 ---
@@ -169,44 +169,60 @@
 
 | Item | Detail |
 |------|--------|
-| Baseline 1 | NodeCB-style rule-only |
-| Baseline 2 | PCWM-style LLM-only (Qwen2.5-Coder-1.5B, no fine-tune) |
-| Our system | ThreadLearn (static + fine-tuned LLM) |
-| Datasets | 20 synthetic test cases + [real-world dataset TBD] |
-| Metrics | Detection F1, False Positive Rate, Fix Acceptance Rate, Latency (ms/request) |
+| Baseline 1 | Qwen2.5-Coder-1.5B base, no fine-tune, same prompt format |
+| Baseline 2 | GPT-3.5-turbo zero-shot, temp=0, OpenAI API |
+| Our system RAW | ThreadLearn fine-tuned, no RAG |
+| Our system RAG | ThreadLearn fine-tuned + BM25 top-3 docs |
+| Test suite | 20 handcrafted JS concurrency cases, 8 bug categories |
+| Prompt format | `"Convert to concurrent JavaScript:\n\n{code}\n"` (training format) |
+| Scoring | Fix-pattern matching: PASS/PARTIAL/FAIL |
+| Hardware | RTX 4060 Laptop GPU, float16 |
+| Date | 2026-06-11 ✅ |
 
-**Table 1**: Detection results — Method × (Precision / Recall / F1 / FPR)
+**Table 1**: Pass rate — Method × (Pass / Partial / Fail / Rate)
 
-### §5.2 End-to-End Detection Comparison (1 page)
+### §5.2 End-to-End Results (1 page)
 
-| Comparison | Hypothesis |
-|-----------|-----------|
-| ThreadLearn vs rule-only | F1 improvement on complex patterns (order violation, API misuse) |
-| ThreadLearn vs LLM-only | F1 improvement with grounded CoT vs generic reasoning |
+| Method | Pass | Partial | Fail | Rate |
+|--------|------|---------|------|------|
+| GPT-3.5-turbo zero-shot | 6 | 11 | 3 | 30% |
+| Qwen2.5-Coder-1.5B base | 8 | 9 | 3 | 40% |
+| ThreadLearn RAW | 14 | 6 | 0 | 70% |
+| **ThreadLearn + RAG** | **15** | **5** | **0** | **75%** |
 
-**Figure 3**: F1 bar chart — 3 methods × JS/Python split
+**Figure 3**: Bar chart — 4 configurations, pass rate comparison
 
-### §5.3 Fix Quality Evaluation (1 page)
+### §5.3 Per-Category Fix Quality (1 page)
 
-| Metric | Measurement Method |
-|--------|-------------------|
-| Fix Acceptance Rate | Human evaluation or compile + test pass |
-| Case study 1 | `var i` closure → fixed to `let i` |
-| Case study 2 | Global var in thread → add Lock |
-| Comparison | PCWM original: +2.7%–11.1% with world model feedback |
+| Category | Pass/Total | Rate |
+|----------|-----------|------|
+| Race Condition | 3/5 | 60% |
+| Event Loop Blocking | 5/5 | 100% |
+| Unhandled Rejection | 1/1 | 100% |
+| Double Callback | 0/1 | 0% |
+| Zalgo | 0/1 | 0% |
+| Context Loss | 1/1 | 100% |
+| Callback Hell | 1/1 | 100% |
+| Resource Exhaustion | 1/1 | 100% |
+| Sequential Awaits | 1/1 | 100% |
+| Missing Promise.all | 1/1 | 100% |
+| Buffer Leak | 0/1 | 0% |
+| Event Loop Ordering | 1/1 | 100% |
 
-**Figure 4**: Fix acceptance rate — ThreadLearn vs LLM-only vs rule-only (no fix)
+**Figure 4**: Per-category horizontal bar chart
 
 ### §5.4 Ablation Study (1 page)
 
-| Component Removed | Expected Impact |
-|------------------|----------------|
-| Static grounding | F1 drops X% |
-| RAG retrieval | Fix quality drops Y% |
-| Hindsight CoT | Accuracy drops Z% (validates PCWMs finding) |
-| QLoRA r=8 vs r=16 | Accuracy vs memory tradeoff |
+| Configuration | Pass | Rate | Delta |
+|--------------|------|------|-------|
+| Base model (no fine-tune, no RAG) | 8 | 40% | baseline |
+| Fine-tune only (RAW, no RAG) | 14 | 70% | +30 pp |
+| Fine-tune + RAG | 15 | 75% | +35 pp |
+| Wrong prompt format (chat template) | 7 | 35% | −5 pp vs base |
 
-**Table 2**: Ablation — Component × Metric
+Key finding: prompt format mismatch alone costs −35 pp (35% vs 70%).
+
+**Table 2**: Ablation — Configuration × Pass Rate
 
 ### §5.5 Scalability & Latency (0.5 page)
 
@@ -237,7 +253,7 @@
 |----------|---------|
 | S1 | Concurrency bugs remain a leading cause of production failures in async and multi-threaded applications, yet no existing tool both detects and fixes them reliably. |
 | S2 | ThreadLearn combines a 10-pattern static race detector with a Hindsight CoT fine-tuned Qwen2.5-Coder-1.5B model to provide an end-to-end detection and fix generation pipeline for JavaScript and Python. |
-| S3 | ThreadLearn achieves F1=X% on race detection (+Y% over NodeCB) and fix acceptance rate Z% (+W% over PCWMs baseline), demonstrating that static grounding significantly improves LLM concurrency reasoning. |
+| S3 | ThreadLearn+RAG achieves 75% pass rate (15/20) on the 20-case benchmark, vs. 40% for the untuned base model and 30% for GPT-3.5-turbo, demonstrating that the correct training prompt format and domain-grounded fine-tuning significantly improve LLM concurrency fix quality. |
 
 **Future work:** Expand to TypeScript AST (replace regex fallback), add MPI/CUDA patterns (PCWMs direction), cross-file multi-language analysis.
 
@@ -261,7 +277,11 @@
 
 | Item | Status |
 |------|--------|
-| Fine-tuned model | Not yet run (AI1-07 blocked — GPU needed) → F1 TBD |
+| Fine-tuned model eval (RAW) | ✅ Complete — 14/20 (70%), 2026-06-11 |
+| Fine-tuned model eval (RAG) | ✅ Complete — 15/20 (75%), 2026-06-11 |
+| GPT-3.5-turbo baseline | ✅ Complete — 6/20 (30%), 2026-06-10 |
+| Qwen2.5 base baseline | ✅ Complete — 8/20 (40%), 2026-06-11 |
+| Prompt format mismatch finding | ✅ Documented — chat template = 35%, completion format = 70% |
 | Real-world benchmark dataset | Not yet selected |
 | Load test results | AI2-10 incomplete |
-| 20 synthetic test cases | Complete ✅ (`test_race_detector.py`) |
+| 20 synthetic test cases | ✅ Complete (`eval_rag_merged.py`, `eval_rag_results.json`) |

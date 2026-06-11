@@ -1,0 +1,130 @@
+{
+  "model": "gpt-3.5-turbo (zero-shot)",
+  "total": 20,
+  "pass": 6,
+  "partial": 11,
+  "fail": 3,
+  "pass_rate": "30%",
+  "results": [
+    {
+      "id": "test_01",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "1. Bug type: Race Condition\n2. Explanation: The `counter` variable is accessed and modified concurrently by multiple `increment` function calls, leading to unpredictable results due to the non-deterministic timing of `setTimeout`.\n3. Fixed code:\n```javascript\nlet counter = 0;\nfunction increment() {\n"
+    },
+    {
+      "id": "test_02",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "1. Bug type: Race Condition\n2. Explanation: The `setTimeout` function introduces a race condition where the `db.setBalance` call may execute before the `balance` is updated, leading to incorrect results.\n3. Fixed code:\n```javascript\nconst updateAccount = async (id, amount) => {\n  const balance = awa"
+    },
+    {
+      "id": "test_03",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "1. Bug type: Race Condition\n2. Explanation: This code has a race condition where multiple calls to `checkAndCreateUser` with the same email can result in creating duplicate users due to the asynchronous nature of the `db.find` and `db.create` operations.\n3. Fixed code:\n```javascript\nconst checkAndCr"
+    },
+    {
+      "id": "test_04",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "1. Bug type: Race Condition\n2. Explanation: The `getCache` function can return `cache` before it is actually populated with data from `fetchData`, leading to potential race conditions.\n3. Fixed code:\n```javascript\nlet cachePromise = null;\nfunction getCache() {\n  if (!cachePromise) {\n    cachePromise"
+    },
+    {
+      "id": "test_05",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "response_preview": "1. Race Condition\n2. The `appendLog` function reads the contents of 'log.txt' file, then appends a message to it and writes back to the file. If multiple calls to `appendLog` happen concurrently, there is a risk of data corruption due to race conditions.\n3. Fixed code snippet:\n```javascript\nfunction"
+    },
+    {
+      "id": "test_06",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "response_preview": "1. Event Loop Blocking\n2. The code is blocking the event loop by performing heavy math operations synchronously in a loop, potentially causing the UI to freeze. \n3. Fixed code snippet:\n```javascript\nfunction processHugeArray(arr) {\n  arr.forEach(item => {\n    setTimeout(() => {\n      heavyMath(item)"
+    },
+    {
+      "id": "test_07",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "1. Event Loop Blocking\n2. The `crypto.pbkdf2Sync` function is a synchronous operation that performs CPU-intensive work, potentially blocking the event loop and causing performance issues when encrypting passwords for multiple users.\n3. Fixed code snippet:\n```javascript\nconst crypto = require('crypto"
+    },
+    {
+      "id": "test_08",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "1. Event Loop Blocking\n2. The `JSON.parse` operation is synchronous and blocking, which can potentially block the event loop when processing a large number of lines.\n3. Fixed code snippet:\n```javascript\nconst parseJSONLines = async (lines) => {\n  for (const line of lines) {\n    await JSON.parse(line"
+    },
+    {
+      "id": "test_09",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "1. Event Loop Blocking\n2. The code is blocking the event loop by rendering pages synchronously, which can lead to poor performance and unresponsiveness, especially for a large number of pages.\n3. Fixed code snippet:\n```javascript\nfunction renderPages(pages) {\n  return pages.map(page => renderAsync(p"
+    },
+    {
+      "id": "test_10",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "1. Event Loop Blocking\n2. The code is synchronously reading and writing files using `fs.readFileSync` and `fs.writeFileSync`, which can block the event loop and cause performance issues, especially when processing multiple files.\n3. Fixed code:\n```javascript\nconst fs = require('fs');\nfunction backup"
+    },
+    {
+      "id": "test_11",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "response_preview": "1. Event Loop Blocking\n2. The code is blocking the event loop by performing a potentially long-running operation (database query) synchronously within a route handler, which can lead to poor performance and blocking of other incoming requests.\n3. Fixed code snippet:\n```javascript\napp.get('/', (req, "
+    },
+    {
+      "id": "test_12",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "response_preview": "1. Callback Issue\n2. The callback function `cb` is called multiple times within the `getUser` function, which can lead to unexpected behavior or errors if the callbacks are not handled properly.\n3. Fixed code:\n```javascript\nfunction getUser(id, cb) {\n  db.findById(id, (err, user) => {\n    if (err) {"
+    },
+    {
+      "id": "test_13",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "response_preview": "1. Race Condition\n2. The `fetchObj` function is susceptible to a race condition where multiple calls with the same `id` can trigger simultaneous network requests. If the cache is empty, both requests will fetch the data and update the cache, potentially leading to inconsistent or duplicate data bein"
+    },
+    {
+      "id": "test_14",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "response_preview": "1. Bug type: Callback issue\n2. Explanation: The `this` keyword inside the `setTimeout` callback function refers to the global object (`window` in browsers) instead of the `Service` instance, causing `this.name` to be undefined.\n3. Fixed code snippet:\n```javascript\nclass Service {\n  constructor() { t"
+    },
+    {
+      "id": "test_15",
+      "category": "Callback Hell",
+      "verdict": "fail",
+      "response_preview": "1. Event Loop Blocking\n2. The code is blocking the event loop by nesting multiple asynchronous operations. This can lead to poor performance and potential stack overflow issues.\n3. Fixed code snippet:\n```javascript\nfunction doTask(cb) {\n  step1(r1 => {\n    step2(r1, r2 => {\n      step3(r2, cb);\n    "
+    },
+    {
+      "id": "test_16",
+      "category": "Resource Exhaustion",
+      "verdict": "fail",
+      "response_preview": "1. Event Loop Blocking\n2. The `fetch` function is called sequentially for each URL in the array, potentially blocking the event loop if there are many URLs to fetch.\n3. Fixed code snippet:\n```javascript\nasync function downloadAll(urls) {\n  const responses = await Promise.all(urls.map(url => fetch(ur"
+    },
+    {
+      "id": "test_17",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "response_preview": "1. Event Loop Blocking\n2. This code is blocking the event loop by sequentially awaiting each database call, which can lead to decreased performance and responsiveness.\n3. Fixed code snippet:\n```javascript\nasync function getDashboard(id) {\n  const [user, stats, friends] = await Promise.all([\n    db.g"
+    },
+    {
+      "id": "test_18",
+      "category": "Missing Promise.all",
+      "verdict": "partial",
+      "response_preview": "1. Event Loop Blocking\n2. The `sendEmails` function is blocking the event loop by using `await` inside a loop, causing each email to be sent sequentially, which can lead to performance issues.\n3. Fixed code:\n```javascript\nasync function sendEmails(users) {\n  await Promise.all(users.map(user => email"
+    },
+    {
+      "id": "test_19",
+      "category": "Buffer Leak",
+      "verdict": "fail",
+      "response_preview": "1. Event Loop Blocking\n2. The code is blocking the event loop by reading a large file synchronously. This can cause the server to become unresponsive to other incoming requests.\n3. To fix this, we can use asynchronous file reading to prevent blocking the event loop:\n\n```javascript\nfunction streamDat"
+    },
+    {
+      "id": "test_20",
+      "category": "Event Loop Ordering",
+      "verdict": "pass",
+      "response_preview": "1. Event Loop Blocking\n2. The `process.nextTick()` callback will be executed before the `setTimeout()` callback, potentially blocking the event loop and causing a delay in executing other tasks.\n3. Fixed code:\n```javascript\nlet init = false;\nsetTimeout(() => {\n  init = true;\n  console.log(init);\n}, "
+    }
+  ]
+}

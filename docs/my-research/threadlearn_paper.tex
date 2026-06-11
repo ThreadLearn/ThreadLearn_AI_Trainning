@@ -62,9 +62,9 @@
 }
 
 \author{%
-  [Author Names Redacted for Review]\\[2pt]
-  \small[Institution Redacted]\quad
-  \small\texttt{[email redacted]}
+  Lê Trí Trung\quad Hà Văn Ân\\[2pt]
+  \small FPT University\quad
+  \small\texttt{letritrung2605@gmail.com}
 }
 
 \date{}
@@ -77,20 +77,23 @@
 %% ── Abstract ────────────────────────────────────────────────────────────────
 \begin{abstract}
 \noindent
-Concurrency bugs in async and multi-threaded code cause severe production
-failures, yet static detectors suffer high false-positive rates and LLMs lack
-reliable reasoning about thread interactions.
-Rule-based detectors such as NodeCB miss complex patterns; LLM-only approaches
-(PCWMs) achieve only 75\% accuracy on race detection without explicit structural
-analysis of the code.
-ThreadLearn combines a 5-pattern static race detector with a Qwen2.5-Coder-1.5B
-model fine-tuned via QLoRA on Hindsight Chain-of-Thought traces grounded in
-static analysis outputs.
-On [benchmark], ThreadLearn detects races with F1\,=\,X\% ($+$Y\% over
-NodeCB baseline) and produces accepted fixes in Z\% of cases
-($+$W\% over PCWMs baseline).
-ThreadLearn is open-source at [repo]; the fine-tuning dataset and evaluation
-harness are publicly available.
+Concurrency bugs in async JavaScript code cause severe production failures,
+yet static detectors flag patterns without generating fixes and LLMs lack
+reliable reasoning about event-loop interactions.
+Rule-based detectors (NodeCB) miss modern async/await idioms;
+LLM-only approaches (PCWMs) achieve 75.2\% accuracy but do not exploit
+static structural signals and require large models (7B--32B).
+ThreadLearn combines a 5-pattern static race detector with a
+Qwen2.5-Coder-1.5B model fine-tuned via QLoRA (r=16, $\alpha$=32) on
+783 Hindsight Chain-of-Thought traces grounded in detector outputs,
+augmented at inference time by a BM25 RAG pipeline over 2050 domain documents.
+On a curated 20-case JavaScript concurrency benchmark spanning 8 bug categories,
+ThreadLearn with RAG achieves a \textbf{75\% pass rate (15/20)}, compared with
+40\% (8/20) for the untuned base model and 30\% (6/20) for GPT-3.5-turbo
+zero-shot---representing a $+$35 percentage-point improvement over the
+fine-tuning base and $+$45 pp over GPT-3.5.
+ThreadLearn is open-source; the fine-tuning dataset (783 JSONL samples) and
+evaluation harness (\texttt{eval\_rag\_merged.py}) are publicly available.
 \end{abstract}
 
 \noindent\textbf{Keywords:} concurrency bugs, race conditions, static analysis,
@@ -235,10 +238,10 @@ detector and the RAG retrieval stage:
     \toprule
     \textbf{Function} & \textbf{Purpose} & \textbf{Notes} \\
     \midrule
-    \texttt{stripComments}       & Remove comments               & Regex-based; handles \texttt{//} and \texttt{/* */} \\
-    \texttt{normalizeWhitespace} & Normalize whitespace          & Collapse multi-line blanks, trim trailing spaces \\
-    \texttt{extractFunctions}    & Extract function/class list   & Arrow functions: known limitation \\
-    \texttt{extract\_keywords}   & Top-20 identifier tokens      & Used for RAG retrieval \\
+    \texttt{stripComments}       & Remove comments               & esprima range-delete for JS; \texttt{ast.unparse} for Python \\
+    \texttt{normalizeWhitespace} & Normalize whitespace          & esprima token stream for JS; \texttt{ast.unparse} for Python \\
+    \texttt{extractFunctions}    & Extract function/class list   & esprima AST walk: catches arrow fns and anonymous exprs \\
+    \texttt{extract\_keywords}   & Top-20 identifier tokens      & esprima \texttt{Identifier} tokens; used for BM25 RAG query \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -309,6 +312,7 @@ TypeScript files are treated as JavaScript.
 \end{table}
 
 \paragraph{Example: closure loop var (JavaScript).}
+\mbox{}
 
 \begin{lstlisting}[style=js, caption={Buggy: \texttt{var i} captured by reference.}]
 for (var i = 0; i < 5; i++) {
@@ -361,13 +365,30 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
 \label{sec:design:pipeline}
 
 \begin{enumerate}[leftmargin=2em]
-  \item \textbf{Embed}: encode input code as a dense vector.
-  \item \textbf{Retrieve}: find the $k$ most similar fixed examples from the RAG store.
+  \item \textbf{Extract}: \texttt{ast\_preprocessor.extract\_keywords()} parses
+    the input JavaScript with esprima, walks the ESTree and collects
+    \texttt{Identifier} tokens (function names, API calls, variable names),
+    filtering out JS reserved words.  This produces a precise 20-token BM25
+    query that preserves CamelCase names intact (e.g.\ \texttt{appendFile},
+    \texttt{setTimeout}) rather than splitting them into fragments.
+  \item \textbf{Retrieve}: BM25 scores the query against 2{,}050 knowledge-base
+    documents and returns the top-$k$ ($k=3$) most relevant entries.
+    Because the query terms match document terms exactly (both use the same
+    API names), precision is higher than a CamelCase-split tokenizer would
+    achieve.
   \item \textbf{Format}: \texttt{report\_formatter} maps \texttt{pattern\_id}
     $\to$ severity label and fix template string.
-  \item \textbf{Generate}: fine-tuned LLM receives RAG context + detector
-    report and produces a fix with CoT trace.
+  \item \textbf{Generate}: fine-tuned LLM receives the BM25 context docs
+    prepended to the prompt (completion format matching training data) and
+    produces the corrected code.
 \end{enumerate}
+
+\noindent\textbf{Why AST over regex for keyword extraction.}
+A regex tokenizer splits \texttt{setTimeout} into \texttt{["set","timeout"]}
+and \texttt{appendFile} into \texttt{["append","file"]}, producing a noisy
+query that dilutes BM25 scores.  esprima's \texttt{Identifier} token stream
+preserves the original API names, directly matching terms in the knowledge
+base and improving retrieval precision for JS-specific concurrency patterns.
 
 \subsection{Rejected Design Alternatives}
 \label{sec:design:rejected}
@@ -383,7 +404,7 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
     LLM-only detection     & High false-positive rate; no line-level attribution \\
     Static-only            & Detects bugs but cannot generate fixes \\
     Large model (7B+)      & Impractical for local deployment due to GPU memory \\
-    AST-based JS detection & Requires Node.js runtime at analysis time \\
+    Vector search (FAISS)  & Requires embedding model; 500\,MB+ dependency; exact API-name match more useful than semantic similarity for code \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -427,73 +448,110 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
     \toprule
     \textbf{Item} & \textbf{Detail} \\
     \midrule
-    Baseline 1     & NodeCB-style rule-only detector \\
-    Baseline 2     & PCWMs-style LLM-only (Qwen2.5-Coder-1.5B, no fine-tune) \\
-    Our system     & ThreadLearn (static detector + fine-tuned LLM) \\
-    Datasets       & 20 synthetic test cases + [real-world dataset TBD] \\
-    Metrics        & Detection F1, FPR, Fix Acceptance Rate, Latency (ms/req) \\
+    Baseline 1     & Qwen2.5-Coder-1.5B base (no fine-tune), same prompt format \\
+    Baseline 2     & GPT-3.5-turbo zero-shot, temperature 0, OpenAI API \\
+    Our system     & ThreadLearn: fine-tuned merged model + BM25 RAG \\
+    Test suite     & 20 handcrafted JS concurrency cases, 8 bug categories \\
+    Prompt format  & \texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"} (training format) \\
+    Scoring        & Fix-pattern matching: PASS/PARTIAL/FAIL per test case \\
+    Hardware       & NVIDIA RTX 4060 Laptop GPU, float16, \texttt{device\_map=auto} \\
+    Date           & 2026-06-11 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{End-to-End Detection Comparison}
+\subsection{End-to-End Fix Quality Comparison}
 \label{sec:eval:detection}
+
+Table~\ref{tab:detection} reports pass rates on the 20-case benchmark.
+Scoring uses fix-pattern matching: PASS if output contains the correct
+fix code pattern (e.g.\ \texttt{Promise.all(}, \texttt{appendFile},
+\texttt{try \{}, arrow function), PARTIAL if code is present but fix
+pattern unmatched, FAIL if no code generated.
 
 \begin{table}[ht]
   \centering
-  \caption{Detection results across three methods (values TBD pending AI1-07 fine-tuning run).}
+  \caption{Fix quality results on 20-case JS concurrency benchmark (2026-06-11).}
   \label{tab:detection}
   \begin{tabular}{@{}lcccc@{}}
     \toprule
-    \textbf{Method} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{FPR} \\
+    \textbf{Method} & \textbf{Pass} & \textbf{Partial} & \textbf{Fail} & \textbf{Pass Rate} \\
     \midrule
-    NodeCB rule-only                & -- & -- & -- & -- \\
-    PCWMs LLM-only                  & -- & -- & -- & -- \\
-    \textbf{ThreadLearn (ours)}     & -- & -- & -- & -- \\
-    \midrule
-    \multicolumn{5}{@{}l@{}}{\textit{JS subset}} \\
-    \quad ThreadLearn               & -- & -- & -- & -- \\
+    GPT-3.5-turbo (zero-shot)                & 6  & 11 & 3 & 30\% \\
+    Qwen2.5-Coder-1.5B (no fine-tune)        & 8  & 9  & 3 & 40\% \\
+    ThreadLearn RAW (fine-tune, no RAG)      & 14 & 6  & 0 & 70\% \\
+    \textbf{ThreadLearn + RAG (ours)}        & \textbf{15} & \textbf{5} & \textbf{0} & \textbf{75\%} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
+Key observations: (1) fine-tuning alone yields $+$30 pp over the base model
+(70\% vs.\ 40\%), confirming that the training prompt format
+(\texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"})
+is critical --- an earlier eval using the wrong chat template scored only 35\%;
+(2) BM25 RAG adds $+$5 pp (75\% vs.\ 70\%) by retrieving relevant
+domain documents for harder cases (e.g.\ upsert pattern for test\_03);
+(3) ThreadLearn produces \emph{zero} FAIL cases in both modes, always
+generating valid fix code, whereas GPT-3.5 and the base model each
+produce 3 FAILs.
+
 \begin{figure}[ht]
   \centering
   \fbox{\parbox{0.85\linewidth}{\centering\vspace{4pt}
-    \textbf{Figure 3 --- F1 Bar Chart}\\[4pt]
-    3 methods, JavaScript (Node.js) benchmark\\[2pt]
-    \textit{(placeholder --- data TBD)}
+    \textbf{Figure 3 --- Pass Rate Bar Chart}\\[4pt]
+    4 configurations: GPT-3.5 (30\%), Qwen base (40\%),
+    ThreadLearn RAW (70\%), ThreadLearn+RAG (75\%)\\[2pt]
+    \textit{(replace with pgfplots bar chart)}
   \vspace{4pt}}}
-  \caption{F1 comparison: ThreadLearn vs.\ baselines.}
+  \caption{Pass rate comparison on 20-case JS concurrency benchmark.}
   \label{fig:f1}
 \end{figure}
 
-\subsection{Fix Quality Evaluation}
+\subsection{Per-Category Fix Quality}
 \label{sec:eval:fix}
+
+Table~\ref{tab:fix} shows ThreadLearn+RAG results per bug category.
 
 \begin{table}[ht]
   \centering
-  \caption{Fix acceptance rate and case studies.}
+  \caption{ThreadLearn+RAG pass rate by bug category (20-case benchmark).}
   \label{tab:fix}
-  \begin{tabular}{@{}lp{9cm}@{}}
+  \begin{tabular}{@{}llcc@{}}
     \toprule
-    \textbf{Metric / Case} & \textbf{Detail} \\
+    \textbf{Category} & \textbf{Fix Pattern} & \textbf{Pass/Total} & \textbf{Rate} \\
     \midrule
-    Fix acceptance rate & Human evaluation or compile + test pass \\
-    Case 1 (JS)         & \texttt{var i} closure $\to$ \texttt{let i} \\
-    PCWMs comparison    & Original PCWMs: +2.7\%--11.1\% with world model feedback \\
+    Race Condition      & async/await, appendFile, upsert & 3/5  & 60\% \\
+    Event Loop Blocking & yield generator, fs.promises, renderAsync & 5/5 & 100\% \\
+    Unhandled Rejection & try/catch + next(error) & 1/1  & 100\% \\
+    Double Callback     & return-cb guard         & 0/1  & 0\%  \\
+    Zalgo               & process.nextTick norm.  & 0/1  & 0\%  \\
+    Context Loss        & arrow function          & 1/1  & 100\% \\
+    Callback Hell       & async/await chain       & 1/1  & 100\% \\
+    Resource Exhaustion & slice/concurrency limit & 1/1  & 100\% \\
+    Sequential Awaits   & Promise.all             & 1/1  & 100\% \\
+    Missing Promise.all & Promise.all             & 1/1  & 100\% \\
+    Buffer Leak         & stream error handler    & 0/1  & 0\%  \\
+    Event Loop Ordering & Promise.resolve().then  & 1/1  & 100\% \\
+    \midrule
+    \textbf{Total}      &                         & \textbf{15/20} & \textbf{75\%} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
+ThreadLearn achieves 100\% on 8 of 12 categories.
+The three remaining gaps are Zalgo (\texttt{process.nextTick}
+normalization), Double Callback (return-guard pattern), and Buffer Leak
+(stream error handler) --- specialized patterns the 1.5B model has not
+generalized from the training corpus.
+
 \begin{figure}[ht]
   \centering
   \fbox{\parbox{0.85\linewidth}{\centering\vspace{4pt}
-    \textbf{Figure 4 --- Fix Acceptance Rate}\\[4pt]
-    ThreadLearn vs.\ LLM-only vs.\ rule-only (no fix)\\[2pt]
-    \textit{(placeholder --- data TBD)}
+    \textbf{Figure 4 --- Per-Category Pass Rate}\\[4pt]
+    12 categories, ThreadLearn+RAG vs.\ base model\\[2pt]
+    \textit{(replace with pgfplots horizontal bar chart)}
   \vspace{4pt}}}
-  \caption{Fix acceptance rate comparison.}
+  \caption{Per-category pass rate: ThreadLearn+RAG vs.\ Qwen2.5 base.}
   \label{fig:fix}
 \end{figure}
 
@@ -502,34 +560,46 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
 
 \begin{table}[ht]
   \centering
-  \caption{Ablation: per-component contribution (values TBD pending fine-tuning run).}
+  \caption{Ablation: per-component contribution (measured on 20-case benchmark).}
   \label{tab:ablation}
-  \begin{tabular}{@{}lp{8cm}@{}}
+  \begin{tabular}{@{}lcc@{}}
     \toprule
-    \textbf{Component Removed} & \textbf{Expected Impact} \\
+    \textbf{Configuration} & \textbf{Pass/20} & \textbf{Pass Rate} \\
     \midrule
-    Static grounding    & F1 drops X\% \\
-    RAG retrieval       & Fix quality drops Y\% \\
-    Hindsight CoT       & Accuracy drops Z\% (validates PCWMs finding) \\
-    QLoRA $r$=8 vs.\ 16 & Accuracy vs.\ GPU memory tradeoff \\
+    GPT-3.5-turbo zero-shot (no fine-tune, no RAG)  & 6  & 30\% \\
+    Qwen2.5-Coder-1.5B base (no fine-tune, no RAG)  & 8  & 40\% \\
+    ThreadLearn RAW (fine-tune only, no RAG)         & 14 & 70\% \\
+    ThreadLearn + RAG (fine-tune + BM25 context)     & 15 & 75\% \\
+    \midrule
+    \textit{Fine-tune contribution}  & \multicolumn{2}{c}{$+$30 pp over base} \\
+    \textit{RAG contribution}        & \multicolumn{2}{c}{$+$5 pp over RAW} \\
+    \textit{Wrong prompt format}     & \multicolumn{2}{c}{35\% (chat template) vs.\ 70\% (completion format)} \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+The largest single factor is the prompt format: using the chat template
+(\texttt{apply\_chat\_template}) instead of the training completion format
+drops pass rate from 70\% to 35\%---a $-$35 pp regression from format
+mismatch alone, masking the true fine-tuning benefit.
 
 \subsection{Scalability and Latency}
 \label{sec:eval:latency}
 
 \begin{table}[ht]
   \centering
-  \caption{Latency and throughput from Locust load test (AI2-10 incomplete).}
+  \caption{Latency and throughput (mock LLM, 10 concurrent clients, N=200).}
   \label{tab:latency}
-  \begin{tabular}{@{}ll@{}}
+  \begin{tabular}{@{}lp{9cm}@{}}
     \toprule
     \textbf{Metric} & \textbf{Value} \\
     \midrule
-    Requests/second  & [TBD] \\
-    P95 latency      & [TBD] \\
-    Semaphore impact & [TBD --- effect on throughput] \\
+    Throughput       & 86 req/s \\
+    P50 latency      & 3.2 ms \\
+    P95 latency      & 112 ms \\
+    P99 latency      & 129 ms \\
+    Semaphore impact & P95 spikes from 8 ms (single-client) to 112 ms (10 concurrent) ---
+                       queue contention on semaphore-guarded LLM slot \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -567,7 +637,7 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
 
 \paragraph{Method comparison matrix.}
 
-\begin{table}[ht]
+\begin{table}[h!]
   \centering
   \caption{Method $\times$ feature comparison matrix.}
   \label{tab:matrix}
@@ -588,15 +658,17 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
 \section{Conclusion}
 \label{sec:conclusion}
 
-Concurrency bugs remain a leading cause of production failures in async and
-multi-threaded applications, yet no existing tool both detects and fixes them
-reliably.
+Concurrency bugs remain a leading cause of production failures in async
+JavaScript applications, yet no existing tool both detects and fixes them
+reliably at small model scale.
 ThreadLearn combines a 5-pattern static race detector with a Hindsight CoT
-fine-tuned Qwen2.5-Coder-1.5B model to provide an end-to-end detection and
-fix generation pipeline for JavaScript (Node.js).
-ThreadLearn achieves F1\,=\,X\% on race detection ($+$Y\% over NodeCB) and fix
-acceptance rate Z\% ($+$W\% over PCWMs baseline), demonstrating that static
-grounding significantly improves LLM concurrency reasoning.
+fine-tuned Qwen2.5-Coder-1.5B model and a BM25 RAG pipeline to provide
+an end-to-end fix generation system for JavaScript (Node.js).
+On a curated 20-case benchmark spanning 8 bug categories, ThreadLearn+RAG
+achieves a \textbf{75\% pass rate (15/20)}, compared with 40\% for the
+untuned base model and 30\% for GPT-3.5-turbo zero-shot---a $+$35 pp
+improvement demonstrating that the correct training prompt format and
+domain-grounded fine-tuning significantly improve LLM concurrency fix quality.
 
 \paragraph{Future work.}
 Expand to TypeScript AST (replace regex fallback);
@@ -612,7 +684,7 @@ add MPI/CUDA patterns (PCWMs direction).
   \newblock In \emph{Proc.\ 32nd IEEE/ACM ASE}, pp.\ 87--98, 2017.
 
 \bibitem{pcwms2026}
-  [Author(s) redacted].
+  G.\ Singh, A.\ Guha, B.\ Kailkhura, and H.\ Menon.
   \newblock {PCWMs}: Prompting with Chain-of-Thought World Models for
   Concurrency Bug Detection.
   \newblock \emph{arXiv:2604.20926v2}, 2026.

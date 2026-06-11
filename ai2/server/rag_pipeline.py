@@ -2,10 +2,12 @@
 AI2-05/06: RAG Pipeline
 Flow: code → keyword extraction → BM25 top-3 docs → build prompt → LLM → List[Issue]
 
-Keyword extraction hiện tại dùng tokenize() từ bm25_module (đơn giản, không cần AST).
-Khi AI1-03 (ast_preprocessor.py từ Ân) hoàn thành → swap vào mà không sửa phần còn lại.
+Keyword extraction dùng ast_preprocessor.extract_keywords() (AST-based, esprima).
+Fallback sang bm25_module.tokenize() nếu import fail.
 """
 
+import os
+import sys
 from typing import List, TYPE_CHECKING
 
 from bm25_module import tokenize
@@ -14,6 +16,14 @@ import llm_client
 
 if TYPE_CHECKING:
     from bm25_module import BM25Retriever
+
+# AST-based keyword extraction từ AI1
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "ai1", "modules"))
+    from ast_preprocessor import extract_keywords as _ast_extract_keywords
+    _HAS_AST = True
+except ImportError:
+    _HAS_AST = False
 
 
 # ---------------------------------------------------------------------------
@@ -24,22 +34,25 @@ def _extract_keywords(code: str) -> str:
     """
     Trích keyword từ code để làm BM25 query.
 
-    Chiến lược hiện tại (tạm):
-        Dùng tokenize() từ bm25_module — tách CamelCase, bỏ stopwords,
-        ghép lại thành query string.
+    Dùng ast_preprocessor.extract_keywords() (esprima AST):
+        - Chỉ lấy Identifier tokens thật — tên hàm, tên biến, API calls
+        - Bỏ JS keywords (if/for/const/async...) chính xác hơn regex
+        - Giữ nguyên CamelCase (setTimeout, Promise, appendFile)
+          để khớp với BM25 index đã tách CamelCase
 
-    Chiến lược sau (AI1-03):
-        Swap sang ast_preprocessor.extract_keywords(code) từ Ân.
-        AST-based → chính xác hơn, chỉ lấy API names + function calls.
+    Fallback sang tokenize() nếu esprima không có.
 
     Ví dụ:
         code = "setTimeout(() => { sharedVar++; }, 100);"
-        → keywords = "set timeout shared var"  (simple tokenize)
-        → keywords = "setTimeout sharedVar"    (AST, chính xác hơn)
+        tokenize()          → "set timeout shared var"   (tách CamelCase, loãng)
+        ast extract_keywords → "setTimeout sharedVar"    (giữ nguyên, khớp tốt hơn)
     """
-    tokens = tokenize(code)
-    # Giới hạn 20 token đầu để tránh query quá dài làm loãng BM25
-    return " ".join(tokens[:20])
+    if _HAS_AST:
+        kw = _ast_extract_keywords(code, language="javascript")
+        if kw.strip():
+            return kw
+    # Fallback
+    return " ".join(tokenize(code)[:20])
 
 
 # ---------------------------------------------------------------------------
