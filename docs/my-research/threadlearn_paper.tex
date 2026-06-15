@@ -77,23 +77,26 @@
 %% ── Abstract ────────────────────────────────────────────────────────────────
 \begin{abstract}
 \noindent
-Concurrency bugs in async JavaScript code cause severe production failures,
-yet static detectors flag patterns without generating fixes and LLMs lack
-reliable reasoning about event-loop interactions.
-Rule-based detectors (NodeCB) miss modern async/await idioms;
-LLM-only approaches (PCWMs) achieve 75.2\% accuracy but do not exploit
-static structural signals and require large models (7B--32B).
-ThreadLearn combines a 5-pattern static race detector with a
-Qwen2.5-Coder-1.5B model fine-tuned via QLoRA (r=16, $\alpha$=32) on
-783 Hindsight Chain-of-Thought traces grounded in detector outputs,
-augmented at inference time by a BM25 RAG pipeline over 2050 domain documents.
-On a curated 20-case JavaScript concurrency benchmark spanning 8 bug categories,
-ThreadLearn with RAG achieves a \textbf{75\% pass rate (15/20)}, compared with
-40\% (8/20) for the untuned base model and 30\% (6/20) for GPT-3.5-turbo
-zero-shot---representing a $+$35 percentage-point improvement over the
-fine-tuning base and $+$45 pp over GPT-3.5.
-ThreadLearn is open-source; the fine-tuning dataset (783 JSONL samples) and
-evaluation harness (\texttt{eval\_rag\_merged.py}) are publicly available.
+Concurrency bugs in async JavaScript code often cause serious failures in
+production systems.
+Existing tools have two main weaknesses: rule-based detectors can spot
+suspicious patterns but cannot suggest how to fix them, while large language
+models (LLMs) can reason about code but tend to miss the exact line where
+a bug occurs and require very large models (7B--32B parameters) to work well.
+ThreadLearn addresses both weaknesses by combining a 5-pattern static race
+detector with a small language model (Qwen2.5-Coder-1.5B) that is fine-tuned
+using QLoRA (r=16, $\alpha$=32, 4-bit NF4 compression) on 783 training examples.
+Each training example includes a step-by-step explanation written
+\emph{after} the correct fix is already known (``hindsight'' reasoning).
+At inference time, a BM25 keyword search retrieves the 3 most relevant
+documents from a 2050-document knowledge base and adds them to the prompt.
+On a hand-crafted benchmark of 20 JavaScript concurrency bugs across 8
+categories, ThreadLearn with retrieval achieves a \textbf{75\% pass rate
+(15/20)}, compared with 40\% (8/20) for the same model without fine-tuning
+and 30\% (6/20) for GPT-3.5-turbo---a gain of $+$35 percentage points
+over the base model and $+$45 pp over GPT-3.5.
+The fine-tuning dataset (783 JSONL samples) and evaluation script
+(\texttt{eval\_rag\_merged.py}) are publicly available.
 \end{abstract}
 
 \noindent\textbf{Keywords:} concurrency bugs, race conditions, static analysis,
@@ -107,45 +110,46 @@ LLM fine-tuning, Chain-of-Thought, JavaScript
 
 \subsection{Problem Statement}
 
-Asynchronous JavaScript (Node.js) powers the majority of modern web backends,
-yet the language exposes concurrency primitives that are easy to misuse.
-A landmark empirical study (NodeCB~\cite{nodecb2017}) examined 57 real-world
-concurrency bugs across 53 open-source Node.js projects and found that
-65\% are \emph{atomicity violations}, 30\% are \emph{order violations}, and
-93\% cause severe failures including crashes, wrong database state, or hangs.
+Asynchronous JavaScript (Node.js) is widely used for building web backends,
+but the language makes it easy to write code that behaves incorrectly when
+multiple operations run at the same time.
+A large-scale study (NodeCB~\cite{nodecb2017}) looked at 57 real concurrency
+bugs in 53 open-source Node.js projects and found that 65\% involve two
+operations conflicting on shared data (atomicity violations), 30\% involve
+operations completing in the wrong order, and 93\% cause serious problems
+such as crashes, wrong database values, or the program hanging.
 
-Despite this severity, the two dominant tool families remain inadequate in
-complementary ways.
-Rule-based detectors flag suspicious patterns but cannot suggest a fix and
-accumulate false positives on idiomatic async code.
-LLM-based approaches reason about code holistically but lack line-level causal
-attribution and require large models (7B--32B parameters) to achieve competitive
-accuracy.
+Despite how common these bugs are, existing tools still fall short in
+different ways.
+Rule-based detectors can find suspicious patterns but cannot explain or fix
+them, and they often produce false alarms on modern async/await code.
+LLM-based tools can reason about whole functions but cannot pinpoint which
+exact line caused the bug and need very large models to achieve good results.
 
 \subsection{Gap Analysis}
 
-We identify four concrete gaps in the state of the art:
+We identify four concrete gaps in current tools:
 
 \begin{description}[leftmargin=2em, labelwidth=2em]
-  \item[\textbf{G1}] Rule-based detectors cannot fix bugs, only detect them.
-  \item[\textbf{G2}] PCWMs~\cite{pcwms2026} achieves 75.2\% accuracy but does
-    not exploit static structure and requires 27K training samples with a large
-    base model.
-  \item[\textbf{G3}] No existing system combines static analysis as a grounding
-    signal for LLM reasoning.
-  \item[\textbf{G4}] No end-to-end pipeline spans detection $\to$ explanation
-    $\to$ fix for JavaScript (Node.js).
+  \item[\textbf{G1}] Rule-based detectors can only find bugs; they cannot fix them.
+  \item[\textbf{G2}] PCWMs~\cite{pcwms2026} reaches 75.2\% accuracy but ignores
+    the structural information from static analysis and needs 27K training samples
+    with a large base model.
+  \item[\textbf{G3}] No existing tool uses static analysis output as additional
+    context to guide LLM reasoning.
+  \item[\textbf{G4}] No end-to-end tool covers the full workflow of
+    detect $\to$ explain $\to$ fix for JavaScript (Node.js).
 \end{description}
 
 \subsection{Key Insight}
 
-Static detector outputs---pattern identifier, line range, and causal
-description---provide the missing \emph{grounding signal} for LLM concurrency
-reasoning.
-A small model (1.5B parameters) fine-tuned with grounded Hindsight
-Chain-of-Thought (CoT) outperforms a large model prompted with generic CoT
-because it has been explicitly trained to reason from structural evidence rather
-than surface-level token patterns.
+The output of a static detector---which pattern was matched, on which lines,
+and why it is dangerous---gives the LLM concrete, line-level evidence to
+reason from, instead of guessing from general code patterns.
+A small model (1.5B parameters) trained with this kind of grounded,
+step-by-step reasoning outperforms a much larger model given only a
+generic prompt, because it has learned to follow structured evidence
+rather than surface-level text similarity.
 
 \subsection{Contributions}
 
@@ -153,15 +157,17 @@ This paper makes four contributions:
 
 \begin{enumerate}[leftmargin=2em]
   \item \textbf{\texttt{race\_detector}}: a 5-pattern static analyzer for
-    JavaScript (Node.js) integrated with an AST preprocessor (\S\ref{sec:design:detector}).
-  \item \textbf{Hindsight CoT dataset}: a synthetic fine-tuning corpus of
-    \texttt{(code, static\_output, CoT\_trace, fix)} tuples grounded on
-    detector outputs (\S\ref{sec:design:finetuning}).
-  \item \textbf{ThreadLearn pipeline}: an end-to-end detect $\to$ format $\to$
-    RAG-augmented fix system exposed via a FastAPI server
-    (\S\ref{sec:design:pipeline}).
-  \item \textbf{Evaluation}: comparison against NodeCB and PCWMs baselines
-    across detection F1, false-positive rate, fix acceptance rate, and latency
+    JavaScript (Node.js) that works together with an AST code preprocessor
+    (\S\ref{sec:design:detector}).
+  \item \textbf{Hindsight CoT dataset}: a training dataset of
+    \texttt{(code, detector\_output, reasoning\_trace, fix)} examples,
+    where the reasoning is written with knowledge of the correct fix
+    (\S\ref{sec:design:finetuning}).
+  \item \textbf{ThreadLearn pipeline}: a complete system that detects,
+    formats, retrieves context, and generates a fix, served via a FastAPI
+    web endpoint (\S\ref{sec:design:pipeline}).
+  \item \textbf{Evaluation}: comparison against NodeCB and PCWMs across
+    fix pass rate, false-positive rate, and response latency
     (\S\ref{sec:eval}).
 \end{enumerate}
 
@@ -183,22 +189,22 @@ This paper makes four contributions:
 
 \subsection{Concurrency Bug Taxonomy}
 
-Table~\ref{tab:taxonomy} summarizes the concurrency bug types from the NodeCB
-study and their JavaScript (Node.js) manifestations relevant to ThreadLearn.
+Table~\ref{tab:taxonomy} lists the types of concurrency bugs found in the NodeCB
+study and shows how each type appears in Node.js code.
 
 \begin{table}[ht]
   \centering
-  \caption{Concurrency bug taxonomy (NodeCB rates) with ThreadLearn examples.}
+  \caption{Concurrency bug types (from NodeCB study) with Node.js examples.}
   \label{tab:taxonomy}
   \begin{tabular}{@{}llp{6cm}@{}}
     \toprule
     \textbf{Bug Type} & \textbf{Rate} & \textbf{Example} \\
     \midrule
-    Atomicity violation & 65\% & Two interleaved DB calls cause lost update \\
-    Order violation     & 30\% & Upload completes before create callback fires \\
-    Starvation          & 5\%  & \texttt{setImmediate} starved by I/O queue \\
+    Atomicity violation & 65\% & Two database calls overlap, causing a lost update \\
+    Order violation     & 30\% & Upload finishes before the file-create callback runs \\
+    Starvation          & 5\%  & \texttt{setImmediate} never runs because the I/O queue is full \\
     \midrule
-    \texttt{var i} + \texttt{setTimeout} & JS  & Closure captures wrong loop iteration value \\
+    \texttt{var i} + \texttt{setTimeout} & JS  & Loop variable captured by reference; all callbacks see the final value \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -207,41 +213,44 @@ study and their JavaScript (Node.js) manifestations relevant to ThreadLearn.
 
 \begin{table}[ht]
   \centering
-  \caption{Prior approach limitations and key observations.}
+  \caption{Weaknesses of prior tools and key observations from this work.}
   \label{tab:limits}
   \begin{tabular}{@{}lp{9.5cm}@{}}
     \toprule
-    \textbf{Approach} & \textbf{Limitation / Observation} \\
+    \textbf{Approach} & \textbf{Weakness / Observation} \\
     \midrule
-    NodeCB study  & Regex-based detection; high false-positive rate; no fix generation \\
-    PCWMs         & 75.2\% accuracy; does not exploit static structure;
-                    requires large model (7B--32B) \\
+    NodeCB study  & Uses regex patterns; high false-positive rate; no fix generation \\
+    PCWMs         & 75.2\% accuracy; ignores static structure;
+                    requires a large model (7B--32B parameters) \\
     \midrule
-    \textbf{O1}   & Static detector outputs (line range, pattern ID) provide
-                    causal grounding missing from LLM reasoning \\
-    \textbf{O2}   & A small model (1.5B) fine-tuned with grounded CoT
-                    outperforms a large model with generic CoT \\
+    \textbf{O1}   & Detector output (line range, pattern name) gives the LLM
+                    a concrete reason for each bug instead of a guess \\
+    \textbf{O2}   & A small model (1.5B) trained with grounded step-by-step reasoning
+                    outperforms a large model given only a generic prompt \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \subsection{AST Preprocessing Foundation}
 
-ThreadLearn's AST preprocessor exposes four functions used by both the race
-detector and the RAG retrieval stage:
+ThreadLearn's AST preprocessor provides four helper functions used by both
+the race detector and the document retrieval stage.
+AST (Abstract Syntax Tree) parsing converts raw source code into a structured
+tree of named nodes---functions, variables, operators---so downstream tools
+can work with precise code structure instead of plain text.
 
 \begin{table}[ht]
   \centering
-  \caption{AST preprocessor functions.}
+  \caption{AST preprocessor functions and what they do.}
   \label{tab:ast}
   \begin{tabular}{@{}llp{5cm}@{}}
     \toprule
     \textbf{Function} & \textbf{Purpose} & \textbf{Notes} \\
     \midrule
-    \texttt{stripComments}       & Remove comments               & esprima range-delete for JS; \texttt{ast.unparse} for Python \\
-    \texttt{normalizeWhitespace} & Normalize whitespace          & esprima token stream for JS; \texttt{ast.unparse} for Python \\
-    \texttt{extractFunctions}    & Extract function/class list   & esprima AST walk: catches arrow fns and anonymous exprs \\
-    \texttt{extract\_keywords}   & Top-20 identifier tokens      & esprima \texttt{Identifier} tokens; used for BM25 RAG query \\
+    \texttt{stripComments}       & Remove comments from code     & esprima range-delete for JS; \texttt{ast.unparse} for Python \\
+    \texttt{normalizeWhitespace} & Remove extra blank lines/spaces & esprima token stream for JS; \texttt{ast.unparse} for Python \\
+    \texttt{extractFunctions}    & List all functions in a file  & esprima AST walk: finds arrow functions and anonymous expressions too \\
+    \texttt{extract\_keywords}   & Pick top-20 identifier names  & esprima \texttt{Identifier} tokens; used to build the BM25 search query \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -263,22 +272,24 @@ detector and the RAG retrieval stage:
 
 \subsection{System Architecture Overview}
 
-ThreadLearn comprises five loosely coupled modules (Table~\ref{tab:components}):
+ThreadLearn has five independent modules (Table~\ref{tab:components}).
+Each module has a single clear job; they communicate through simple data
+structures so any one module can be replaced without changing the others.
 
 \begin{table}[ht]
   \centering
-  \caption{ThreadLearn system components and roles.}
+  \caption{ThreadLearn modules and their roles.}
   \label{tab:components}
   \begin{tabular}{@{}ll@{}}
     \toprule
-    \textbf{Component} & \textbf{Role} \\
+    \textbf{Module} & \textbf{Job} \\
     \midrule
-    \texttt{ast\_preprocessor} & Clean and normalize input code \\
-    \texttt{race\_detector}    & Detect 5 JS race condition patterns \\
-    \texttt{report\_formatter} & Map \texttt{pattern\_id} $\to$ severity + fix template \\
-    \texttt{rag\_pipeline}     & Retrieve similar examples, augment LLM prompt \\
-    Fine-tuned LLM             & Generate fix with CoT reasoning \\
-    FastAPI server             & Expose \texttt{/analyze} endpoint \\
+    \texttt{ast\_preprocessor} & Clean and normalize the input code \\
+    \texttt{race\_detector}    & Find 5 known JS race condition patterns \\
+    \texttt{report\_formatter} & Turn a pattern name into a severity level and fix hint \\
+    \texttt{rag\_pipeline}     & Search for related examples; add them to the LLM prompt \\
+    Fine-tuned LLM             & Generate the corrected code with step-by-step reasoning \\
+    FastAPI server             & Expose the \texttt{/analyze} HTTP endpoint \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -286,14 +297,14 @@ ThreadLearn comprises five loosely coupled modules (Table~\ref{tab:components}):
 \subsection{Static Race Detector}
 \label{sec:design:detector}
 
-The detector scans source files in $O(n)$ time and emits structured reports of
-the form \texttt{\{pattern\_id, line\_range, description\}}.
-Table~\ref{tab:patterns} lists all 5 patterns.
-TypeScript files are treated as JavaScript.
+The detector reads a source file line by line in $O(n)$ time and outputs a
+structured report: \texttt{\{pattern\_id, line\_range, description\}}.
+Table~\ref{tab:patterns} lists all 5 patterns it checks for.
+TypeScript files are handled the same way as JavaScript.
 
 \begin{table}[ht]
   \centering
-  \caption{Race detection patterns in ThreadLearn (5 patterns, JavaScript only).}
+  \caption{The 5 race condition patterns detected by ThreadLearn (JavaScript only).}
   \label{tab:patterns}
   \begin{tabular}{@{}lll@{}}
     \toprule
@@ -311,10 +322,10 @@ TypeScript files are treated as JavaScript.
   \end{tabular}
 \end{table}
 
-\paragraph{Example: closure loop var (JavaScript).}
+\paragraph{Example: closure loop variable (JavaScript).}
 \mbox{}
 
-\begin{lstlisting}[style=js, caption={Buggy: \texttt{var i} captured by reference.}]
+\begin{lstlisting}[style=js, caption={Bug: \texttt{var i} is shared across all callbacks.}]
 for (var i = 0; i < 5; i++) {
   setTimeout(function() {
     console.log(i); // always prints 5
@@ -322,7 +333,7 @@ for (var i = 0; i < 5; i++) {
 }
 \end{lstlisting}
 
-\begin{lstlisting}[style=js, caption={Fixed: \texttt{let i} creates per-iteration binding.}]
+\begin{lstlisting}[style=js, caption={Fix: \texttt{let i} creates a separate copy for each loop iteration.}]
 for (let i = 0; i < 5; i++) {
   setTimeout(function() {
     console.log(i); // prints 0, 1, 2, 3, 4
@@ -331,32 +342,36 @@ for (let i = 0; i < 5; i++) {
 \end{lstlisting}
 
 
-\subsection{Hindsight CoT Fine-Tuning}
+\subsection{Hindsight Chain-of-Thought Fine-Tuning}
 \label{sec:design:finetuning}
 
-Inspired by PCWMs~\cite{pcwms2026}, we construct training tuples:
+Inspired by PCWMs~\cite{pcwms2026}, we build training examples of the form:
 \[
-  (\textit{code},\; \textit{static\_output},\; \textit{CoT\_trace},\; \textit{fix})
+  (\textit{code},\; \textit{detector\_output},\; \textit{reasoning\_trace},\; \textit{fix})
 \]
-where \textit{static\_output} is the detector report and \textit{CoT\_trace}
-is written by a teacher model \emph{after} the correct fix is known (``hindsight'').
+where \textit{detector\_output} is the structured report from the race
+detector, and \textit{reasoning\_trace} is a step-by-step explanation
+written by a teacher model \emph{after} the correct fix is already known.
+Writing the reasoning in hindsight---starting from the answer and
+explaining why it is right---produces cleaner, more consistent training
+signal than asking a model to reason forward under uncertainty.
 
 \begin{table}[ht]
   \centering
-  \caption{Fine-tuning configuration.}
+  \caption{Fine-tuning settings.}
   \label{tab:finetune}
   \begin{tabular}{@{}ll@{}}
     \toprule
-    \textbf{Parameter} & \textbf{Value} \\
+    \textbf{Setting} & \textbf{Value} \\
     \midrule
     Base model         & Qwen2.5-Coder-1.5B \\
-    Method             & QLoRA: $r$=16, $\alpha$=32, 4-bit NF4 quantization \\
+    Method             & QLoRA: $r$=16, $\alpha$=32, 4-bit NF4 weight compression \\
     Framework          & \texttt{SFTTrainer} (trl $\geq$ 1.5.0) \\
-    Grounding signal   & \texttt{pattern\_id} + \texttt{line\_range} from detector \\
+    Grounding input    & \texttt{pattern\_id} + \texttt{line\_range} from the detector \\
     \midrule
     \multicolumn{2}{@{}l@{}}{\textit{Rejected alternatives}} \\
-    Full fine-tune     & Compute cost prohibitive \\
-    RAG-only           & No explicit reasoning capability \\
+    Full fine-tune     & Too expensive to run on available hardware \\
+    Retrieval-only     & Finds relevant documents but cannot generate a fix \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -365,46 +380,50 @@ is written by a teacher model \emph{after} the correct fix is known (``hindsight
 \label{sec:design:pipeline}
 
 \begin{enumerate}[leftmargin=2em]
-  \item \textbf{Extract}: \texttt{ast\_preprocessor.extract\_keywords()} parses
-    the input JavaScript with esprima, walks the ESTree and collects
-    \texttt{Identifier} tokens (function names, API calls, variable names),
-    filtering out JS reserved words.  This produces a precise 20-token BM25
-    query that preserves CamelCase names intact (e.g.\ \texttt{appendFile},
-    \texttt{setTimeout}) rather than splitting them into fragments.
-  \item \textbf{Retrieve}: BM25 scores the query against 2{,}050 knowledge-base
-    documents and returns the top-$k$ ($k=3$) most relevant entries.
-    Because the query terms match document terms exactly (both use the same
-    API names), precision is higher than a CamelCase-split tokenizer would
-    achieve.
-  \item \textbf{Format}: \texttt{report\_formatter} maps \texttt{pattern\_id}
-    $\to$ severity label and fix template string.
-  \item \textbf{Generate}: fine-tuned LLM receives the BM25 context docs
-    prepended to the prompt (completion format matching training data) and
-    produces the corrected code.
+  \item \textbf{Extract keywords}: \texttt{ast\_preprocessor.extract\_keywords()}
+    parses the input JavaScript using esprima, walks the syntax tree, and
+    collects all \texttt{Identifier} tokens---function names, API calls,
+    variable names---while skipping JS reserved words (\texttt{if},
+    \texttt{const}, \texttt{async}, \ldots).
+    The result is a list of up to 20 meaningful names used as a search query.
+    Because the names are taken directly from the syntax tree, CamelCase
+    names like \texttt{appendFile} and \texttt{setTimeout} stay intact
+    instead of being split into separate words.
+  \item \textbf{Retrieve documents}: BM25 scores the query against 2{,}050
+    knowledge-base documents and returns the top-3 most relevant ones.
+    Keeping API names intact means the query words match the document words
+    exactly, giving better search results than a plain text tokenizer.
+  \item \textbf{Format}: \texttt{report\_formatter} converts the
+    \texttt{pattern\_id} into a human-readable severity label and a short
+    fix hint.
+  \item \textbf{Generate}: the fine-tuned LLM receives the 3 retrieved
+    documents prepended to the prompt (using the same plain completion
+    format as during training) and outputs the corrected code.
 \end{enumerate}
 
-\noindent\textbf{Why AST over regex for keyword extraction.}
+\noindent\textbf{Why AST keyword extraction beats regex for search.}
 A regex tokenizer splits \texttt{setTimeout} into \texttt{["set","timeout"]}
-and \texttt{appendFile} into \texttt{["append","file"]}, producing a noisy
-query that dilutes BM25 scores.  esprima's \texttt{Identifier} token stream
-preserves the original API names, directly matching terms in the knowledge
-base and improving retrieval precision for JS-specific concurrency patterns.
+and \texttt{appendFile} into \texttt{["append","file"]}, creating a noisy
+query where each word is too generic to find the right documents.
+esprima reads the actual syntax tree and returns identifier tokens as-is,
+so the search query contains the exact API names that appear in the knowledge
+base---leading to more precise retrieval for JavaScript concurrency patterns.
 
 \subsection{Rejected Design Alternatives}
 \label{sec:design:rejected}
 
 \begin{table}[ht]
   \centering
-  \caption{Rejected design alternatives and justification.}
+  \caption{Design choices that were tried and rejected.}
   \label{tab:rejected}
   \begin{tabular}{@{}lp{8cm}@{}}
     \toprule
-    \textbf{Alternative} & \textbf{Reason Rejected} \\
+    \textbf{Alternative} & \textbf{Why Rejected} \\
     \midrule
-    LLM-only detection     & High false-positive rate; no line-level attribution \\
-    Static-only            & Detects bugs but cannot generate fixes \\
-    Large model (7B+)      & Impractical for local deployment due to GPU memory \\
-    Vector search (FAISS)  & Requires embedding model; 500\,MB+ dependency; exact API-name match more useful than semantic similarity for code \\
+    LLM-only detection     & Too many false positives; cannot point to the exact buggy line \\
+    Static analysis only   & Finds the bug but cannot write a fix \\
+    Large model (7B+)      & Does not fit in GPU memory on a laptop GPU \\
+    Vector search (FAISS)  & Requires a separate embedding model (500\,MB+ download); exact API-name matching gives better results for code search than semantic similarity \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -422,14 +441,14 @@ base and improving retrieval precision for JS-specific concurrency patterns.
     \textbf{Item} & \textbf{Detail} \\
     \midrule
     Language / framework     & Python 3.10+, FastAPI \\
-    Total LOC                & $\approx$1,200 \\
-    \texttt{race\_detector.py} & 320 LOC, 10 detectors, $O(n)$ scan \\
-    Model adapter            & LoRA SafeTensors at
+    Total lines of code      & $\approx$1,200 \\
+    \texttt{race\_detector.py} & 320 lines, 10 detectors, linear scan \\
+    Model adapter files      & LoRA SafeTensors at
                                \texttt{./threadlearn-qwen2.5-coder-1.5b/final\_adapter} \\
     Infrastructure           & Docker: Redis cache (localhost:6379), Atlas MongoDB \\
-    Concurrency control      & Semaphore in FastAPI server \\
-    Key engineering note     & Graceful fallback if \texttt{ast\_preprocessor}
-                               import fails (CI isolation) \\
+    Concurrency control      & One request at a time to the LLM (semaphore in FastAPI) \\
+    Fallback behavior        & System keeps running if \texttt{ast\_preprocessor}
+                               cannot be imported (useful for CI/CD pipelines) \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -442,19 +461,19 @@ base and improving retrieval precision for JS-specific concurrency patterns.
 
 \begin{table}[ht]
   \centering
-  \caption{Experimental setup.}
+  \caption{Evaluation setup.}
   \label{tab:setup}
   \begin{tabular}{@{}ll@{}}
     \toprule
     \textbf{Item} & \textbf{Detail} \\
     \midrule
-    Baseline 1     & Qwen2.5-Coder-1.5B base (no fine-tune), same prompt format \\
-    Baseline 2     & GPT-3.5-turbo zero-shot, temperature 0, OpenAI API \\
-    Our system     & ThreadLearn: fine-tuned merged model + BM25 RAG \\
-    Test suite     & 20 handcrafted JS concurrency cases, 8 bug categories \\
-    Prompt format  & \texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"} (training format) \\
-    Scoring        & Fix-pattern matching: PASS/PARTIAL/FAIL per test case \\
-    Hardware       & NVIDIA RTX 4060 Laptop GPU, float16, \texttt{device\_map=auto} \\
+    Baseline 1     & Qwen2.5-Coder-1.5B without fine-tuning, same prompt format \\
+    Baseline 2     & GPT-3.5-turbo with no examples, temperature 0, OpenAI API \\
+    Our system     & ThreadLearn: fine-tuned model + BM25 document retrieval \\
+    Test suite     & 20 hand-written JS concurrency bugs across 8 categories \\
+    Prompt format  & \texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"} (matches training) \\
+    Scoring        & PASS = output contains the correct fix pattern; PARTIAL = code generated but fix pattern not matched; FAIL = no code generated \\
+    Hardware       & NVIDIA RTX 4060 Laptop GPU, float16 precision \\
     Date           & 2026-06-11 \\
     \bottomrule
   \end{tabular}
@@ -463,37 +482,39 @@ base and improving retrieval precision for JS-specific concurrency patterns.
 \subsection{End-to-End Fix Quality Comparison}
 \label{sec:eval:detection}
 
-Table~\ref{tab:detection} reports pass rates on the 20-case benchmark.
-Scoring uses fix-pattern matching: PASS if output contains the correct
-fix code pattern (e.g.\ \texttt{Promise.all(}, \texttt{appendFile},
-\texttt{try \{}, arrow function), PARTIAL if code is present but fix
-pattern unmatched, FAIL if no code generated.
+Table~\ref{tab:detection} shows pass rates on the 20-case benchmark.
+A test is scored PASS if the generated code contains the correct fix
+(e.g.\ \texttt{Promise.all(}, \texttt{appendFile}, \texttt{try \{},
+arrow function), PARTIAL if code was generated but the fix pattern was
+not present, and FAIL if no code was generated at all.
 
 \begin{table}[ht]
   \centering
-  \caption{Fix quality results on 20-case JS concurrency benchmark (2026-06-11).}
+  \caption{Fix quality on 20-case JS concurrency benchmark (2026-06-11).}
   \label{tab:detection}
   \begin{tabular}{@{}lcccc@{}}
     \toprule
     \textbf{Method} & \textbf{Pass} & \textbf{Partial} & \textbf{Fail} & \textbf{Pass Rate} \\
     \midrule
-    GPT-3.5-turbo (zero-shot)                & 6  & 11 & 3 & 30\% \\
-    Qwen2.5-Coder-1.5B (no fine-tune)        & 8  & 9  & 3 & 40\% \\
-    ThreadLearn RAW (fine-tune, no RAG)      & 14 & 6  & 0 & 70\% \\
-    \textbf{ThreadLearn + RAG (ours)}        & \textbf{15} & \textbf{5} & \textbf{0} & \textbf{75\%} \\
+    GPT-3.5-turbo (no examples)                & 6  & 11 & 3 & 30\% \\
+    Qwen2.5-Coder-1.5B (no fine-tuning)        & 8  & 9  & 3 & 40\% \\
+    ThreadLearn RAW (fine-tuned, no retrieval) & 14 & 6  & 0 & 70\% \\
+    \textbf{ThreadLearn + RAG (ours)}          & \textbf{15} & \textbf{5} & \textbf{0} & \textbf{75\%} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Key observations: (1) fine-tuning alone yields $+$30 pp over the base model
-(70\% vs.\ 40\%), confirming that the training prompt format
-(\texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"})
-is critical --- an earlier eval using the wrong chat template scored only 35\%;
-(2) BM25 RAG adds $+$5 pp (75\% vs.\ 70\%) by retrieving relevant
-domain documents for harder cases (e.g.\ upsert pattern for test\_03);
-(3) ThreadLearn produces \emph{zero} FAIL cases in both modes, always
-generating valid fix code, whereas GPT-3.5 and the base model each
-produce 3 FAILs.
+Three findings stand out.
+(1) Fine-tuning alone gives $+$30 pp over the base model (70\% vs.\ 40\%),
+and this gain depends entirely on using the correct prompt format
+(\texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"})---an earlier run
+with the wrong chat-template prompt scored only 35\%.
+(2) Adding BM25 document retrieval gives another $+$5 pp (75\% vs.\ 70\%)
+by providing relevant context for harder cases (e.g.\ the upsert pattern
+needed for test\_03).
+(3) ThreadLearn produces \emph{zero} FAIL cases in both modes---it always
+generates some code---while GPT-3.5 and the base model each fail to
+produce any code on 3 tests.
 
 \begin{figure}[ht]
   \centering
@@ -510,7 +531,7 @@ produce 3 FAILs.
 \subsection{Per-Category Fix Quality}
 \label{sec:eval:fix}
 
-Table~\ref{tab:fix} shows ThreadLearn+RAG results per bug category.
+Table~\ref{tab:fix} breaks down ThreadLearn+RAG results by bug category.
 
 \begin{table}[ht]
   \centering
@@ -518,31 +539,31 @@ Table~\ref{tab:fix} shows ThreadLearn+RAG results per bug category.
   \label{tab:fix}
   \begin{tabular}{@{}llcc@{}}
     \toprule
-    \textbf{Category} & \textbf{Fix Pattern} & \textbf{Pass/Total} & \textbf{Rate} \\
+    \textbf{Category} & \textbf{Expected Fix} & \textbf{Pass/Total} & \textbf{Rate} \\
     \midrule
     Race Condition      & async/await, appendFile, upsert & 3/5  & 60\% \\
     Event Loop Blocking & yield generator, fs.promises, renderAsync & 5/5 & 100\% \\
     Unhandled Rejection & try/catch + next(error) & 1/1  & 100\% \\
-    Double Callback     & return-cb guard         & 0/1  & 0\%  \\
-    Zalgo               & process.nextTick norm.  & 0/1  & 0\%  \\
-    Context Loss        & arrow function          & 1/1  & 100\% \\
-    Callback Hell       & async/await chain       & 1/1  & 100\% \\
-    Resource Exhaustion & slice/concurrency limit & 1/1  & 100\% \\
-    Sequential Awaits   & Promise.all             & 1/1  & 100\% \\
-    Missing Promise.all & Promise.all             & 1/1  & 100\% \\
-    Buffer Leak         & stream error handler    & 0/1  & 0\%  \\
-    Event Loop Ordering & Promise.resolve().then  & 1/1  & 100\% \\
+    Double Callback     & return before second callback   & 0/1  & 0\%  \\
+    Zalgo               & process.nextTick to make async consistent & 0/1 & 0\% \\
+    Context Loss        & arrow function to keep \texttt{this}       & 1/1  & 100\% \\
+    Callback Hell       & rewrite with async/await        & 1/1  & 100\% \\
+    Resource Exhaustion & limit concurrency with slice    & 1/1  & 100\% \\
+    Sequential Awaits   & run in parallel with Promise.all & 1/1 & 100\% \\
+    Missing Promise.all & add Promise.all                 & 1/1  & 100\% \\
+    Buffer Leak         & add stream error handler        & 0/1  & 0\%  \\
+    Event Loop Ordering & Promise.resolve().then          & 1/1  & 100\% \\
     \midrule
-    \textbf{Total}      &                         & \textbf{15/20} & \textbf{75\%} \\
+    \textbf{Total}      &                                 & \textbf{15/20} & \textbf{75\%} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-ThreadLearn achieves 100\% on 8 of 12 categories.
-The three remaining gaps are Zalgo (\texttt{process.nextTick}
+ThreadLearn reaches 100\% on 8 of 12 categories.
+The three failing categories---Zalgo (\texttt{process.nextTick}
 normalization), Double Callback (return-guard pattern), and Buffer Leak
-(stream error handler) --- specialized patterns the 1.5B model has not
-generalized from the training corpus.
+(stream error handler)---are rare and unusual patterns that the 1.5B model
+has not seen enough examples of during training to generalize reliably.
 
 \begin{figure}[ht]
   \centering
@@ -560,46 +581,48 @@ generalized from the training corpus.
 
 \begin{table}[ht]
   \centering
-  \caption{Ablation: per-component contribution (measured on 20-case benchmark).}
+  \caption{How much each component contributes (20-case benchmark).}
   \label{tab:ablation}
   \begin{tabular}{@{}lcc@{}}
     \toprule
     \textbf{Configuration} & \textbf{Pass/20} & \textbf{Pass Rate} \\
     \midrule
-    GPT-3.5-turbo zero-shot (no fine-tune, no RAG)  & 6  & 30\% \\
-    Qwen2.5-Coder-1.5B base (no fine-tune, no RAG)  & 8  & 40\% \\
-    ThreadLearn RAW (fine-tune only, no RAG)         & 14 & 70\% \\
-    ThreadLearn + RAG (fine-tune + BM25 context)     & 15 & 75\% \\
+    GPT-3.5-turbo (no fine-tune, no retrieval)       & 6  & 30\% \\
+    Qwen2.5-Coder-1.5B base (no fine-tune, no retrieval) & 8 & 40\% \\
+    ThreadLearn RAW (fine-tuned only, no retrieval)  & 14 & 70\% \\
+    ThreadLearn + RAG (fine-tuned + retrieved context) & 15 & 75\% \\
     \midrule
-    \textit{Fine-tune contribution}  & \multicolumn{2}{c}{$+$30 pp over base} \\
-    \textit{RAG contribution}        & \multicolumn{2}{c}{$+$5 pp over RAW} \\
-    \textit{Wrong prompt format}     & \multicolumn{2}{c}{35\% (chat template) vs.\ 70\% (completion format)} \\
+    \textit{Gain from fine-tuning}   & \multicolumn{2}{c}{$+$30 pp over base model} \\
+    \textit{Gain from RAG}           & \multicolumn{2}{c}{$+$5 pp over fine-tune only} \\
+    \textit{Wrong prompt format}     & \multicolumn{2}{c}{35\% (chat template) vs.\ 70\% (training format)} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The largest single factor is the prompt format: using the chat template
-(\texttt{apply\_chat\_template}) instead of the training completion format
-drops pass rate from 70\% to 35\%---a $-$35 pp regression from format
-mismatch alone, masking the true fine-tuning benefit.
+The biggest single factor is the prompt format.
+Using the chat template (\texttt{apply\_chat\_template}) instead of the
+plain completion format that the model was trained on drops the pass rate
+from 70\% to 35\%---a $-$35 pp drop caused entirely by a format mismatch,
+which hid most of the benefit from fine-tuning during an early evaluation run.
 
 \subsection{Scalability and Latency}
 \label{sec:eval:latency}
 
 \begin{table}[ht]
   \centering
-  \caption{Latency and throughput (mock LLM, 10 concurrent clients, N=200).}
+  \caption{Server throughput and response time (mock LLM, 10 parallel clients, N=200 requests).}
   \label{tab:latency}
   \begin{tabular}{@{}lp{9cm}@{}}
     \toprule
     \textbf{Metric} & \textbf{Value} \\
     \midrule
-    Throughput       & 86 req/s \\
-    P50 latency      & 3.2 ms \\
-    P95 latency      & 112 ms \\
-    P99 latency      & 129 ms \\
-    Semaphore impact & P95 spikes from 8 ms (single-client) to 112 ms (10 concurrent) ---
-                       queue contention on semaphore-guarded LLM slot \\
+    Throughput         & 86 requests/second \\
+    Median latency     & 3.2 ms \\
+    95th percentile    & 112 ms \\
+    99th percentile    & 129 ms \\
+    Why P95 is high    & When 10 clients send requests at the same time, they queue
+                         behind the single-LLM semaphore; the 95th-percentile wait
+                         jumps from 8 ms (one client) to 112 ms (10 clients) \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -610,40 +633,40 @@ mismatch alone, masking the true fine-tuning benefit.
 
 \begin{table}[ht]
   \centering
-  \caption{Related work: how ThreadLearn differs from prior approaches.}
+  \caption{How ThreadLearn differs from prior tools.}
   \label{tab:related}
   \begin{tabular}{@{}p{3.2cm}p{4.5cm}p{4.5cm}@{}}
     \toprule
-    \textbf{Group} & \textbf{Representative Works} & \textbf{How ThreadLearn Differs} \\
+    \textbf{Group} & \textbf{Examples} & \textbf{Key Difference} \\
     \midrule
     Static race detectors
       & ThreadSanitizer, Helgrind, ESLint async rules
-      & Detect without fixing; no LLM reasoning \\
+      & Find bugs but cannot fix them; no LLM reasoning \\
     \addlinespace
     Empirical bug studies
       & NodeCB~\cite{nodecb2017}, Android concurrency bugs
-      & Taxonomy source; no automated fix \\
+      & Provide the bug taxonomy we build on; no automated fix \\
     \addlinespace
     LLM for code analysis
       & PCWMs~\cite{pcwms2026}, CodeBERT, CodeT5
-      & LLM-only; does not exploit static structure \\
+      & LLM-only; ignores static structure; needs large models \\
     \addlinespace
     Fine-tuning for code
       & QLoRA~\cite{qlora}, SFT on code, PEFT
-      & Training methodology; not targeting race detection \\
+      & Same training technique; not targeting concurrency bugs \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\paragraph{Method comparison matrix.}
+\paragraph{Feature comparison.}
 
 \begin{table}[h!]
   \centering
-  \caption{Method $\times$ feature comparison matrix.}
+  \caption{Which tools can detect bugs, generate fixes, handle JavaScript, and use fine-tuning.}
   \label{tab:matrix}
   \begin{tabular}{@{}lcccc@{}}
     \toprule
-    \textbf{Method} & \textbf{Detect} & \textbf{Fix} & \textbf{JS} & \textbf{Fine-tuned} \\
+    \textbf{Tool} & \textbf{Detect} & \textbf{Fix} & \textbf{JS} & \textbf{Fine-tuned} \\
     \midrule
     ThreadSanitizer      & $\checkmark$ & $\times$ & $\times$     & $\times$ \\
     ESLint async         & $\checkmark$ & $\times$ & $\checkmark$ & $\times$ \\
@@ -658,21 +681,22 @@ mismatch alone, masking the true fine-tuning benefit.
 \section{Conclusion}
 \label{sec:conclusion}
 
-Concurrency bugs remain a leading cause of production failures in async
-JavaScript applications, yet no existing tool both detects and fixes them
-reliably at small model scale.
-ThreadLearn combines a 5-pattern static race detector with a Hindsight CoT
-fine-tuned Qwen2.5-Coder-1.5B model and a BM25 RAG pipeline to provide
-an end-to-end fix generation system for JavaScript (Node.js).
-On a curated 20-case benchmark spanning 8 bug categories, ThreadLearn+RAG
+Concurrency bugs remain a leading cause of failures in async JavaScript
+applications, yet no existing tool both finds them and fixes them reliably
+using a small model.
+ThreadLearn combines a 5-pattern static race detector with a small language
+model (Qwen2.5-Coder-1.5B) fine-tuned on step-by-step reasoning examples and
+a BM25 document retrieval pipeline to deliver an end-to-end bug-fix system
+for JavaScript (Node.js).
+On a 20-case benchmark covering 8 bug categories, ThreadLearn with retrieval
 achieves a \textbf{75\% pass rate (15/20)}, compared with 40\% for the
-untuned base model and 30\% for GPT-3.5-turbo zero-shot---a $+$35 pp
-improvement demonstrating that the correct training prompt format and
-domain-grounded fine-tuning significantly improve LLM concurrency fix quality.
+same model without fine-tuning and 30\% for GPT-3.5-turbo---a $+$35 pp
+improvement showing that the right training format and domain-specific
+fine-tuning significantly improve fix quality even at 1.5B parameters.
 
 \paragraph{Future work.}
-Expand to TypeScript AST (replace regex fallback);
-add MPI/CUDA patterns (PCWMs direction).
+Expand to TypeScript AST (replace the current regex fallback);
+add MPI/CUDA patterns (following PCWMs direction).
 
 %% ════════════════════════════════════════════════════════════════════════════
 \begin{thebibliography}{9}
