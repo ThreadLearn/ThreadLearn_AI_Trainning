@@ -18398,5 +18398,50 @@
     "category": "patterns",
     "source": "Synthetic Data (Context Permutation)",
     "url": null
+  },
+  {
+    "id": "js-patch-001",
+    "title": "Singleton Promise Pattern: Cache the Promise, Not the Result",
+    "content": "A common race condition occurs when multiple concurrent callers each trigger an async operation before any result is cached. The fix is to cache the Promise object itself (not the resolved value), so all callers share the same in-flight request.\n\nBAD — race condition, multiple fetches launched:\n```javascript\nlet cache = null;\nfunction getCache() {\n  if (!cache) fetchData().then(d => cache = d);\n  return cache; // returns null on concurrent calls!\n}\n```\n\nGOOD — singleton promise, only one fetch ever fires:\n```javascript\nlet promise = null;\nfunction getCache() {\n  if (!promise) promise = fetchData();\n  return promise; // all callers await the same promise\n}\n```\n\nKey insight: Promises are reusable. Once created, they can be awaited by many consumers. Caching the Promise prevents duplicate side-effects (DB queries, network requests, file reads). Use this pattern for any initialisation that must run exactly once.",
+    "language": "javascript",
+    "category": "race-condition",
+    "source": "ThreadLearn Knowledge Base — Patch v2",
+    "url": ""
+  },
+  {
+    "id": "js-patch-002",
+    "title": "Atomic File Append: fs.appendFile vs readFile+writeFile Race",
+    "content": "Combining fs.readFile + fs.writeFile is NOT atomic. Two concurrent callers can both read the same old content, then both write, causing one writer's data to be lost.\n\nBAD — read-then-write race condition:\n```javascript\nfunction appendLog(msg) {\n  fs.readFile('log.txt', 'utf8', (err, data) => {\n    fs.writeFile('log.txt', data + msg, () => {});\n  });\n}\nappendLog('A');\nappendLog('B'); // B reads before A writes → A's content lost!\n```\n\nGOOD — atomic OS-level append:\n```javascript\nconst { promises: fs } = require('fs');\nasync function appendLog(msg) {\n  await fs.appendFile('log.txt', msg + '\\n');\n}\nawait Promise.all([appendLog('A'), appendLog('B')]); // both written safely\n```\n\nfs.appendFile() delegates to the OS open(O_APPEND) system call which is atomic at the kernel level — two concurrent appends will never overwrite each other. Always use appendFile for concurrent log/event writing.",
+    "language": "javascript",
+    "category": "race-condition",
+    "source": "ThreadLearn Knowledge Base — Patch v2",
+    "url": ""
+  },
+  {
+    "id": "js-patch-003",
+    "title": "Double Callback Guard: Always 'return cb()' to Prevent Double Invocation",
+    "content": "In callback-style Node.js code, omitting 'return' before cb() causes the callback to be called multiple times when multiple exit branches exist (error + success path both execute).\n\nBAD — callback invoked twice when err is truthy:\n```javascript\nfunction getUser(id, cb) {\n  db.findById(id, (err, user) => {\n    if (err) cb(err);           // no return!\n    if (!user) cb(new Error('Not found')); // runs even after err\n    cb(null, user);             // runs even after err or not found\n  });\n}\n```\n\nGOOD — return before every cb() call:\n```javascript\nfunction getUser(id, cb) {\n  db.findById(id, (err, user) => {\n    if (err) return cb(err);\n    if (!user) return cb(new Error('Not found'));\n    return cb(null, user);\n  });\n}\n```\n\nRule: Every code path inside an async callback MUST end with 'return cb(...)'. Do NOT convert to async/await just to fix this — 'return cb()' is the minimal correct fix.",
+    "language": "javascript",
+    "category": "double-callback",
+    "source": "ThreadLearn Knowledge Base — Patch v2",
+    "url": ""
+  },
+  {
+    "id": "js-patch-004",
+    "title": "Zalgo Anti-Pattern: Use process.nextTick to Normalize Async Behavior",
+    "content": "The Zalgo anti-pattern occurs when a function sometimes calls its callback synchronously (cache hit) and sometimes asynchronously (cache miss). This inconsistency makes the function unreliable and order-dependent for callers.\n\nBAD — Zalgo: sync cb on cache hit, async on miss:\n```javascript\nconst cache = {};\nfunction fetchObj(id, cb) {\n  if (cache[id]) return cb(cache[id]); // sync!\n  networkFetch(id, data => {\n    cache[id] = data;\n    cb(data); // async\n  });\n}\n```\n\nGOOD — always async using process.nextTick:\n```javascript\nconst cache = {};\nfunction fetchObj(id, cb) {\n  if (cache[id]) {\n    return process.nextTick(() => cb(null, cache[id])); // defer to next tick\n  }\n  networkFetch(id, (err, data) => {\n    if (err) return cb(err);\n    cache[id] = data;\n    cb(null, data);\n  });\n}\n```\n\nprocess.nextTick() defers execution to the next iteration of the event loop, making the callback always async. This ensures callers can always set up listeners or state before the callback fires. Use nextTick (not setTimeout/setImmediate) for minimal overhead.",
+    "language": "javascript",
+    "category": "zalgo",
+    "source": "ThreadLearn Knowledge Base — Patch v2",
+    "url": ""
+  },
+  {
+    "id": "js-patch-005",
+    "title": "Stream Buffer Leak: Cleanup Readable Streams on Client Disconnect",
+    "content": "When piping a Readable stream to an HTTP response, if the client disconnects early, the stream keeps reading and buffering data in memory — causing a buffer/memory leak. Always handle stream errors and destroy the stream on disconnect.\n\nBAD — stream keeps running after client disconnect:\n```javascript\nfunction streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.on('end', () => res.end());\n  rs.on('error', err => res.status(500).send(err.message));\n  // No cleanup on client disconnect!\n}\n```\n\nGOOD — destroy stream when client disconnects:\n```javascript\nfunction streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.pipe(res);\n  rs.on('error', err => {\n    if (!res.headersSent) res.status(500).end();\n  });\n  req.on('close', () => rs.destroy()); // client disconnected: stop streaming\n  res.on('finish', () => rs.destroy()); // response done: cleanup\n}\n```\n\nKey points:\n1. rs.pipe(res) automatically handles backpressure and end events.\n2. req.on('close') fires when client drops connection — always destroy() the source stream.\n3. rs.on('error') must be handled or Node.js will throw an uncaught exception.\n4. Check res.headersSent before writing error responses to avoid 'headers already sent' errors.",
+    "language": "javascript",
+    "category": "buffer-leak",
+    "source": "ThreadLearn Knowledge Base — Patch v2",
+    "url": ""
   }
 ]
