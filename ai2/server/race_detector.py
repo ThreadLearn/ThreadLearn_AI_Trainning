@@ -4,7 +4,7 @@ Owner: AI2 - Trung
 Status: Done
 Depends on: AI1-03 ast_preprocessor.py (Ân)
 
-Phát hiện 10 race condition patterns trong JavaScript/Python bằng rule-based scan.
+Phát hiện 10 race condition patterns trong JavaScript bằng rule-based scan.
 Input: code string + language → Output: list[dict] raw detections cho report_formatter.
 
 Interface chính:
@@ -188,169 +188,7 @@ def _detect_concurrent_write_array(code: str) -> list[dict]:
     return detections
 
 
-# Python Pattern 5: global variable trong thread function (global_var_thread)
-_RE_THREAD_START = re.compile(r'\bthreading\.Thread\s*\(|Thread\s*\(target\s*=')
-_RE_GLOBAL_KW = re.compile(r'\bglobal\s+(\w+)')
-
-def _detect_global_var_thread(code: str) -> list[dict]:
-    detections = []
-    lines = _lines(code)
-    global_vars: set[str] = set()
-    for line in lines:
-        m = _RE_GLOBAL_KW.search(line)
-        if m:
-            global_vars.add(m.group(1))
-
-    for i, line in enumerate(lines, 1):
-        if _RE_THREAD_START.search(line):
-            # Check surrounding code uses global vars
-            window = "\n".join(lines[max(0, i-5):i+10])
-            for vname in global_vars:
-                if re.search(r'\b' + re.escape(vname) + r'\b', window):
-                    detections.append({
-                        "pattern_id": "global_var_thread",
-                        "line_range": _line_range(max(1, i-2), min(i+5, len(lines))),
-                        "description": (
-                            f"Thread tại dòng {i} truy cập biến global `{vname}` "
-                            f"không có Lock — có thể gây data race."
-                        ),
-                    })
-                    break
-    return detections
-
-
-# Python Pattern 6: shared list không có Lock (shared_list_no_lock)
-_RE_LIST_APPEND = re.compile(r'(\w+)\s*\.\s*append\s*\(')
-_RE_LOCK = re.compile(r'\bLock\(\)|RLock\(\)|with\s+\w+.*lock', re.IGNORECASE)
-
-def _detect_shared_list_no_lock(code: str) -> list[dict]:
-    detections = []
-    lines = _lines(code)
-    has_lock = bool(_RE_LOCK.search(code))
-    if has_lock:
-        return []  # Nếu có Lock ở bất kỳ đâu → không flag
-
-    append_targets: dict[str, list[int]] = {}
-    for i, line in enumerate(lines, 1):
-        m = _RE_LIST_APPEND.search(line)
-        if m:
-            name = m.group(1)
-            append_targets.setdefault(name, []).append(i)
-
-    if _RE_THREAD_START.search(code):
-        for name, line_nums in append_targets.items():
-            if len(line_nums) >= 2:
-                detections.append({
-                    "pattern_id": "shared_list_no_lock",
-                    "line_range": _line_range(line_nums[0], line_nums[-1]),
-                    "description": (
-                        f"List `{name}` được append từ nhiều thread "
-                        f"(dòng {', '.join(str(l) for l in line_nums)}) "
-                        f"mà không có Lock."
-                    ),
-                })
-    return detections
-
-
-# Python Pattern 7: thread read-write race (thread_read_write_race)
-_RE_THREAD_FN = re.compile(r'def\s+(\w+).*:')
-
-def _detect_thread_read_write_race(code: str) -> list[dict]:
-    detections = []
-    if not _RE_THREAD_START.search(code):
-        return []
-    has_lock = bool(_RE_LOCK.search(code))
-    if has_lock:
-        return []
-
-    lines = _lines(code)
-    # Tìm assignment vào shared variable trong thread functions
-    shared_vars: dict[str, list[int]] = {}
-    for i, line in enumerate(lines, 1):
-        m = re.search(r'^(\s{4,}|\t)(\w+)\s*[+\-*]?=\s*', line)
-        if m:
-            name = m.group(2)
-            if name not in ('self', 'cls', 'True', 'False', 'None'):
-                shared_vars.setdefault(name, []).append(i)
-
-    for name, line_nums in shared_vars.items():
-        if len(line_nums) >= 2:
-            detections.append({
-                "pattern_id": "thread_read_write_race",
-                "line_range": _line_range(line_nums[0], line_nums[-1]),
-                "description": (
-                    f"Biến `{name}` bị ghi từ nhiều vị trí trong thread context "
-                    f"(dòng {', '.join(str(l) for l in line_nums[:3])}) "
-                    f"mà không có Lock."
-                ),
-            })
-    return detections[:3]  # Giới hạn 3 để tránh noise
-
-
-# Python Pattern 8: thiếu thread.join() (missing_join)
-_RE_THREAD_ASSIGN = re.compile(r'(\w+)\s*=\s*(?:threading\.)?Thread\s*\(')
-_RE_JOIN = re.compile(r'\.join\s*\(')
-
-def _detect_missing_join(code: str) -> list[dict]:
-    detections = []
-    lines = _lines(code)
-    thread_vars: dict[str, int] = {}
-    for i, line in enumerate(lines, 1):
-        m = _RE_THREAD_ASSIGN.search(line)
-        if m:
-            thread_vars[m.group(1)] = i
-
-    if not thread_vars:
-        return []
-
-    joined_vars: set[str] = set()
-    for line in lines:
-        for vname in thread_vars:
-            if re.search(r'\b' + re.escape(vname) + r'\b', line) and _RE_JOIN.search(line):
-                joined_vars.add(vname)
-
-    for vname, start_line in thread_vars.items():
-        if vname not in joined_vars:
-            detections.append({
-                "pattern_id": "missing_join",
-                "line_range": str(start_line),
-                "description": (
-                    f"Thread `{vname}` (dòng {start_line}) được tạo nhưng không có .join() "
-                    f"— main thread có thể đọc kết quả trước khi thread hoàn thành."
-                ),
-            })
-    return detections
-
-
-# Python Pattern 9: singleton lazy init không có Lock (singleton_lazy_init)
-_RE_NONE_CHECK = re.compile(r'if\s+\w+\s+is\s+None\s*:')
-_RE_INSTANCE_ASSIGN = re.compile(r'(\w+)\s*=\s*\w+\s*\(')
-
-def _detect_singleton_lazy_init(code: str) -> list[dict]:
-    detections = []
-    if not _RE_THREAD_START.search(code):
-        return []
-    has_lock = bool(_RE_LOCK.search(code))
-    if has_lock:
-        return []
-
-    lines = _lines(code)
-    for i, line in enumerate(lines, 1):
-        if _RE_NONE_CHECK.search(line):
-            next_lines = "\n".join(lines[i:i+3])
-            if _RE_INSTANCE_ASSIGN.search(next_lines):
-                detections.append({
-                    "pattern_id": "singleton_lazy_init",
-                    "line_range": _line_range(i, min(i+3, len(lines))),
-                    "description": (
-                        f"Lazy initialization tại dòng {i} không có Lock "
-                        f"— race condition nếu nhiều thread khởi tạo cùng lúc (TOCTOU)."
-                    ),
-                })
-    return detections
-
-
-# JS/Python Pattern 10: counter không atomic (counter_no_atomic)
+# JS Pattern 5: counter không atomic (counter_no_atomic)
 _RE_INCREMENT = re.compile(r'\b(\w+)\s*\+\+|\b(\w+)\s*\+=\s*1|\b(\w+)\s*=\s*\2\s*\+\s*1')
 _RE_COUNTER_VAR = re.compile(r'\b(\w+)\s*(?:\+\+|\+=\s*1)')
 
@@ -358,7 +196,7 @@ def _detect_counter_no_atomic(code: str) -> list[dict]:
     detections = []
     lines = _lines(code)
     # Chỉ flag nếu có async context
-    has_async = bool(_RE_ASYNC_CB.search(code) or _RE_THREAD_START.search(code))
+    has_async = bool(_RE_ASYNC_CB.search(code) or _RE_ASYNC_FN.search(code))
     if not has_async:
         return []
 
@@ -383,6 +221,240 @@ def _detect_counter_no_atomic(code: str) -> list[dict]:
     return detections
 
 
+# JS Pattern 6: .then() không có .catch() (unhandled_rejection)
+_RE_THEN = re.compile(r'\.then\s*\(')
+_RE_CATCH = re.compile(r'\.catch\s*\(')
+_RE_TRY = re.compile(r'\btry\s*\{')
+
+def _detect_unhandled_rejection(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    for i, line in enumerate(lines, 1):
+        if _RE_THEN.search(line):
+            # Tìm .catch trong 5 dòng tiếp theo
+            window = "\n".join(lines[i:i+5])
+            if not _RE_CATCH.search(window) and not _RE_CATCH.search(line):
+                # Kiểm tra không có try/catch bao ngoài (10 dòng trước)
+                outer = "\n".join(lines[max(0, i-10):i])
+                if not _RE_TRY.search(outer):
+                    detections.append({
+                        "pattern_id": "unhandled_rejection",
+                        "line_range": str(i),
+                        "description": (
+                            f"Dòng {i}: .then() không có .catch() — "
+                            f"Promise rejection không được bắt, gây unhandled rejection."
+                        ),
+                    })
+    return detections
+
+
+# JS Pattern 7: callback bị gọi nhiều lần (double_callback)
+_RE_CB_CALL = re.compile(r'\b(cb|callback|next|done)\s*\(')
+_RE_RETURN_CB = re.compile(r'\breturn\s+(cb|callback|next|done)\s*\(')
+
+def _detect_double_callback(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    i = 0
+    while i < len(lines):
+        # Tìm function có cb/callback parameter
+        fn_match = re.search(r'function.*\b(cb|callback|next|done)\b', lines[i])
+        if fn_match:
+            cb_name = fn_match.group(1)
+            re_cb = re.compile(r'\b' + cb_name + r'\s*\(')
+            re_ret_cb = re.compile(r'\breturn\s+' + cb_name + r'\s*\(')
+            # Tìm body của function (30 dòng tiếp)
+            body_lines = lines[i+1:i+30]
+            cb_calls = []
+            for j, bline in enumerate(body_lines, i+2):
+                if re_cb.search(bline) and not re_ret_cb.search(bline):
+                    cb_calls.append(j)
+            if len(cb_calls) >= 2:
+                detections.append({
+                    "pattern_id": "double_callback",
+                    "line_range": _line_range(cb_calls[0], cb_calls[-1]),
+                    "description": (
+                        f"`{cb_name}` bị gọi nhiều lần (dòng {', '.join(str(l) for l in cb_calls)}) "
+                        f"mà không có return — callback fired multiple times."
+                    ),
+                })
+        i += 1
+    return detections
+
+
+# JS Pattern 8: zalgo — callback gọi cả sync lẫn async (zalgo)
+def _detect_zalgo(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    for i, line in enumerate(lines, 1):
+        fn_match = re.search(r'function.*\b(cb|callback)\b', line)
+        if fn_match:
+            cb_name = fn_match.group(1)
+            body = lines[i:i+20]
+            sync_call = False
+            async_call = False
+            sync_line = async_line = 0
+            for j, bline in enumerate(body, i+1):
+                has_cb = re.search(r'\b' + cb_name + r'\s*\(', bline)
+                if not has_cb:
+                    continue
+                is_async = bool(_RE_ASYNC_CB.search(bline) or re.search(r'\.then\s*\(', bline))
+                if is_async:
+                    async_call = True
+                    async_line = j
+                else:
+                    sync_call = True
+                    sync_line = j
+            if sync_call and async_call:
+                detections.append({
+                    "pattern_id": "zalgo",
+                    "line_range": _line_range(sync_line, async_line),
+                    "description": (
+                        f"`{cb_name}` được gọi sync (dòng {sync_line}) lẫn async (dòng {async_line}) "
+                        f"— hành vi không nhất quán (Zalgo anti-pattern)."
+                    ),
+                })
+    return detections
+
+
+# JS Pattern 9: this mất context trong setTimeout/setInterval (context_loss_this)
+_RE_THIS = re.compile(r'\bthis\b')
+_RE_REGULAR_FN = re.compile(r'\bfunction\s*\(')
+
+def _detect_context_loss_this(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    for i, line in enumerate(lines, 1):
+        if _RE_SETTIME.search(line) and _RE_REGULAR_FN.search(line):
+            # Tìm this trong body callback (10 dòng tiếp)
+            window = "\n".join(lines[i:i+10])
+            if _RE_THIS.search(window):
+                detections.append({
+                    "pattern_id": "context_loss_this",
+                    "line_range": _line_range(i, min(i+5, len(lines))),
+                    "description": (
+                        f"setTimeout/setInterval tại dòng {i} dùng function() thường có `this` "
+                        f"— this sẽ là undefined hoặc global. Dùng arrow function hoặc .bind(this)."
+                    ),
+                })
+    return detections
+
+
+# JS Pattern 10: callback hell — lồng nhau >= 3 cấp (callback_hell)
+def _detect_callback_hell(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    max_depth = 0
+    max_line = 0
+    depth = 0
+    for i, line in enumerate(lines, 1):
+        # Đếm arrow/function callbacks mở
+        opens = len(re.findall(r'=>\s*\{|\bfunction\s*\w*\s*\([^)]*\)\s*\{', line))
+        closes = line.count('}')
+        depth += opens - closes
+        if depth > max_depth:
+            max_depth = depth
+            max_line = i
+    if max_depth >= 3:
+        detections.append({
+            "pattern_id": "callback_hell",
+            "line_range": str(max_line),
+            "description": (
+                f"Callback lồng nhau {max_depth} cấp (sâu nhất tại dòng {max_line}) "
+                f"— khó đọc, khó debug. Refactor sang async/await hoặc Promise chain."
+            ),
+        })
+    return detections
+
+
+# JS Pattern 11: Promise.all không giới hạn concurrency (resource_exhaustion)
+_RE_PROMISE_ALL = re.compile(r'Promise\.all\s*\(')
+_RE_MAP = re.compile(r'\.map\s*\(')
+
+def _detect_resource_exhaustion(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    for i, line in enumerate(lines, 1):
+        if _RE_PROMISE_ALL.search(line):
+            # Tìm .map( trên cùng dòng hoặc 3 dòng trước
+            window = "\n".join(lines[max(0, i-3):i+1])
+            if _RE_MAP.search(window):
+                detections.append({
+                    "pattern_id": "resource_exhaustion",
+                    "line_range": str(i),
+                    "description": (
+                        f"Promise.all() tại dòng {i} với .map() không giới hạn concurrency "
+                        f"— có thể tạo hàng nghìn request/connection cùng lúc. "
+                        f"Dùng p-limit hoặc chunk array."
+                    ),
+                })
+    return detections
+
+
+# JS Pattern 12: sequential awaits có thể parallel hóa (sequential_awaits)
+_RE_AWAIT_LINE = re.compile(r'\bawait\b')
+
+def _detect_sequential_awaits(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    i = 0
+    while i < len(lines):
+        if _RE_ASYNC_FN.search(lines[i]):
+            # Đếm await liên tiếp trong 20 dòng tiếp
+            await_lines = []
+            await_args = []
+            for j in range(i+1, min(i+20, len(lines))):
+                if _RE_AWAIT_LINE.search(lines[j]):
+                    await_lines.append(j+1)
+                    # Lấy argument của await call
+                    m = re.search(r'await\s+\w+\.\w+\(([^)]*)\)', lines[j])
+                    if m:
+                        await_args.append(m.group(1).strip())
+                elif lines[j].strip() and not lines[j].strip().startswith('//'):
+                    if len(await_lines) >= 3:
+                        break
+                    await_lines = []
+                    await_args = []
+            if len(await_lines) >= 3:
+                # Kiểm tra các await call dùng cùng argument → độc lập
+                unique_args = set(await_args)
+                if len(unique_args) == 1 and list(unique_args)[0]:
+                    detections.append({
+                        "pattern_id": "sequential_awaits",
+                        "line_range": _line_range(await_lines[0], await_lines[-1]),
+                        "description": (
+                            f"{len(await_lines)} await liên tiếp (dòng {await_lines[0]}–{await_lines[-1]}) "
+                            f"với cùng argument — có thể chạy song song bằng Promise.all()."
+                        ),
+                    })
+        i += 1
+    return detections
+
+
+# JS Pattern 13: stream pipe không handle error (buffer_leak)
+_RE_PIPE = re.compile(r'\.pipe\s*\(')
+_RE_ON_ERROR = re.compile(r'\.on\s*\(\s*[\'"]error[\'"]')
+_RE_DESTROY = re.compile(r'\.destroy\s*\(')
+
+def _detect_buffer_leak(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    for i, line in enumerate(lines, 1):
+        if _RE_PIPE.search(line):
+            # Tìm .on('error') hoặc .destroy() trong 10 dòng xung quanh
+            window = "\n".join(lines[max(0, i-5):i+10])
+            if not _RE_ON_ERROR.search(window) and not _RE_DESTROY.search(window):
+                detections.append({
+                    "pattern_id": "buffer_leak",
+                    "line_range": str(i),
+                    "description": (
+                        f".pipe() tại dòng {i} không có .on('error') handler "
+                        f"— nếu stream lỗi, pipe không tự đóng → memory/fd leak."
+                    ),
+                })
+    return detections
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -393,25 +465,24 @@ _JS_DETECTORS = [
     _detect_promise_no_await,
     _detect_concurrent_write_array,
     _detect_counter_no_atomic,
-]
-
-_PY_DETECTORS = [
-    _detect_global_var_thread,
-    _detect_shared_list_no_lock,
-    _detect_thread_read_write_race,
-    _detect_missing_join,
-    _detect_singleton_lazy_init,
-    _detect_counter_no_atomic,
+    _detect_unhandled_rejection,
+    _detect_double_callback,
+    _detect_zalgo,
+    _detect_context_loss_this,
+    _detect_callback_hell,
+    _detect_resource_exhaustion,
+    _detect_sequential_awaits,
+    _detect_buffer_leak,
 ]
 
 
 def detectRaceConditions(code: str, language: str = "javascript") -> list[dict]:
     """
-    Phát hiện race condition patterns trong code.
+    Phát hiện race condition patterns trong JavaScript/TypeScript.
 
     Args:
         code:     source code string
-        language: "javascript" | "typescript" | "python"
+        language: "javascript" | "typescript"
 
     Returns:
         list[dict] raw detections — truyền thẳng vào report_formatter.format_report()
@@ -422,21 +493,13 @@ def detectRaceConditions(code: str, language: str = "javascript") -> list[dict]:
         issues = format_report(detections)
     """
     lang = language.lower()
-    if lang == "typescript":
-        lang = "javascript"
-
-    # Strip comments trước khi scan (dùng ast_preprocessor nếu có)
-    clean_code = stripComments(code, lang)
-
-    if lang == "javascript":
-        detectors = _JS_DETECTORS
-    elif lang == "python":
-        detectors = _PY_DETECTORS
-    else:
+    if lang not in ("javascript", "typescript"):
         return []
 
+    clean_code = stripComments(code, "javascript")
+
     raw: list[dict] = []
-    for detector in detectors:
+    for detector in _JS_DETECTORS:
         raw.extend(detector(clean_code))
 
     # Dedup: bỏ detection trùng pattern_id + line_range
