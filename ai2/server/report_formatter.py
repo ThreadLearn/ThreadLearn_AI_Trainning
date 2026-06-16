@@ -65,6 +65,42 @@ _FIX_TEMPLATES: dict[str, str] = {
         "dùng single Promise chain hoặc Atomics nếu dùng SharedArrayBuffer. "
         "Python: Dùng threading.Lock() hoặc concurrent.futures để serialize increment."
     ),
+    "unhandled_rejection": (
+        "Thêm .catch(err => ...) sau .then(), hoặc bọc toàn bộ trong try/catch nếu dùng async/await. "
+        "Node.js sẽ crash process nếu unhandledRejection không được handle."
+    ),
+    "double_callback": (
+        "Thêm return trước mỗi cb() call để đảm bảo chỉ gọi một lần: "
+        "if (err) return cb(err); — thiếu return khiến callback bị fired nhiều lần."
+    ),
+    "zalgo": (
+        "Đảm bảo callback luôn được gọi async: bọc sync path bằng process.nextTick(() => cb(result)) "
+        "để hành vi nhất quán bất kể cache hit hay miss."
+    ),
+    "context_loss_this": (
+        "Thay function() bằng arrow function để giữ this từ outer scope: "
+        "setTimeout(() => { console.log(this.name); }, 100) "
+        "Hoặc dùng const self = this trước setTimeout rồi dùng self trong callback."
+    ),
+    "callback_hell": (
+        "Refactor sang async/await: thay nested callbacks bằng các await statement tuần tự. "
+        "Hoặc tách mỗi callback thành named function riêng để flatten pyramid."
+    ),
+    "resource_exhaustion": (
+        "Giới hạn concurrency bằng p-limit: const limit = pLimit(10); "
+        "await Promise.all(items.map(item => limit(() => process(item)))) "
+        "Hoặc chunk array và xử lý từng batch."
+    ),
+    "sequential_awaits": (
+        "Chạy song song bằng Promise.all(): "
+        "const [user, stats, friends] = await Promise.all([getUser(id), getStats(id), getFriends(id)]) "
+        "Chỉ dùng await tuần tự khi call sau phụ thuộc kết quả call trước."
+    ),
+    "buffer_leak": (
+        "Thêm error handler cho stream trước khi pipe: "
+        "readStream.on('error', err => { writeStream.destroy(); next(err); }).pipe(writeStream) "
+        "Hoặc dùng pipeline() từ stream/promises để tự động cleanup khi lỗi."
+    ),
 }
 
 # Severity mặc định cho mỗi pattern
@@ -79,6 +115,14 @@ _SEVERITY_MAP: dict[str, str] = {
     "missing_join": "high",
     "singleton_lazy_init": "medium",
     "counter_no_atomic": "medium",
+    "unhandled_rejection": "medium",
+    "double_callback": "high",
+    "zalgo": "high",
+    "context_loss_this": "medium",
+    "callback_hell": "low",
+    "resource_exhaustion": "high",
+    "sequential_awaits": "medium",
+    "buffer_leak": "high",
 }
 
 _SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
