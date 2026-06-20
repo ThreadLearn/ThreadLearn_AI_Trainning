@@ -104,48 +104,43 @@ from output_parser import parse_model_output
 
 def _ollama_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue]:
     """
-    [AI2-08] Gọi Hugging Face Inference API cho mô hình ThreadLearn vừa train.
-    (Giữ nguyên tên hàm _ollama_analyze để tương thích với cấu hình cũ)
+    [AI2-08] Gọi HuggingFace Space endpoint cho mô hình ThreadLearn vừa train.
+    Space: https://anha12-threadlearn-ai2-api.hf.space
     """
-    API_URL = "https://api-inference.huggingface.co/models/anha12/threadlearn-qwen2.5-coder-1.5b"
-    HF_TOKEN = os.environ.get("HF_TOKEN", "")
-    if not HF_TOKEN:
-        return [Issue(line_range="all", severity="medium",
-                      description="Lỗi: Chưa cấu hình HF_TOKEN trong file .env",
-                      fix="Thêm HF_TOKEN=hf_... vào ai2/server/.env")]
-    HEADERS = {
-        "Authorization": f"Bearer {HF_TOKEN}",
-        "Content-Type": "application/json"
+    API_URL = "https://anha12-threadlearn-ai2-api.hf.space/analyze"
+
+    payload = {
+        "code": code,
+        "language": "javascript",
     }
 
-    prompt = f"Convert to concurrent JavaScript:\n\n{code}\n\n"
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 256,
-            "temperature": 0.2,
-            "repetition_penalty": 1.1
-        }
-    }
-    
     try:
         data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(API_URL, data=data, headers=HEADERS, method='POST')
-        with urllib.request.urlopen(req, timeout=30) as response:
+        req = urllib.request.Request(
+            API_URL,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=180) as response:
             result = json.loads(response.read().decode('utf-8'))
-            if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0]:
-                raw_output = result[0]["generated_text"].replace(prompt, "")
-                return parse_model_output(raw_output)
-            else:
-                raise Exception(f"Lỗi format trả về: {result}")
+            issues = result.get("issues", [])
+            return [
+                Issue(
+                    line_range=iss.get("line_range", "all"),
+                    severity=iss.get("severity", "medium"),
+                    description=iss.get("description", ""),
+                    fix=iss.get("fix", ""),
+                )
+                for iss in issues
+            ]
     except Exception as e:
-        print(f"Lỗi gọi HF API: {e}")
-        # Trả về fallback issue nếu lỗi API
+        print(f"Lỗi gọi HF Space: {e}")
         return [Issue(
-            line_range="all", 
-            severity="medium", 
-            description="Lỗi API khi gọi Mô hình AI", 
-            fix="Vui lòng thử lại sau."
+            line_range="all",
+            severity="medium",
+            description="Lỗi kết nối tới HF Space",
+            fix="Kiểm tra Space đang chạy tại https://huggingface.co/spaces/anha12/threadlearn-ai2-api",
         )]
 
 

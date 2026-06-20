@@ -17,14 +17,26 @@
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
+const jwt = require("jsonwebtoken");
+require("dotenv").config({ path: require("path").join(__dirname, "../../ai2/server/.env") });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const AI2_BASE = process.env.AI2_URL || "http://localhost:8001";
+const JWT_SECRET = process.env.JWT_SECRET || "your_super_secret_access_key_change_me";
 
-// Mock JWT for demo — AI2 auth middleware accepts this in mock/dev mode
-// Real integration: forward the user's actual JWT from Authorization header
-const MOCK_JWT = process.env.MOCK_JWT || "mock-demo-token";
+function makeDemoToken() {
+  return jwt.sign(
+    { sub: "demo-user", exp: Math.floor(Date.now() / 1000) + 86400 },
+    JWT_SECRET,
+    { algorithm: "HS256" }
+  );
+}
+
+// Re-generate token per request so it never expires mid-session
+function getDemoToken() {
+  return makeDemoToken();
+}
 
 app.use(cors());
 app.use(express.json({ limit: "512kb" }));
@@ -35,10 +47,10 @@ async function proxyToAI2(path, options = {}) {
   const url = `${AI2_BASE}${path}`;
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${MOCK_JWT}`,
+    Authorization: `Bearer ${getDemoToken()}`,
     ...(options.headers || {}),
   };
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...options, headers, signal: AbortSignal.timeout(200000) });
   const data = await response.json();
   return { status: response.status, data };
 }
@@ -102,6 +114,53 @@ app.post("/api/analyze", async (req, res) => {
       message: "AI2 server không trả lời. Đảm bảo AI2 đang chạy tại " + AI2_BASE,
     });
   }
+});
+
+/**
+ * POST /api/analyze/stream
+ * SSE proxy — streams pipeline steps from AI2 to FE
+ */
+app.post("/api/analyze/stream", async (req, res) => {
+  const { code, language = "javascript" } = req.body;
+
+  if (!code || typeof code !== "string" || code.trim().length === 0) {
+    return res.status(400).json({ error: "code is required" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  try {
+    const ai2Res = await fetch(`${AI2_BASE}/api/v1/ai/analyze/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getDemoToken()}`,
+      },
+      body: JSON.stringify({ code, language, user_id: "demo-user" }),
+      signal: AbortSignal.timeout(200000),
+    });
+
+    if (!ai2Res.ok) {
+      const err = await ai2Res.text();
+      res.write(`event: error\ndata: ${JSON.stringify({ message: err })}\n\n`);
+      return res.end();
+    }
+
+    await new Promise((resolve, reject) => {
+      ai2Res.body.on("data", (chunk) => res.write(chunk));
+      ai2Res.body.on("end", resolve);
+      ai2Res.body.on("error", reject);
+    });
+  } catch (err) {
+    console.error("[/api/analyze/stream] error:", err.message);
+    res.write(`event: error\ndata: ${JSON.stringify({ message: err.message })}\n\n`);
+  }
+
+  res.end();
 });
 
 /**
