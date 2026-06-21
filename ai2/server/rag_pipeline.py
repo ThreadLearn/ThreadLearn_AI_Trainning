@@ -123,7 +123,7 @@ def run(
             iss.fix = fixed_code
 
     docs_used = [
-        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""))
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
     return issues, docs_used
@@ -153,17 +153,33 @@ def run_streaming(
     # ── Bước 2: AST keyword extraction ──
     emit("step", {"stage": "ast", "status": "running", "label": "Extracting AST keywords…"})
     query = _extract_keywords(code)
+    
+    ast_flow = [
+        "1. Parse code into AST tree (Esprima)",
+        "2. Walk nodes to extract Identifier tokens",
+        "3. Filter out JS stopwords (if, for, async...)",
+        "4. Retain unique keywords for search"
+    ]
+    
     emit("step", {"stage": "ast", "status": "done",
                   "label": f"AST keywords: {query[:60]}{'…' if len(query) > 60 else ''}",
-                  "keywords": query})
+                  "keywords": query,
+                  "process_flow": ast_flow})
 
     # ── Bước 3: BM25 search ──
     emit("step", {"stage": "bm25", "status": "running", "label": "Searching knowledge base (BM25)…"})
     raw_docs = retriever.search(query, top_k=3) if query else []
-    doc_titles = [d.get("title", "") for d in raw_docs]
+    
+    docs_with_scores = []
+    for d in raw_docs:
+        docs_with_scores.append({
+            "title": d.get("title", ""),
+            "score": d.get("bm25_score")
+        })
+
     emit("step", {"stage": "bm25", "status": "done",
                   "label": f"BM25: {len(raw_docs)} doc(s) retrieved",
-                  "docs": doc_titles})
+                  "docs": docs_with_scores})
 
     # ── Bước 4: Build prompt ──
     emit("step", {"stage": "prompt", "status": "running", "label": "Building RAG prompt…"})
@@ -174,7 +190,8 @@ def run_streaming(
     print("="*60 + "\n")
     emit("step", {"stage": "prompt", "status": "done",
                   "label": f"Prompt ready — {len(prompt)} chars",
-                  "chars": len(prompt)})
+                  "chars": len(prompt),
+                  "full_prompt": prompt})
 
     # ── Bước 5: LLM inference ──
     emit("step", {"stage": "llm", "status": "running", "label": "Sending to ThreadLearn model (HF Space)…"})
@@ -197,7 +214,7 @@ def run_streaming(
                   "label": f"Model returned {len(issues)} issue(s)"})
 
     docs_used = [
-        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""))
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
     return issues, docs_used

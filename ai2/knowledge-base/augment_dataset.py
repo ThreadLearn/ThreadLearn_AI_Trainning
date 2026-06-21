@@ -81,6 +81,10 @@ def generate_context_variations(doc):
             "users": ctx["vars"]["data"]
         }
         
+        # Actually apply the replacements to the text
+        for old_word, new_word in replacements.items():
+            new_content = re.sub(r'\b' + old_word + r'\b', new_word, new_content, flags=re.IGNORECASE)
+        
         # Create a synthetic scenario description at the beginning
         scenario = f"**Scenario ({ctx['domain']}):** Implementing this pattern to handle {ctx['vars']['data']} efficiently.\n\n"
         new_content = scenario + new_content
