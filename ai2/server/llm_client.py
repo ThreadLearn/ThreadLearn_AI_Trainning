@@ -77,7 +77,7 @@ from output_parser import parse_model_output
 # Hugging Face API client (Sử dụng Model vừa train)
 # ---------------------------------------------------------------------------
 
-def _ollama_analyze(code: str, prompt: str) -> str:
+def _hf_space_analyze(code: str, prompt: str) -> str:
     """
     [AI2-08] Gọi HuggingFace Space endpoint cho mô hình ThreadLearn vừa train.
     """
@@ -112,7 +112,7 @@ def _ollama_analyze(code: str, prompt: str) -> str:
 # HF Inference API client — gọi fine-tuned model qua HF serverless GPU
 # ---------------------------------------------------------------------------
 
-def _hf_inference_analyze(code: str, prompt: str) -> str:
+def _local_with_hf_api_analyze(code: str, prompt: str) -> str:
     """
     Gọi HF Inference API (serverless) thay vì HF Space.
     """
@@ -121,7 +121,7 @@ def _hf_inference_analyze(code: str, prompt: str) -> str:
 
     if not HF_TOKEN:
         print("[hf_inference] HF_TOKEN not set — fallback to HF Space")
-        return _ollama_analyze(code, prompt)
+        return _hf_space_analyze(code, prompt)
 
     payload = {
         "inputs": prompt,
@@ -150,23 +150,23 @@ def _hf_inference_analyze(code: str, prompt: str) -> str:
                 if "error" in result:
                     wait = result.get("estimated_time", 20)
                     print(f"[hf_inference] Model loading, est. {wait}s — fallback to HF Space")
-                    return _ollama_analyze(code, prompt)
+                    return _hf_space_analyze(code, prompt)
                 raw_output = result.get("generated_text", "")
             else:
                 raw_output = str(result)
 
             if not raw_output.strip():
-                return _ollama_analyze(code, prompt)
+                return _hf_space_analyze(code, prompt)
 
             return raw_output
 
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore")
         print(f"[hf_inference] HTTP {e.code}: {body[:200]}")
-        return _ollama_analyze(code, prompt)
+        return _hf_space_analyze(code, prompt)
     except Exception as e:
         print(f"[hf_inference] Error: {e}")
-        return _ollama_analyze(code, prompt)
+        return _hf_space_analyze(code, prompt)
 
 
 # ---------------------------------------------------------------------------
@@ -181,9 +181,9 @@ def get_llm_fix(code: str, prompt: str) -> str:
 
     if provider == "openai":
         return _openai_analyze(code, prompt)
-    elif provider == "hf_inference":
-        return _hf_inference_analyze(code, prompt)
-    elif provider == "ollama":
-        return _ollama_analyze(code, prompt)
+    elif provider == "local_with_hf_api":
+        return _local_with_hf_api_analyze(code, prompt)
+    elif provider == "hf_space":
+        return _hf_space_analyze(code, prompt)
     else:
         return _mock_analyze(code, prompt)
