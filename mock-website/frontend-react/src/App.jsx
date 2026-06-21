@@ -2,209 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { LIVE_SAMPLES } from './mockCases';
 import './App.css';
 
+import LiveEditor, { buildHlMap } from './components/LiveEditor';
+import IssueCard from './components/IssueCard';
+import { PipelineProgress, PipelineSummary } from './components/PipelineProgress';
+
 const BACKEND_URL = 'http://localhost:3001';
-
-const KW  = new Set(['async','await','function','const','let','var','return','if','else','for','new','this','class','constructor','try','catch','throw','of','in','require']);
-const FNS = new Set(['console','setTimeout','Promise','app','db','res','req','connection','fs','emailService','cache','payment','zlib']);
-
-function syntaxHL(line) {
-  if (!line) return ' ';
-
-  // Comment line — escape and wrap whole line
-  if (/^\s*\/\//.test(line)) {
-    const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return `<span class="cmt">${esc}</span>`;
-  }
-
-  // Tokenize: strings, then word tokens, then rest
-  const tokens = [];
-  let i = 0;
-  while (i < line.length) {
-    // String literals: "...", '...', `...`
-    const q = line[i];
-    if (q === '"' || q === "'" || q === '`') {
-      let end = i + 1;
-      while (end < line.length && line[end] !== q) {
-        if (line[end] === '\\') end++;
-        end++;
-      }
-      end++;
-      const raw = line.slice(i, end);
-      const esc = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      tokens.push(`<span class="str">${esc}</span>`);
-      i = end;
-      continue;
-    }
-    // Word token (identifier / keyword)
-    if (/[a-zA-Z_$]/.test(line[i])) {
-      let end = i;
-      while (end < line.length && /[\w$]/.test(line[end])) end++;
-      const word = line.slice(i, end);
-      if (KW.has(word))  tokens.push(`<span class="kw">${word}</span>`);
-      else if (FNS.has(word)) tokens.push(`<span class="fn">${word}</span>`);
-      else tokens.push(word);
-      i = end;
-      continue;
-    }
-    // Number
-    if (/[0-9]/.test(line[i])) {
-      let end = i;
-      while (end < line.length && /[\d.]/.test(line[end])) end++;
-      tokens.push(`<span class="num">${line.slice(i, end)}</span>`);
-      i = end;
-      continue;
-    }
-    // Everything else — escape HTML special chars
-    const ch = line[i];
-    if (ch === '&') tokens.push('&amp;');
-    else if (ch === '<') tokens.push('&lt;');
-    else if (ch === '>') tokens.push('&gt;');
-    else tokens.push(ch);
-    i++;
-  }
-
-  return tokens.join('');
-}
-
-function buildHlMap(issues) {
-  const map = {};
-  (issues || []).forEach(issue => {
-    const cls = issue.severity === 'high' ? 'hl-high'
-              : issue.severity === 'medium' ? 'hl-med' : 'hl-low';
-    const range = String(issue.line_range);
-    if (range.includes('-')) {
-      const [a, b] = range.split('-').map(Number);
-      for (let i = a; i <= b; i++) map[i] = cls;
-    } else {
-      map[parseInt(range)] = cls;
-    }
-  });
-  return map;
-}
-
-function CodeDisplay({ code, hlMap }) {
-  const lines = code.split('\n');
-  return (
-    <div className="editor-inner">
-      <div className="line-numbers">
-        {lines.map((_, i) => {
-          const ln = i + 1;
-          const cls = hlMap[ln];
-          const dotCls = cls === 'hl-high' ? 'h' : cls === 'hl-med' ? 'm' : cls === 'hl-low' ? 'l' : '';
-          const numCls = cls === 'hl-high' ? 'hl-h' : cls === 'hl-med' ? 'hl-m' : cls === 'hl-low' ? 'hl-l' : '';
-          return (
-            <div key={i} className={`line-num ${numCls}`}>
-              {dotCls && <span className={`gutter-dot ${dotCls}`} />}
-              {ln}
-            </div>
-          );
-        })}
-      </div>
-      <div className="code-area">
-        {lines.map((line, i) => {
-          const ln = i + 1;
-          const hlCls = hlMap[ln];
-          const lineCls = hlCls === 'hl-high' ? 'hl-high'
-                        : hlCls === 'hl-med'  ? 'hl-med'
-                        : hlCls === 'hl-low'  ? 'hl-low' : '';
-          return (
-            <span
-              key={i}
-              className={`code-line${lineCls ? ` ${lineCls}` : ''}`}
-              dangerouslySetInnerHTML={{ __html: syntaxHL(line) || ' ' }}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function LiveEditor({ code, onChange }) {
-  const lines = code.split('\n');
-  const minLines = Math.max(lines.length, 20);
-
-  function handleKeyDown(e) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const ta = e.target;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      const next = code.substring(0, start) + '  ' + code.substring(end);
-      onChange(next);
-      // restore cursor after React re-render
-      requestAnimationFrame(() => {
-        ta.selectionStart = ta.selectionEnd = start + 2;
-      });
-    }
-  }
-
-  return (
-    <div className="editor-inner live-editor-inner">
-      {/* Line numbers */}
-      <div className="line-numbers live-line-numbers">
-        {Array.from({ length: minLines }, (_, i) => (
-          <div key={i} className="line-num">{i + 1}</div>
-        ))}
-      </div>
-
-      {/* Highlight layer (visual only) */}
-      <div className="live-hl-layer" aria-hidden="true">
-        {lines.map((line, i) => (
-          <span
-            key={i}
-            className="code-line"
-            dangerouslySetInnerHTML={{ __html: syntaxHL(line) || ' ' }}
-          />
-        ))}
-        {/* padding lines so textarea and overlay same height */}
-        {lines.length < minLines && Array.from({ length: minLines - lines.length }, (_, i) => (
-          <span key={`pad-${i}`} className="code-line">{' '}</span>
-        ))}
-      </div>
-
-      {/* Transparent textarea on top for input */}
-      <textarea
-        className="live-textarea-overlay"
-        value={code}
-        onChange={e => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        spellCheck={false}
-        autoCorrect="off"
-        autoCapitalize="off"
-      />
-    </div>
-  );
-}
-
-function IssueCard({ issue }) {
-  const patternId = issue.pattern_id || issue.pattern || 'unknown';
-  const isRewrite = typeof issue.fix === 'string' && issue.fix.includes('```');
-  const fixLabel = isRewrite ? 'Suggested Rewrite' : 'Fix';
-
-  // Extract code from markdown code block if present
-  let fixContent;
-  if (isRewrite) {
-    const match = issue.fix.match(/```(?:javascript|js)?\n?([\s\S]*?)```/);
-    const code = match ? match[1].trim() : issue.fix.replace(/```(?:javascript|js)?/g, '').trim();
-    fixContent = <pre className="issue-fix-code"><code>{code}</code></pre>;
-  } else {
-    fixContent = <div className="issue-fix">{issue.fix}</div>;
-  }
-
-  return (
-    <div className={`issue-card ${issue.severity}`}>
-      <div className="issue-top">
-        <span className={`sev-pill ${issue.severity}`}>{issue.severity}</span>
-        <span className="issue-pattern-id">{patternId}</span>
-        <span className="issue-line">line {issue.line_range}</span>
-      </div>
-      <div className="issue-desc">{issue.description}</div>
-      <div className="issue-fix-label">{fixLabel}</div>
-      {fixContent}
-    </div>
-  );
-}
 
 const STAGE_META = {
   race_detector: { icon: '⚡', label: 'Race Detector' },
@@ -213,102 +15,6 @@ const STAGE_META = {
   prompt:        { icon: '📝', label: 'Prompt Builder' },
   llm:           { icon: '🤖', label: 'LLM Inference' },
 };
-
-const RACE_DESC = {
-  closure_loop_var:    'closure captures loop var by reference',
-  double_callback:     'callback called twice on error path',
-  sequential_awaits:   'independent awaits run sequentially',
-  unhandled_rejection: 'async function missing try/catch',
-  unbounded_promise_all: 'Promise.all fires all items at once',
-  missing_error_handler: 'stream missing error handler',
-};
-
-function ElapsedTimer({ active }) {
-  const [secs, setSecs] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    setSecs(0);
-    const id = setInterval(() => setSecs(s => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [active]);
-  if (!active) return null;
-  return <span className="elapsed-timer">{secs}s</span>;
-}
-
-function StepDetail({ s }) {
-  if (s.stage === 'race_detector' && s.status === 'done') {
-    if (!s.found || s.found.length === 0)
-      return <div className="step-detail step-detail-ok">No patterns matched</div>;
-    return (
-      <div className="pipeline-step-badges">
-        {s.found.map(p => (
-          <span key={p} className="race-badge" title={RACE_DESC[p] || p}>
-            {p.replace(/_/g, ' ')}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  if (s.stage === 'ast' && s.keywords) {
-    const chips = s.keywords.trim().split(/\s+/).slice(0, 8);
-    return (
-      <div className="pipeline-step-badges">
-        {chips.map(k => <span key={k} className="kw-chip">{k}</span>)}
-      </div>
-    );
-  }
-  if (s.stage === 'bm25' && s.docs && s.docs.length > 0) {
-    return (
-      <ul className="step-doc-list">
-        {s.docs.map((d, i) => {
-          const ctxMatch = d.match(/\[([^\]]+)\]\s*$/);
-          const ctx   = ctxMatch ? ctxMatch[1] : null;
-          const title = d.replace(/\s*\[.*?\]\s*$/, '').trim();
-          return (
-            <li key={i} title={d}>
-              {title}{ctx && <span className="step-doc-ctx">[{ctx}]</span>}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  }
-  if (s.stage === 'prompt' && s.chars) {
-    const tokens = Math.round(s.chars / 4);
-    return <div className="step-detail">~{tokens} tokens · {s.chars} chars</div>;
-  }
-  return null;
-}
-
-function PipelineProgress({ steps }) {
-  if (!steps || steps.length === 0) return null;
-  const llmStep = steps.find(s => s.stage === 'llm');
-  const llmRunning = llmStep?.status === 'running';
-  return (
-    <div className="pipeline-progress">
-      {steps.map((s, i) => {
-        const meta = STAGE_META[s.stage] || { icon: '●', label: s.stage };
-        const isRunning = s.status === 'running';
-        return (
-          <div key={i} className={`pipeline-step ${s.status}`}>
-            <div className="pipeline-step-icon">
-              {isRunning ? <span className="step-spinner" /> : meta.icon}
-            </div>
-            <div className="pipeline-step-body">
-              <div className="pipeline-step-name">
-                {meta.label}
-                {s.stage === 'llm' && <ElapsedTimer active={llmRunning} />}
-              </div>
-              <div className="pipeline-step-label">{s.label}</div>
-              <StepDetail s={s} />
-            </div>
-            <div className={`pipeline-step-dot ${s.status}`} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function App() {
   const [liveCode, setLiveCode] = useState('// Paste your JavaScript code here\n// then click Analyze\n');
@@ -323,6 +29,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [cached, setCached] = useState(false);
   const [pipelineSteps, setPipelineSteps] = useState([]);
+  const [promptInlineOpen, setPromptInlineOpen] = useState(false);
   const [ai2Status, setAi2Status] = useState({ state: 'checking', label: 'checking…' });
   const [analyzeTime, setAnalyzeTime] = useState(null); // ms
   const analyzeStart = useRef(null);
@@ -347,7 +54,7 @@ export default function App() {
     function onMove(e) {
       if (!dragging.current) return;
       const delta = startX.current - e.clientX; // drag left = wider
-      const next = Math.min(Math.max(startW.current + delta, 280), 720);
+      const next = Math.min(Math.max(startW.current + delta, 280), 1400);
       setIssuesPaneWidth(next);
     }
     function onUp() {
@@ -392,6 +99,7 @@ export default function App() {
     setError('');
     setCached(false);
     setPipelineSteps([]);
+    setPromptInlineOpen(false);
     setAnalyzeTime(null);
   }
 
@@ -461,10 +169,15 @@ export default function App() {
               const existing = prev.findIndex(s => s.stage === evtData.stage);
               if (existing >= 0) {
                 const next = [...prev];
-                next[existing] = evtData;
+                const oldStep = next[existing];
+                next[existing] = {
+                  ...oldStep,
+                  ...evtData,
+                  _endTime: evtData.status === 'done' && oldStep.status === 'running' ? Date.now() : oldStep._endTime
+                };
                 return next;
               }
-              return [...prev, evtData];
+              return [...prev, { ...evtData, _startTime: Date.now() }];
             });
           } else if (evtType === 'result') {
             const issueList = evtData.issues || [];
@@ -542,14 +255,7 @@ export default function App() {
           </div>
           <div className="editor-scroll" style={{ position: 'relative' }}>
             <LiveEditor code={liveCode} onChange={setLiveCode} hlMap={hlMap} />
-            {loading && (
-              <div className="loading-overlay visible">
-                {pipelineSteps.length > 0
-                  ? <PipelineProgress steps={pipelineSteps} />
-                  : <><div className="spinner" /><div className="loading-text">{loadingText}</div></>
-                }
-              </div>
-            )}
+
           </div>
         </div>
 
@@ -565,7 +271,7 @@ export default function App() {
           </div>
           {error && <div className="error-banner visible">{error}</div>}
           <div className="issues-scroll">
-            {issues === null ? (
+            {issues === null && pipelineSteps.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">⏳</div>
                 <div className="empty-text">Click <strong>Analyze</strong> to detect<br />concurrency bugs.</div>
@@ -573,7 +279,7 @@ export default function App() {
             ) : (
               <>
                 {/* ── Code Stats ── */}
-                {(() => {
+                {issues !== null && (() => {
                   const lines = currentCode.trim().split('\n');
                   const chars = currentCode.length;
                   const high  = (issues||[]).filter(x=>x.severity==='high').length;
@@ -599,50 +305,12 @@ export default function App() {
                   );
                 })()}
 
-                {/* ── Pipeline Summary ── */}
+                 {/* ── Pipeline Summary ── */}
                 {pipelineSteps.length > 0 && (
-                  <div className="report-section">
-                    <div className="report-section-title">Pipeline Summary</div>
-                    <div className="report-pipeline-summary">
-                      {pipelineSteps.map((s, i) => {
-                        const meta = STAGE_META[s.stage] || { icon: '●', label: s.stage };
-                        let detail = null;
-                        let subDetail = null;
-                        if (s.stage === 'race_detector') {
-                          detail = s.found?.length > 0
-                            ? `${s.found.length} pattern(s) matched`
-                            : 'no patterns matched';
-                          if (s.found?.length > 0)
-                            subDetail = s.found.map(p => p.replace(/_/g,' ')).join(' · ');
-                        } else if (s.stage === 'ast' && s.keywords) {
-                          const kws = s.keywords.trim().split(/\s+/);
-                          detail = `${kws.length} keyword(s) extracted`;
-                          subDetail = kws.slice(0,6).join(', ') + (kws.length > 6 ? '…' : '');
-                        } else if (s.stage === 'bm25' && s.docs?.length > 0) {
-                          detail = `${s.docs.length} doc(s) retrieved`;
-                          subDetail = [...new Set(s.docs.map(d => d.replace(/\s*\[.*?\]\s*$/,'').trim()))].join(', ');
-                        } else if (s.stage === 'prompt' && s.chars) {
-                          detail = `~${Math.round(s.chars/4)} tokens · ${s.chars} chars`;
-                        } else if (s.stage === 'llm' && s.status === 'done') {
-                          detail = s.label;
-                        }
-                        return (
-                          <div key={i} className="report-pipeline-row-block">
-                            <div className="report-pipeline-row">
-                              <span className="report-pipeline-icon">{meta.icon}</span>
-                              <span className="report-pipeline-name">{meta.label}</span>
-                              {detail && <span className="report-pipeline-detail">{detail}</span>}
-                            </div>
-                            {subDetail && <div className="report-pipeline-sub">{subDetail}</div>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <PipelineSummary pipelineSteps={pipelineSteps} promptInlineOpen={promptInlineOpen} setPromptInlineOpen={setPromptInlineOpen} />
                 )}
-
                 {/* ── Issues ── */}
-                {issues.length === 0 ? (
+                {issues !== null && (issues.length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon">✓</div>
                     <div className="empty-text">No concurrency issues detected.</div>
@@ -654,10 +322,10 @@ export default function App() {
                     </div>
                     {issues.map((issue, i) => <IssueCard key={i} issue={issue} />)}
                   </div>
-                )}
+                ))}
 
                 {/* ── AI Explanation ── */}
-                {explanation && (
+                {issues !== null && explanation && (
                   <div className="report-section">
                     <div className="report-section-title">AI Explanation</div>
                     <div className="explain-text" dangerouslySetInnerHTML={{ __html: explanation }} />

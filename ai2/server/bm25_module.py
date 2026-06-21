@@ -222,14 +222,30 @@ class BM25Retriever:
         # get_scores trả về array điểm BM25 cho từng tài liệu trong corpus
         scores = self._index.get_scores(query_tokens)
 
-        # Lấy top_k chỉ số tài liệu có điểm cao nhất
-        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:top_k]
+        # Lấy nhiều hơn top_k một chút để phòng trường hợp bị trùng lặp variation
+        search_k = min(len(scores), top_k * 5)
+        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:search_k]
 
-        # Chỉ trả về tài liệu có điểm > 0 (thực sự liên quan)
+        # Chỉ trả về tài liệu có điểm > 0 (thực sự liên quan) và lọc trùng lặp variation
         results = []
+        seen_base_titles = set()
+        
         for idx in top_indices:
             if scores[idx] > 0:
-                results.append(self._docs[idx])
+                doc = self._docs[idx]
+                title = doc.get("title", "")
+                
+                # Base title: Xóa đoạn " [Domain Context]" ở cuối để nhận diện tài liệu gốc
+                base_title = re.sub(r'\s*\[.*?\]\s*$', '', title).strip()
+                
+                if base_title not in seen_base_titles:
+                    seen_base_titles.add(base_title)
+                    doc_copy = dict(doc)
+                    doc_copy["bm25_score"] = round(float(scores[idx]), 3)
+                    results.append(doc_copy)
+                    
+                    if len(results) >= top_k:
+                        break
 
         return results
 
