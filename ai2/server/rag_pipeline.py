@@ -13,6 +13,9 @@ from typing import List, TYPE_CHECKING
 from bm25_module import tokenize
 from schemas import Issue, DocUsed
 import llm_client
+from race_detector import detectRaceConditions
+from report_formatter import format_report
+from output_parser import cleanOutput
 
 if TYPE_CHECKING:
     from bm25_module import BM25Retriever
@@ -62,13 +65,7 @@ def _extract_keywords(code: str) -> str:
 def _build_prompt(code: str, docs: list) -> str:
     """
     Ghép code + context docs thành prompt gửi LLM.
-
-    Format:
-        [Context docs]
-        ---
-        [Code cần phân tích]
-        ---
-        [Instruction]
+    Dùng chuẩn format của eval_rag_merged.py để tránh lỗi hallucination.
     """
     context_parts = []
     for i, doc in enumerate(docs, 1):
@@ -79,17 +76,15 @@ def _build_prompt(code: str, docs: list) -> str:
 
     context = "\n\n".join(context_parts)
 
-    return (
-        f"Dưới đây là các tài liệu tham khảo về lập trình concurrent JavaScript:\n\n"
-        f"{context}\n\n"
-        f"---\n\n"
-        f"Code cần phân tích:\n```javascript\n{code}\n```\n\n"
-        f"---\n\n"
-        f"Dựa vào tài liệu tham khảo, hãy phân tích code trên và liệt kê "
-        f"các vấn đề race condition hoặc lỗi concurrent programming nếu có. "
-        f"Với mỗi vấn đề, cho biết: dòng code liên quan, mức độ nghiêm trọng "
-        f"(high/medium/low), mô tả vấn đề, và gợi ý sửa."
-    )
+    if context:
+        return (
+            f"Dưới đây là các tài liệu tham khảo về lập trình concurrent JavaScript:\n\n"
+            f"{context}\n\n"
+            f"---\n\n"
+            f"Convert to concurrent JavaScript:\n\n{code}\n"
+        )
+    else:
+        return f"Convert to concurrent JavaScript:\n\n{code}\n"
 
 
 # ---------------------------------------------------------------------------
@@ -101,10 +96,32 @@ def run(
     language: str,
     retriever: "BM25Retriever",
 ) -> tuple[List[Issue], List[DocUsed]]:
+    # 1. RAG
     query = _extract_keywords(code)
     raw_docs = retriever.search(query, top_k=3) if query else []
-    prompt = _build_prompt(code, raw_docs)   # noqa: F841
-    issues = llm_client.analyze_code(code, raw_docs)
+    prompt = _build_prompt(code, raw_docs)
+    
+    # 2. Race Detector (cho descriptions & severity)
+    raw_detections = detectRaceConditions(code, language)
+    issues = format_report(raw_detections)
+    
+    # 3. LLM Fix
+    llm_output = llm_client.get_llm_fix(code, prompt)
+    parsed = cleanOutput(llm_output)
+    fixed_code = f"```javascript\n{parsed['code']}\n```"
+    
+    # 4. Merge Fix vào Issues
+    if not issues:
+        issues = [Issue(
+            line_range="all",
+            severity="medium",
+            description=parsed.get("explanation", "Phát hiện mã nguồn chưa tối ưu. Hệ thống AI đã cung cấp mã song song hóa an toàn thay thế."),
+            fix=fixed_code
+        )]
+    else:
+        for iss in issues:
+            iss.fix = fixed_code
+
     docs_used = [
         DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""))
         for doc in raw_docs
@@ -127,10 +144,11 @@ def run_streaming(
     """
     # ── Bước 1: Race pattern detector (regex nhanh trước LLM) ──
     emit("step", {"stage": "race_detector", "status": "running", "label": "Scanning race condition patterns…"})
-    race_patterns = _quick_race_scan(code)
+    raw_detections = detectRaceConditions(code, language)
+    issues = format_report(raw_detections)
     emit("step", {"stage": "race_detector", "status": "done",
-                  "label": f"Race detector: {len(race_patterns)} pattern(s) found",
-                  "found": race_patterns})
+                  "label": f"Race detector: {len(issues)} pattern(s) found",
+                  "found": [i.pattern_id for i in issues if hasattr(i, "pattern_id")]})
 
     # ── Bước 2: AST keyword extraction ──
     emit("step", {"stage": "ast", "status": "running", "label": "Extracting AST keywords…"})
@@ -160,7 +178,21 @@ def run_streaming(
 
     # ── Bước 5: LLM inference ──
     emit("step", {"stage": "llm", "status": "running", "label": "Sending to ThreadLearn model (HF Space)…"})
-    issues = llm_client.analyze_code(code, raw_docs)
+    llm_output = llm_client.get_llm_fix(code, prompt)
+    parsed = cleanOutput(llm_output)
+    fixed_code = f"```javascript\n{parsed['code']}\n```"
+    
+    if not issues:
+        issues = [Issue(
+            line_range="all",
+            severity="medium",
+            description=parsed.get("explanation", "Phát hiện mã nguồn chưa tối ưu. Hệ thống AI đã cung cấp mã song song hóa an toàn thay thế."),
+            fix=fixed_code
+        )]
+    else:
+        for iss in issues:
+            iss.fix = fixed_code
+            
     emit("step", {"stage": "llm", "status": "done",
                   "label": f"Model returned {len(issues)} issue(s)"})
 
