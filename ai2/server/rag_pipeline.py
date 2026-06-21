@@ -101,54 +101,88 @@ def run(
     language: str,
     retriever: "BM25Retriever",
 ) -> tuple[List[Issue], List[DocUsed]]:
-    """
-    Chạy toàn bộ RAG pipeline và trả về issues + docs đã dùng.
-
-    Args:
-        code:      source code người dùng gửi lên
-        language:  "javascript" | "typescript"
-        retriever: BM25Retriever đã build (từ app.state.retriever)
-
-    Returns:
-        (issues, docs_used)
-        issues:    List[Issue] — danh sách vấn đề phát hiện
-        docs_used: List[DocUsed] — top-3 docs BM25 đã dùng
-
-    Flow chi tiết:
-        Step 1: Trích keyword từ code
-                Hiện tại: tokenize() đơn giản
-                Sau AI1-03: ast_preprocessor.extract_keywords()
-
-        Step 2: BM25 search top-3 docs từ knowledge_base.json
-
-        Step 3: Build prompt = context docs + code + instruction
-
-        Step 4: Gọi llm_client.analyze_code()
-                Hiện tại: mock response
-                Sau AI2-08: OpenAI/Ollama thật
-
-        Step 5: Trả về (issues, docs_used)
-    """
-    # Step 1 — keyword extraction
     query = _extract_keywords(code)
-
-    # Step 2 — BM25 search
     raw_docs = retriever.search(query, top_k=3) if query else []
-
-    # Step 3 — build prompt (prompt được truyền vào LLM, không trả về client)
-    prompt = _build_prompt(code, raw_docs)   # noqa: F841 — dùng khi LLM thật
-
-    # Step 4 — LLM call
+    prompt = _build_prompt(code, raw_docs)   # noqa: F841
     issues = llm_client.analyze_code(code, raw_docs)
-
-    # Step 5 — format docs_used để trả về FE
     docs_used = [
-        DocUsed(
-            id=doc.get("id", ""),
-            title=doc.get("title", ""),
-            category=doc.get("category", ""),
-        )
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""))
         for doc in raw_docs
     ]
-
     return issues, docs_used
+
+
+from typing import Callable, Generator  # noqa: E402
+
+def run_streaming(
+    code: str,
+    language: str,
+    retriever: "BM25Retriever",
+    emit: Callable[[str, dict], None],
+) -> tuple[List[Issue], List[DocUsed]]:
+    """
+    Giống run() nhưng gọi emit(stage, data) sau mỗi bước để stream tiến trình.
+    emit("step", {"stage": ..., "status": "running"|"done", ...})
+    emit("result", {"issues": [...], "docs_used": [...]})
+    """
+    # ── Bước 1: Race pattern detector (regex nhanh trước LLM) ──
+    emit("step", {"stage": "race_detector", "status": "running", "label": "Scanning race condition patterns…"})
+    race_patterns = _quick_race_scan(code)
+    emit("step", {"stage": "race_detector", "status": "done",
+                  "label": f"Race detector: {len(race_patterns)} pattern(s) found",
+                  "found": race_patterns})
+
+    # ── Bước 2: AST keyword extraction ──
+    emit("step", {"stage": "ast", "status": "running", "label": "Extracting AST keywords…"})
+    query = _extract_keywords(code)
+    emit("step", {"stage": "ast", "status": "done",
+                  "label": f"AST keywords: {query[:60]}{'…' if len(query) > 60 else ''}",
+                  "keywords": query})
+
+    # ── Bước 3: BM25 search ──
+    emit("step", {"stage": "bm25", "status": "running", "label": "Searching knowledge base (BM25)…"})
+    raw_docs = retriever.search(query, top_k=3) if query else []
+    doc_titles = [d.get("title", "") for d in raw_docs]
+    emit("step", {"stage": "bm25", "status": "done",
+                  "label": f"BM25: {len(raw_docs)} doc(s) retrieved",
+                  "docs": doc_titles})
+
+    # ── Bước 4: Build prompt ──
+    emit("step", {"stage": "prompt", "status": "running", "label": "Building RAG prompt…"})
+    prompt = _build_prompt(code, raw_docs)
+    print("\n" + "="*60)
+    print(f"[PROMPT] {len(prompt)} chars")
+    print(prompt)
+    print("="*60 + "\n")
+    emit("step", {"stage": "prompt", "status": "done",
+                  "label": f"Prompt ready — {len(prompt)} chars",
+                  "chars": len(prompt)})
+
+    # ── Bước 5: LLM inference ──
+    emit("step", {"stage": "llm", "status": "running", "label": "Sending to ThreadLearn model (HF Space)…"})
+    issues = llm_client.analyze_code(code, raw_docs)
+    emit("step", {"stage": "llm", "status": "done",
+                  "label": f"Model returned {len(issues)} issue(s)"})
+
+    docs_used = [
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""))
+        for doc in raw_docs
+    ]
+    return issues, docs_used
+
+
+_RACE_PATTERNS = [
+    ("closure_loop_var",   r"\bfor\s*\(\s*var\b"),
+    ("double_callback",    r"if\s*\(\s*err\s*\)\s*callback\(err\)\s*;(?!\s*return)"),
+    ("sequential_awaits",  r"await\s+\w+[^;]*;\s*\n\s*(?:const\s+\w+\s*=\s*)?await\s+\w+"),
+    ("unhandled_rejection",r"async\s+function[^{]*\{(?![\s\S]*try\s*\{)"),
+]
+
+import re as _re  # noqa: E402
+
+def _quick_race_scan(code: str) -> list:
+    found = []
+    for name, pattern in _RACE_PATTERNS:
+        if _re.search(pattern, code, _re.MULTILINE):
+            found.append(name)
+    return found

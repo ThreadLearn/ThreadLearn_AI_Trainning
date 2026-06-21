@@ -95,7 +95,7 @@ import json
 import os
 import urllib.request
 import urllib.error
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, HF_TOKEN
 from output_parser import parse_model_output
 
 # ---------------------------------------------------------------------------
@@ -104,49 +104,114 @@ from output_parser import parse_model_output
 
 def _ollama_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue]:
     """
-    [AI2-08] Gọi Hugging Face Inference API cho mô hình ThreadLearn vừa train.
-    (Giữ nguyên tên hàm _ollama_analyze để tương thích với cấu hình cũ)
+    [AI2-08] Gọi HuggingFace Space endpoint cho mô hình ThreadLearn vừa train.
+    Space: https://anha12-threadlearn-ai2-api.hf.space
     """
-    API_URL = "https://api-inference.huggingface.co/models/anha12/threadlearn-qwen2.5-coder-1.5b"
-    HF_TOKEN = os.environ.get("HF_TOKEN", "")
-    if not HF_TOKEN:
-        return [Issue(line_range="all", severity="medium",
-                      description="Lỗi: Chưa cấu hình HF_TOKEN trong file .env",
-                      fix="Thêm HF_TOKEN=hf_... vào ai2/server/.env")]
-    HEADERS = {
-        "Authorization": f"Bearer {HF_TOKEN}",
-        "Content-Type": "application/json"
+    API_URL = "https://anha12-threadlearn-ai2-api.hf.space/analyze"
+
+    payload = {
+        "code": code,
+        "language": "javascript",
     }
 
-    prompt = f"Convert to concurrent JavaScript:\n\n{code}\n\n"
+    try:
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(
+            API_URL,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=180) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            issues = result.get("issues", [])
+            return [
+                Issue(
+                    line_range=iss.get("line_range", "all"),
+                    severity=iss.get("severity", "medium"),
+                    description=iss.get("description", ""),
+                    fix=iss.get("fix", ""),
+                    pattern_id=iss.get("pattern_id", "unknown"),
+                )
+                for iss in issues
+            ]
+    except Exception as e:
+        print(f"Lỗi gọi HF Space: {e}")
+        return [Issue(
+            line_range="all",
+            severity="medium",
+            description="Lỗi kết nối tới HF Space",
+            fix="Kiểm tra Space đang chạy tại https://huggingface.co/spaces/anha12/threadlearn-ai2-api",
+        )]
+
+
+# ---------------------------------------------------------------------------
+# HF Inference API client — gọi fine-tuned model qua HF serverless GPU
+# ---------------------------------------------------------------------------
+
+def _hf_inference_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue]:
+    """
+    Gọi HF Inference API (serverless) thay vì HF Space.
+    - Chạy trên GPU shared của HF → ~2-4s thay vì 5-8s
+    - Không cần manage Space, không cold start
+    - Cần HF_TOKEN (Read access) trong .env
+    """
+    MODEL_ID = "anha12/threadlearn-qwen2.5-coder-1.5b-merged"
+    API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
+
+    if not HF_TOKEN:
+        print("[hf_inference] HF_TOKEN not set — fallback to HF Space")
+        return _ollama_analyze(code, context_docs)
+
+    prompt = f"Convert to concurrent JavaScript:\n\n{code}"
+
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 256,
+            "max_new_tokens": 512,
             "temperature": 0.2,
-            "repetition_penalty": 1.1
-        }
+            "do_sample": False,
+            "return_full_text": False,
+        },
     }
-    
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {HF_TOKEN}",
+    }
+
     try:
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(API_URL, data=data, headers=HEADERS, method='POST')
-        with urllib.request.urlopen(req, timeout=30) as response:
-            result = json.loads(response.read().decode('utf-8'))
-            if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0]:
-                raw_output = result[0]["generated_text"].replace(prompt, "")
-                return parse_model_output(raw_output)
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(API_URL, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=60) as response:
+            result = json.loads(response.read().decode("utf-8"))
+
+            # HF Inference API trả list: [{"generated_text": "..."}]
+            if isinstance(result, list) and result:
+                raw_output = result[0].get("generated_text", "")
+            elif isinstance(result, dict):
+                # Model đang load → {"error": "Model ... is currently loading"}
+                if "error" in result:
+                    wait = result.get("estimated_time", 20)
+                    print(f"[hf_inference] Model loading, est. {wait}s — fallback to HF Space")
+                    return _ollama_analyze(code, context_docs)
+                raw_output = result.get("generated_text", "")
             else:
-                raise Exception(f"Lỗi format trả về: {result}")
+                raw_output = str(result)
+
+            if not raw_output.strip():
+                return _ollama_analyze(code, context_docs)
+
+            return parse_model_output(raw_output)
+
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        print(f"[hf_inference] HTTP {e.code}: {body[:200]}")
+        # 503 = model loading, fallback gracefully
+        return _ollama_analyze(code, context_docs)
     except Exception as e:
-        print(f"Lỗi gọi HF API: {e}")
-        # Trả về fallback issue nếu lỗi API
-        return [Issue(
-            line_range="all", 
-            severity="medium", 
-            description="Lỗi API khi gọi Mô hình AI", 
-            fix="Vui lòng thử lại sau."
-        )]
+        print(f"[hf_inference] Error: {e}")
+        return _ollama_analyze(code, context_docs)
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +238,10 @@ def analyze_code(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue]:
 
     if provider == "openai":
         return _openai_analyze(code, context_docs)
+    elif provider == "hf_inference":
+        return _hf_inference_analyze(code, context_docs)
     elif provider == "ollama":
         return _ollama_analyze(code, context_docs)
     else:
-        # Mặc định: mock (bao gồm LLM_PROVIDER=mock hoặc chưa set)
+        # Mặc định: mock
         return _mock_analyze(code, context_docs)

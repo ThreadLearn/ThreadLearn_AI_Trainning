@@ -572,9 +572,32 @@ async function sendEmails(users) {
 Server expose 3 endpoints chính:
 
 ```
-POST /analyze           ← Phân tích code (yêu cầu JWT)
-GET  /history/{user_id} ← Lịch sử phân tích
-GET  /health            ← Health check
+GET  /health                           ← Health check (public, không cần JWT)
+POST /api/v1/ai/analyze                ← Phân tích code (yêu cầu JWT)
+GET  /api/v1/ai/history/{user_id}      ← Lịch sử phân tích (yêu cầu JWT)
+```
+
+**Request / Response schema:**
+
+```
+POST /api/v1/ai/analyze
+Request body:
+  code        string  (bắt buộc) — source code cần phân tích
+  language    string  (mặc định "javascript") — "javascript" | "typescript"
+  user_id     string  (bắt buộc) — ID người dùng, dùng để lưu lịch sử
+
+Response:
+  user_id     string
+  language    string
+  issues[]    Issue   — danh sách lỗi phát hiện, rỗng nếu code sạch
+  docs_used[] DocUsed — top-3 tài liệu BM25 đã dùng làm context
+  cached      bool    — true nếu lấy từ Redis, false nếu gọi LLM mới
+
+Issue:
+  line_range  string  — ví dụ "12-18" hoặc "42"
+  severity    string  — "high" | "medium" | "low"
+  description string
+  fix         string
 ```
 
 **Concurrency Control — Semaphore:**
@@ -1023,98 +1046,162 @@ Tích hợp vào pull request workflow: khi reviewer mở PR, ThreadLearn tự �
 ### Yêu cầu môi trường
 
 ```
-Python 3.10+
-NVIDIA GPU với ít nhất 8GB VRAM (cho inference)
+Python 3.13+
 RAM: 16GB+
 Hệ điều hành: Windows 10/11 hoặc Linux
+GPU: Chỉ cần khi dùng LLM_PROVIDER=ollama với model local
 ```
 
-### Cài đặt dependencies
+### Bước 1: Cài dependencies cho AI2 server
 
 ```bash
-# AI2 server + eval
-pip install fastapi uvicorn rank-bm25 pydantic motor redis
-
-# Inference dependencies
-pip install transformers torch accelerate peft bitsandbytes
-
-# Evaluation
-pip install datasets tqdm
+cd ThreadLearn-AI-Trainning/ai2/server
+pip install -r requirements.txt
 ```
 
-### Bước 1: Tải model đã merge về
+### Bước 2: Tạo file `.env`
 
-```bash
-# Dùng huggingface-cli (khuyến nghị — tránh lỗi tên file Windows)
-pip install huggingface_hub
-huggingface-cli download anha12/threadlearn-qwen2.5-coder-1.5b-merged \
-  --local-dir models/merged
+Tạo file `ai2/server/.env`:
 
-# Kiểm tra: phải có file models/merged/model.safetensors (không có dấu cách)
+```env
+# Chọn 1: mock | openai | ollama
+LLM_PROVIDER=mock
+
+OPENAI_API_KEY=
+
+# Phải khớp với JWT_SECRET trong Node.js backend
+JWT_SECRET=your_super_secret_access_key_change_me
+
+# Tùy chọn — server chạy bình thường nếu thiếu
+REDIS_URL=redis://localhost:6379
+MONGODB_URL=mongodb://localhost:27017
+OLLAMA_URL=http://localhost:11434
+HF_TOKEN=
 ```
 
-### Bước 2: Chạy evaluation
+> ⚠️ **Không commit file `.env` lên git.**
 
+### Bước 3: Chạy AI2 server
+
+**Linux/Mac:**
 ```bash
-cd ai2
-python eval_rag_merged.py
-# Kết quả lưu tại: ai2/eval_rag_results.json
-# Kỳ vọng: RAW ~14/20 (70%), RAG ~15/20 (75%)
+cd ThreadLearn-AI-Trainning/ai2/server
+uvicorn main:app --reload --port 8001
 ```
 
-### Bước 3: Chạy API server
-
-```bash
-cd ai2/server
-
-# Với mock LLM (chỉ để test API, không cần GPU)
-LLM_PROVIDER=mock uvicorn main:app --port 8001 --reload
-
-# Với model thật (cần 8GB VRAM)
-LLM_PROVIDER=local MODEL_PATH=../../models/merged uvicorn main:app --port 8001
+**Windows (PowerShell):**
+```powershell
+cd ThreadLearn-AI-Trainning\ai2\server
+python -m uvicorn main:app --reload --port 8001
 ```
 
 Kiểm tra server:
 ```bash
 curl http://localhost:8001/health
-# → {"status": "ok", "version": "1.0.0"}
-
-curl -X POST http://localhost:8001/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"code": "async function getUsers() { const user1 = await db.get(1); const user2 = await db.get(2); return [user1, user2]; }"}'
+# → {"status":"ok","retriever_docs":2050}
 ```
 
-### Bước 4: Chạy unit tests
+Swagger UI: http://localhost:8001/docs
+
+### Bước 4: Gọi API analyze (cần JWT)
+
+Tạo JWT token (chạy từ `ai2/server/`):
 
 ```bash
-cd ai2
-pytest tests/ -v
-
-# Load test (cần locust)
-pip install locust
-cd tests
-locust -f locustfile.py --headless -u 10 -r 2 --run-time 60s --host http://localhost:8001
+python -c "
+from jose import jwt; import time
+from config import JWT_SECRET
+token = jwt.encode({'sub':'test-user','exp':int(time.time())+3600}, JWT_SECRET, algorithm='HS256')
+print(token)
+"
 ```
 
-### Bước 5 (tùy chọn): Fine-tune lại từ đầu
+Gọi analyze:
+```bash
+curl -X POST http://localhost:8001/api/v1/ai/analyze \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "for(var i=0;i<3;i++){setTimeout(function(){console.log(i)},1000);}",
+    "language": "javascript",
+    "user_id": "test-user"
+  }'
+```
+
+### Bước 5: Chạy unit tests
+
+```bash
+cd ThreadLearn-AI-Trainning/ai2
+pytest tests/ -v
+```
+
+### Bước 6: Chạy evaluation (20 test cases thực tế)
+
+Cần cài thêm inference dependencies:
+```bash
+pip install transformers torch accelerate peft bitsandbytes datasets tqdm
+```
+
+Tải model đã merge:
+```bash
+pip install huggingface_hub
+huggingface-cli download anha12/threadlearn-qwen2.5-coder-1.5b-merged \
+  --local-dir models/merged
+```
+
+> ⚠️ **Windows:** Kiểm tra tên file sau khi tải — nếu tên là `model (1).safetensors` thì đổi lại thành `model.safetensors`.
+
+Chạy evaluation:
+```bash
+cd ThreadLearn-AI-Trainning/ai2
+python eval_rag_merged.py
+# Kết quả lưu tại: ai2/eval_rag_results.json
+# Kỳ vọng: RAW ~14/20 (70%), với RAG ~15/20 (75%)
+```
+
+### Bước 7 (tùy chọn): Chạy với Redis và MongoDB
+
+Nếu muốn bật cache và history, khởi động Redis + MongoDB bằng Docker:
+
+```bash
+docker run -d -p 6379:6379 redis:alpine
+docker run -d -p 27017:27017 mongo:7
+```
+
+Server tự kết nối theo `REDIS_URL` và `MONGODB_URL` trong `.env`.
+
+### Bước 8 (tùy chọn): Chạy bằng Docker
+
+```bash
+cd ThreadLearn-AI-Trainning/ai2
+docker build -t threadlearn-ai2 .
+docker run -d \
+  -p 8001:8001 \
+  -e LLM_PROVIDER=mock \
+  -e JWT_SECRET=your_super_secret_access_key_change_me \
+  --name ai2 \
+  threadlearn-ai2
+```
+
+### Bước 9 (tùy chọn): Fine-tune lại từ đầu
 
 Chỉ cần khi muốn thêm dữ liệu training mới:
 
 ```bash
-# Bước 5.1: Thu thập dữ liệu
-cd ai1/modules
+# Thu thập dữ liệu
+cd ThreadLearn-AI-Trainning/ai1/modules
 python ai1_01_dataset_collector.py
 # Cần GITHUB_TOKEN trong .env
 
-# Bước 5.2: Format sang JSONL
+# Format sang JSONL
 python ai1_02_format_jsonl.py
 
-# Bước 5.3: Upload lên Kaggle, chạy notebook ai1_03_finetune.py
-# Lưu ý: chạy trên Kaggle vì cần 2×T4 GPU miễn phí
+# Bước 3: Upload lên Kaggle, chạy notebook ai1_03_finetune.py
+# Chạy trên Kaggle vì cần 2×T4 GPU miễn phí
 
-# Bước 5.4: Merge adapter
-cd ai1/training
-python ai1_04_merge_model.py --adapter-path ./final_adapter --output ./merged
+# Merge adapter sau khi train xong
+cd ThreadLearn-AI-Trainning/ai1/training
+python ai1_04_merge_model.py
 ```
 
 ---
