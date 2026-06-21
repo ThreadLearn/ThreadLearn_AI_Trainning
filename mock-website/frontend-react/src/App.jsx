@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MOCK_CASES } from './mockCases';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { LIVE_SAMPLES } from './mockCases';
 import './App.css';
 
 const BACKEND_URL = 'http://localhost:3001';
@@ -214,13 +214,80 @@ const STAGE_META = {
   llm:           { icon: '🤖', label: 'LLM Inference' },
 };
 
+const RACE_DESC = {
+  closure_loop_var:    'closure captures loop var by reference',
+  double_callback:     'callback called twice on error path',
+  sequential_awaits:   'independent awaits run sequentially',
+  unhandled_rejection: 'async function missing try/catch',
+  unbounded_promise_all: 'Promise.all fires all items at once',
+  missing_error_handler: 'stream missing error handler',
+};
+
+function ElapsedTimer({ active }) {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    setSecs(0);
+    const id = setInterval(() => setSecs(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  if (!active) return null;
+  return <span className="elapsed-timer">{secs}s</span>;
+}
+
+function StepDetail({ s }) {
+  if (s.stage === 'race_detector' && s.status === 'done') {
+    if (!s.found || s.found.length === 0)
+      return <div className="step-detail step-detail-ok">No patterns matched</div>;
+    return (
+      <div className="pipeline-step-badges">
+        {s.found.map(p => (
+          <span key={p} className="race-badge" title={RACE_DESC[p] || p}>
+            {p.replace(/_/g, ' ')}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (s.stage === 'ast' && s.keywords) {
+    const chips = s.keywords.trim().split(/\s+/).slice(0, 8);
+    return (
+      <div className="pipeline-step-badges">
+        {chips.map(k => <span key={k} className="kw-chip">{k}</span>)}
+      </div>
+    );
+  }
+  if (s.stage === 'bm25' && s.docs && s.docs.length > 0) {
+    return (
+      <ul className="step-doc-list">
+        {s.docs.map((d, i) => {
+          const ctxMatch = d.match(/\[([^\]]+)\]\s*$/);
+          const ctx   = ctxMatch ? ctxMatch[1] : null;
+          const title = d.replace(/\s*\[.*?\]\s*$/, '').trim();
+          return (
+            <li key={i} title={d}>
+              {title}{ctx && <span className="step-doc-ctx">[{ctx}]</span>}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+  if (s.stage === 'prompt' && s.chars) {
+    const tokens = Math.round(s.chars / 4);
+    return <div className="step-detail">~{tokens} tokens · {s.chars} chars</div>;
+  }
+  return null;
+}
+
 function PipelineProgress({ steps }) {
   if (!steps || steps.length === 0) return null;
+  const llmStep = steps.find(s => s.stage === 'llm');
+  const llmRunning = llmStep?.status === 'running';
   return (
     <div className="pipeline-progress">
       {steps.map((s, i) => {
         const meta = STAGE_META[s.stage] || { icon: '●', label: s.stage };
-        const isDone = s.status === 'done';
         const isRunning = s.status === 'running';
         return (
           <div key={i} className={`pipeline-step ${s.status}`}>
@@ -228,15 +295,12 @@ function PipelineProgress({ steps }) {
               {isRunning ? <span className="step-spinner" /> : meta.icon}
             </div>
             <div className="pipeline-step-body">
-              <div className="pipeline-step-name">{meta.label}</div>
+              <div className="pipeline-step-name">
+                {meta.label}
+                {s.stage === 'llm' && <ElapsedTimer active={llmRunning} />}
+              </div>
               <div className="pipeline-step-label">{s.label}</div>
-              {s.stage === 'race_detector' && s.found && s.found.length > 0 && (
-                <div className="pipeline-step-badges">
-                  {s.found.map((p) => (
-                    <span key={p} className="race-badge">{p.replace(/_/g, ' ')}</span>
-                  ))}
-                </div>
-              )}
+              <StepDetail s={s} />
             </div>
             <div className={`pipeline-step-dot ${s.status}`} />
           </div>
@@ -247,8 +311,6 @@ function PipelineProgress({ steps }) {
 }
 
 export default function App() {
-  const [mode, setMode] = useState('mock');
-  const [caseIdx, setCaseIdx] = useState(0);
   const [liveCode, setLiveCode] = useState('// Paste your JavaScript code here\n// then click Analyze\n');
   const [liveSampleIdx, setLiveSampleIdx] = useState(-1);
 
@@ -262,9 +324,45 @@ export default function App() {
   const [cached, setCached] = useState(false);
   const [pipelineSteps, setPipelineSteps] = useState([]);
   const [ai2Status, setAi2Status] = useState({ state: 'checking', label: 'checking…' });
+  const [analyzeTime, setAnalyzeTime] = useState(null); // ms
+  const analyzeStart = useRef(null);
 
-  const mockCases   = MOCK_CASES.filter(c => !c.liveOnly);
-  const liveSamples = MOCK_CASES.filter(c => c.liveOnly);
+  const liveSamples = LIVE_SAMPLES;
+
+  // ── Resizable split ──
+  const [issuesPaneWidth, setIssuesPaneWidth] = useState(440);
+  const dragging = useRef(false);
+  const startX   = useRef(0);
+  const startW   = useRef(440);
+
+  const onDragStart = useCallback((e) => {
+    dragging.current = true;
+    startX.current = e.clientX;
+    startW.current = issuesPaneWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [issuesPaneWidth]);
+
+  useEffect(() => {
+    function onMove(e) {
+      if (!dragging.current) return;
+      const delta = startX.current - e.clientX; // drag left = wider
+      const next = Math.min(Math.max(startW.current + delta, 280), 720);
+      setIssuesPaneWidth(next);
+    }
+    function onUp() {
+      if (!dragging.current) return;
+      dragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
 
   const checkHealth = useCallback(async () => {
     try {
@@ -294,16 +392,7 @@ export default function App() {
     setError('');
     setCached(false);
     setPipelineSteps([]);
-  }
-
-  function handleModeChange(m) {
-    setMode(m);
-    reset();
-  }
-
-  function handleCaseChange(idx) {
-    setCaseIdx(idx);
-    reset();
+    setAnalyzeTime(null);
   }
 
   function handleLiveSampleChange(idx) {
@@ -318,19 +407,6 @@ export default function App() {
     setIssues(null);
     setHlMap({});
 
-    if (mode === 'mock') {
-      setLoadingText('Analyzing concurrency patterns…');
-      await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
-      const resp = mockCases[caseIdx].response;
-      setIssues(resp.issues);
-      setHlMap(buildHlMap(resp.issues));
-      setDocsUsed(resp.docs_used);
-      setExplanation(resp.explanation);
-      setCached(false);
-      setLoading(false);
-      return;
-    }
-
     const code = liveCode.trim();
     if (!code) {
       setError('Code is empty. Paste some JavaScript to analyze.');
@@ -339,6 +415,7 @@ export default function App() {
     }
 
     setPipelineSteps([]);
+    analyzeStart.current = Date.now();
 
     try {
       setLoadingText('Connecting to AI2 server…');
@@ -395,6 +472,7 @@ export default function App() {
             setHlMap(buildHlMap(issueList));
             setDocsUsed(evtData.docs_used || []);
             setCached(!!evtData.cached);
+            setAnalyzeTime(Date.now() - (analyzeStart.current || Date.now()));
             const docs = evtData.docs_used || [];
             setExplanation(
               issueList.length > 0
@@ -415,7 +493,7 @@ export default function App() {
     setLoading(false);
   }
 
-  const currentCode = mode === 'mock' ? (mockCases[caseIdx]?.code || '') : liveCode;
+  const currentCode = liveCode;
 
   return (
     <div className="app">
@@ -428,29 +506,17 @@ export default function App() {
         <div className="sep" />
 
         <div className="mode-tabs">
-          <button className={`mode-tab${mode === 'mock' ? ' active' : ''}`} onClick={() => handleModeChange('mock')}>Mock</button>
-          <button className={`mode-tab${mode === 'live' ? ' active' : ''}`} onClick={() => handleModeChange('live')}>Live AI2</button>
+          <button className="mode-tab active">Live AI2</button>
         </div>
         <div className="sep" />
 
-        {mode === 'mock' && (
-          <>
-            <span className="case-label">Test case:</span>
-            <select className="case-select" value={caseIdx} onChange={e => handleCaseChange(Number(e.target.value))}>
-              {mockCases.map((c, i) => <option key={i} value={i}>{c.title}</option>)}
-            </select>
-          </>
-        )}
-
-        {mode === 'live' && (
-          <>
-            <span className="case-label">Sample code:</span>
-            <select className="case-select" value={liveSampleIdx} onChange={e => handleLiveSampleChange(Number(e.target.value))}>
-              <option value={-1}>— paste your own code —</option>
-              {liveSamples.map((c, i) => <option key={i} value={i}>{c.title}</option>)}
-            </select>
-          </>
-        )}
+        <>
+          <span className="case-label">Sample code:</span>
+          <select className="case-select" value={liveSampleIdx} onChange={e => handleLiveSampleChange(Number(e.target.value))}>
+            <option value={-1}>— paste your own code —</option>
+            {liveSamples.map((c, i) => <option key={i} value={i}>{c.title}</option>)}
+          </select>
+        </>
 
         <div className="topbar-right">
           <div className="ai2-indicator">
@@ -467,7 +533,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="main">
+      <div className="main" style={{ gridTemplateColumns: `1fr 5px ${issuesPaneWidth}px` }}>
         <div className="editor-pane">
           <div className="pane-header">
             <span className="pane-title">Editor</span>
@@ -475,13 +541,10 @@ export default function App() {
             {cached && <span className="cached-badge" style={{ marginLeft: 'auto' }}>⚡ cached</span>}
           </div>
           <div className="editor-scroll" style={{ position: 'relative' }}>
-            {mode === 'mock'
-              ? <CodeDisplay code={currentCode} hlMap={hlMap} />
-              : <LiveEditor code={liveCode} onChange={setLiveCode} hlMap={hlMap} />
-            }
+            <LiveEditor code={liveCode} onChange={setLiveCode} hlMap={hlMap} />
             {loading && (
               <div className="loading-overlay visible">
-                {mode === 'live' && pipelineSteps.length > 0
+                {pipelineSteps.length > 0
                   ? <PipelineProgress steps={pipelineSteps} />
                   : <><div className="spinner" /><div className="loading-text">{loadingText}</div></>
                 }
@@ -490,12 +553,15 @@ export default function App() {
           </div>
         </div>
 
+        <div className="resize-handle" onMouseDown={onDragStart} />
         <div className="issues-pane">
           <div className="pane-header">
-            <span className="pane-title">Issues</span>
+            <span className="pane-title">Analysis Report</span>
             <span className={`count-badge ${issues && issues.length > 0 ? 'has' : 'none'}`}>
               {issues ? issues.length : 0}
             </span>
+            <span className="rag-tag" style={{marginLeft:'auto'}}>RAG</span>
+            <span className="mode-tag live">LIVE</span>
           </div>
           {error && <div className="error-banner visible">{error}</div>}
           <div className="issues-scroll">
@@ -504,37 +570,123 @@ export default function App() {
                 <div className="empty-icon">⏳</div>
                 <div className="empty-text">Click <strong>Analyze</strong> to detect<br />concurrency bugs.</div>
               </div>
-            ) : issues.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">✓</div>
-                <div className="empty-text">No concurrency issues detected.</div>
-              </div>
             ) : (
-              issues.map((issue, i) => <IssueCard key={i} issue={issue} />)
+              <>
+                {/* ── Code Stats ── */}
+                {(() => {
+                  const lines = currentCode.trim().split('\n');
+                  const chars = currentCode.length;
+                  const high  = (issues||[]).filter(x=>x.severity==='high').length;
+                  const med   = (issues||[]).filter(x=>x.severity==='medium').length;
+                  const low   = (issues||[]).filter(x=>x.severity==='low').length;
+                  return (
+                    <div className="report-section">
+                      <div className="report-section-title">Code Stats</div>
+                      <div className="report-stats-row">
+                        <div className="report-stat"><span className="report-stat-val">{lines.length}</span><span className="report-stat-lbl">lines</span></div>
+                        <div className="report-stat"><span className="report-stat-val">{chars}</span><span className="report-stat-lbl">chars</span></div>
+                        <div className="report-stat"><span className="report-stat-val">{(issues||[]).length}</span><span className="report-stat-lbl">issues</span></div>
+                        {analyzeTime && <div className="report-stat"><span className="report-stat-val">{(analyzeTime/1000).toFixed(1)}s</span><span className="report-stat-lbl">total time</span></div>}
+                      </div>
+                      {(issues||[]).length > 0 && (
+                        <div className="report-sev-bar">
+                          {high > 0 && <span className="sev-chip high">{high} HIGH</span>}
+                          {med  > 0 && <span className="sev-chip medium">{med} MED</span>}
+                          {low  > 0 && <span className="sev-chip low">{low} LOW</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ── Pipeline Summary ── */}
+                {pipelineSteps.length > 0 && (
+                  <div className="report-section">
+                    <div className="report-section-title">Pipeline Summary</div>
+                    <div className="report-pipeline-summary">
+                      {pipelineSteps.map((s, i) => {
+                        const meta = STAGE_META[s.stage] || { icon: '●', label: s.stage };
+                        let detail = null;
+                        let subDetail = null;
+                        if (s.stage === 'race_detector') {
+                          detail = s.found?.length > 0
+                            ? `${s.found.length} pattern(s) matched`
+                            : 'no patterns matched';
+                          if (s.found?.length > 0)
+                            subDetail = s.found.map(p => p.replace(/_/g,' ')).join(' · ');
+                        } else if (s.stage === 'ast' && s.keywords) {
+                          const kws = s.keywords.trim().split(/\s+/);
+                          detail = `${kws.length} keyword(s) extracted`;
+                          subDetail = kws.slice(0,6).join(', ') + (kws.length > 6 ? '…' : '');
+                        } else if (s.stage === 'bm25' && s.docs?.length > 0) {
+                          detail = `${s.docs.length} doc(s) retrieved`;
+                          subDetail = [...new Set(s.docs.map(d => d.replace(/\s*\[.*?\]\s*$/,'').trim()))].join(', ');
+                        } else if (s.stage === 'prompt' && s.chars) {
+                          detail = `~${Math.round(s.chars/4)} tokens · ${s.chars} chars`;
+                        } else if (s.stage === 'llm' && s.status === 'done') {
+                          detail = s.label;
+                        }
+                        return (
+                          <div key={i} className="report-pipeline-row-block">
+                            <div className="report-pipeline-row">
+                              <span className="report-pipeline-icon">{meta.icon}</span>
+                              <span className="report-pipeline-name">{meta.label}</span>
+                              {detail && <span className="report-pipeline-detail">{detail}</span>}
+                            </div>
+                            {subDetail && <div className="report-pipeline-sub">{subDetail}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Issues ── */}
+                {issues.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">✓</div>
+                    <div className="empty-text">No concurrency issues detected.</div>
+                  </div>
+                ) : (
+                  <div className="report-section">
+                    <div className="report-section-title">
+                      {issues.length} Issue{issues.length > 1 ? 's' : ''} Found
+                    </div>
+                    {issues.map((issue, i) => <IssueCard key={i} issue={issue} />)}
+                  </div>
+                )}
+
+                {/* ── AI Explanation ── */}
+                {explanation && (
+                  <div className="report-section">
+                    <div className="report-section-title">AI Explanation</div>
+                    <div className="explain-text" dangerouslySetInnerHTML={{ __html: explanation }} />
+                  </div>
+                )}
+
+                {/* ── Knowledge Base Used ── */}
+                {docsUsed.length > 0 && (
+                  <div className="report-section">
+                    <div className="report-section-title">Knowledge Base References</div>
+                    <div className="report-docs">
+                      {docsUsed.map((d, i) => {
+                        const ctxMatch = d.title?.match(/\[([^\]]+)\]\s*$/);
+                        const ctx   = ctxMatch ? ctxMatch[1] : null;
+                        const title = d.title?.replace(/\s*\[.*?\]\s*$/, '').trim() || d.id;
+                        return (
+                        <div key={i} className="report-doc-row">
+                          <span className="report-doc-cat">{d.category || 'ref'}</span>
+                          <span className="report-doc-title">{title}</span>
+                          {ctx && <span className="report-doc-ctx-badge">{ctx}</span>}
+                        </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="explain-pane">
-        <div className="explain-scroll">
-          <div className="explain-label">
-            AI Explanation
-            <span className="rag-tag">RAG</span>
-            <span className={`mode-tag ${mode}`}>{mode}</span>
-          </div>
-          {explanation ? (
-            <div className="explain-text" dangerouslySetInnerHTML={{ __html: explanation }} />
-          ) : (
-            <div className="explain-text" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
-              Run analysis to see explanation and knowledge-base references.
-            </div>
-          )}
-          {docsUsed.length > 0 && (
-            <div className="docs-used">
-              {docsUsed.map((d, i) => <span key={i} className="doc-chip">{d.title || d.id}</span>)}
-            </div>
-          )}
         </div>
       </div>
 

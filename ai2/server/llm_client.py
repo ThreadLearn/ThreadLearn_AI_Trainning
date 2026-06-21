@@ -95,7 +95,7 @@ import json
 import os
 import urllib.request
 import urllib.error
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, HF_TOKEN
 from output_parser import parse_model_output
 
 # ---------------------------------------------------------------------------
@@ -131,6 +131,7 @@ def _ollama_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue
                     severity=iss.get("severity", "medium"),
                     description=iss.get("description", ""),
                     fix=iss.get("fix", ""),
+                    pattern_id=iss.get("pattern_id", "unknown"),
                 )
                 for iss in issues
             ]
@@ -142,6 +143,75 @@ def _ollama_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue
             description="Lỗi kết nối tới HF Space",
             fix="Kiểm tra Space đang chạy tại https://huggingface.co/spaces/anha12/threadlearn-ai2-api",
         )]
+
+
+# ---------------------------------------------------------------------------
+# HF Inference API client — gọi fine-tuned model qua HF serverless GPU
+# ---------------------------------------------------------------------------
+
+def _hf_inference_analyze(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue]:
+    """
+    Gọi HF Inference API (serverless) thay vì HF Space.
+    - Chạy trên GPU shared của HF → ~2-4s thay vì 5-8s
+    - Không cần manage Space, không cold start
+    - Cần HF_TOKEN (Read access) trong .env
+    """
+    MODEL_ID = "anha12/threadlearn-qwen2.5-coder-1.5b-merged"
+    API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
+
+    if not HF_TOKEN:
+        print("[hf_inference] HF_TOKEN not set — fallback to HF Space")
+        return _ollama_analyze(code, context_docs)
+
+    prompt = f"Convert to concurrent JavaScript:\n\n{code}"
+
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 512,
+            "temperature": 0.2,
+            "do_sample": False,
+            "return_full_text": False,
+        },
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {HF_TOKEN}",
+    }
+
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(API_URL, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=60) as response:
+            result = json.loads(response.read().decode("utf-8"))
+
+            # HF Inference API trả list: [{"generated_text": "..."}]
+            if isinstance(result, list) and result:
+                raw_output = result[0].get("generated_text", "")
+            elif isinstance(result, dict):
+                # Model đang load → {"error": "Model ... is currently loading"}
+                if "error" in result:
+                    wait = result.get("estimated_time", 20)
+                    print(f"[hf_inference] Model loading, est. {wait}s — fallback to HF Space")
+                    return _ollama_analyze(code, context_docs)
+                raw_output = result.get("generated_text", "")
+            else:
+                raw_output = str(result)
+
+            if not raw_output.strip():
+                return _ollama_analyze(code, context_docs)
+
+            return parse_model_output(raw_output)
+
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        print(f"[hf_inference] HTTP {e.code}: {body[:200]}")
+        # 503 = model loading, fallback gracefully
+        return _ollama_analyze(code, context_docs)
+    except Exception as e:
+        print(f"[hf_inference] Error: {e}")
+        return _ollama_analyze(code, context_docs)
 
 
 # ---------------------------------------------------------------------------
@@ -168,8 +238,10 @@ def analyze_code(code: str, context_docs: List[Dict[str, Any]]) -> List[Issue]:
 
     if provider == "openai":
         return _openai_analyze(code, context_docs)
+    elif provider == "hf_inference":
+        return _hf_inference_analyze(code, context_docs)
     elif provider == "ollama":
         return _ollama_analyze(code, context_docs)
     else:
-        # Mặc định: mock (bao gồm LLM_PROVIDER=mock hoặc chưa set)
+        # Mặc định: mock
         return _mock_analyze(code, context_docs)

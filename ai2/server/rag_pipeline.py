@@ -154,7 +154,9 @@ def run_streaming(
     print(f"[PROMPT] {len(prompt)} chars")
     print(prompt)
     print("="*60 + "\n")
-    emit("step", {"stage": "prompt", "status": "done", "label": "Prompt ready"})
+    emit("step", {"stage": "prompt", "status": "done",
+                  "label": f"Prompt ready — {len(prompt)} chars",
+                  "chars": len(prompt)})
 
     # ── Bước 5: LLM inference ──
     emit("step", {"stage": "llm", "status": "running", "label": "Sending to ThreadLearn model (HF Space)…"})

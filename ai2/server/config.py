@@ -12,7 +12,8 @@ REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
 JWT_SECRET: str = os.getenv("JWT_SECRET", "")
-LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "ollama"
+LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "ollama")  # "mock" | "openai" | "ollama" | "hf_inference"
+HF_TOKEN: str = os.getenv("HF_TOKEN", "")
 KNOWLEDGE_BASE_PATH: str = str(
     Path(__file__).parent / ".." / "knowledge-base" / "knowledge_base.json"
 )

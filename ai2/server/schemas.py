@@ -26,6 +26,10 @@ class Issue(BaseModel):
     fix: str = Field(
         description="Gợi ý cách sửa"
     )
+    pattern_id: str = Field(
+        default="unknown",
+        description="Pattern identifier, ví dụ: closure_loop_var"
+    )
 
 
 class DocUsed(BaseModel):

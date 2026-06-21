@@ -98,13 +98,28 @@
 /* ── MAIN SPLIT ─────────────────────────────────────── */
 .main {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 5px 440px; /* overridden by inline style */
   overflow: hidden;
   border-bottom: 1px solid var(--border);
 }
 
+/* ── RESIZE HANDLE ───────────────────────────────────── */
+.resize-handle {
+  width: 5px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 5;
+}
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--accent);
+}
+
 /* ── EDITOR PANE ────────────────────────────────────── */
-.editor-pane { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+.editor-pane { display: flex; flex-direction: column; overflow: hidden; }
 
 .pane-header {
   display: flex; align-items: center; gap: 10px;
@@ -260,9 +275,9 @@
 .sev-pill.medium { background: rgba(240,160,80,0.2);  color: var(--med); }
 .sev-pill.low    { background: rgba(80,208,160,0.2);  color: var(--low); }
 
-.issue-pattern-id { font-size: 11px; color: var(--text-mid); }
-.issue-line { font-size: 10px; color: var(--text-dim); margin-left: auto; }
-.issue-desc { font-size: 11px; color: var(--text-mid); line-height: 1.5; margin-bottom: 7px; }
+.issue-pattern-id { font-size: 12px; color: var(--text-mid); }
+.issue-line { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+.issue-desc { font-size: 12px; color: var(--text-mid); line-height: 1.5; margin-bottom: 7px; }
 .issue-fix-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
 .issue-fix {
   font-size: 11px; color: var(--text-mid);
@@ -372,8 +387,49 @@
 }
 
 .pipeline-step-body { flex: 1; min-width: 0; }
-.pipeline-step-name { font-size: 11px; font-weight: 600; color: var(--text-mid); letter-spacing: 0.06em; }
+.pipeline-step-name { font-size: 11px; font-weight: 600; color: var(--text-mid); letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; }
 .pipeline-step-label { font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.step-detail { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+.step-detail-ok { color: var(--low); }
+.kw-chip { font-size: 9px; font-family: monospace; padding: 1px 5px; border-radius: 3px; background: rgba(100,160,255,0.12); color: #7ab4ff; border: 1px solid rgba(100,160,255,0.25); }
+.step-doc-list { margin: 3px 0 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.step-doc-list li { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; position: relative; }
+.step-doc-list li::before { content: '›'; position: absolute; left: 0; color: var(--accent); }
+.step-doc-ctx { font-size: 8px; color: var(--text-dim); margin-left: 4px; opacity: 0.6; }
+.elapsed-timer { font-size: 10px; font-family: monospace; color: var(--accent); font-weight: 400; letter-spacing: 0; }
+
+/* ── Analysis Report ─────────────────────────────────────── */
+.report-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.report-section:last-child { border-bottom: none; }
+.report-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+
+.report-pipeline-summary { display: flex; flex-direction: column; gap: 7px; }
+.report-pipeline-row { display: flex; align-items: baseline; gap: 8px; }
+.report-pipeline-icon { font-size: 13px; flex-shrink: 0; }
+.report-pipeline-name { font-size: 12px; font-weight: 600; color: var(--text-mid); min-width: 110px; flex-shrink: 0; }
+.report-pipeline-detail { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.report-docs { display: flex; flex-direction: column; gap: 6px; }
+.report-doc-row { display: flex; align-items: center; gap: 8px; }
+.report-doc-cat { font-size: 9px; font-family: monospace; padding: 2px 6px; border-radius: 3px; background: rgba(100,100,200,0.15); color: #9090e0; border: 1px solid rgba(100,100,200,0.25); flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.report-doc-title { font-size: 11px; color: var(--text-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.report-doc-ctx-badge { font-size: 8px; font-family: monospace; padding: 1px 5px; border-radius: 3px; background: rgba(255,160,50,0.1); color: #ffa032; border: 1px solid rgba(255,160,50,0.25); flex-shrink: 0; white-space: nowrap; }
+
+/* ── Code Stats ─────────────────────────────────────── */
+.report-stats-row { display: flex; gap: 16px; margin-bottom: 8px; }
+.report-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.report-stat-val { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; font-family: 'JetBrains Mono', monospace; }
+.report-stat-lbl { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+
+.report-sev-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+.sev-chip { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 3px; }
+.sev-chip.high   { background: rgba(240,90,126,0.15);  color: var(--high); border: 1px solid rgba(240,90,126,0.3); }
+.sev-chip.medium { background: rgba(240,160,80,0.15);  color: var(--med);  border: 1px solid rgba(240,160,80,0.3); }
+.sev-chip.low    { background: rgba(80,208,160,0.15);  color: var(--low);  border: 1px solid rgba(80,208,160,0.3); }
+
+/* ── Pipeline row with sub-detail ───────────────────── */
+.report-pipeline-row-block { display: flex; flex-direction: column; gap: 2px; }
+.report-pipeline-sub { font-size: 10px; color: var(--text-dim); padding-left: 26px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .pipeline-step-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .race-badge { font-size: 9px; font-family: monospace; padding: 1px 6px; border-radius: 3px; background: rgba(255,160,50,0.15); color: #ffa032; border: 1px solid rgba(255,160,50,0.35); text-transform: uppercase; letter-spacing: 0.04em; }

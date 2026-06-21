@@ -186,6 +186,18 @@ app.get("/api/history/:userId", async (req, res) => {
   }
 });
 
+// ── HF Space keep-alive ───────────────────────────────────────────────────────
+// Ping every 10 min so the Space doesn't sleep between analyses.
+// Cold start costs ~20-25s; this keeps it warm for free.
+const HF_SPACE_HEALTH = "https://anha12-threadlearn-ai2-api.hf.space/health";
+const KEEPALIVE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+function pingHFSpace() {
+  fetch(HF_SPACE_HEALTH, { signal: AbortSignal.timeout(10000) })
+    .then(r => console.log(`[keep-alive] HF Space ping → ${r.status}`))
+    .catch(e => console.warn(`[keep-alive] HF Space unreachable: ${e.message}`));
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
@@ -196,4 +208,8 @@ app.listen(PORT, () => {
   console.log(` Health  : http://localhost:${PORT}/health`);
   console.log(` Analyze : POST http://localhost:${PORT}/api/analyze`);
   console.log(` History : GET  http://localhost:${PORT}/api/history/demo-user\n`);
+
+  // Ping immediately on start, then every 10 min
+  pingHFSpace();
+  setInterval(pingHFSpace, KEEPALIVE_INTERVAL_MS);
 });
