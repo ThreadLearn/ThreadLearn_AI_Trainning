@@ -12,10 +12,12 @@ Chạy server:
 """
 
 import asyncio
+import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from auth import get_current_user
 from bm25_module import load_retriever
@@ -34,7 +36,7 @@ from config import LLM_PROVIDER
 # Lý do: Ollama/GPU OOM nếu >3 inference song song; OpenAI rate-limit friendly
 # ---------------------------------------------------------------------------
 _llm_semaphore = asyncio.Semaphore(3)
-LLM_TIMEOUT_SECONDS = 30   # 504 nếu LLM không trả lời trong 30s
+LLM_TIMEOUT_SECONDS = 180  # HF Space CPU inference ~2-3 phút
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +184,73 @@ async def analyze_code(
     )
 
     return response
+
+
+@app.post(
+    "/api/v1/ai/analyze/stream",
+    tags=["AI Analysis"],
+    summary="Stream tiến trình phân tích real-time (SSE)",
+)
+async def analyze_stream(
+    body: AnalyzeRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Server-Sent Events stream — emit từng bước pipeline:
+      race_detector → ast → bm25 → prompt → llm → result
+    """
+    retriever = app.state.retriever
+
+    async def event_generator():
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def emit(event: str, data: dict):
+            queue.put_nowait((event, data))
+
+        async def run_pipeline():
+            try:
+                async with asyncio.timeout(LLM_TIMEOUT_SECONDS):
+                    async with _llm_semaphore:
+                        issues, docs_used = await asyncio.to_thread(
+                            rag_pipeline.run_streaming,
+                            body.code,
+                            body.language,
+                            retriever,
+                            emit,
+                        )
+                result_data = {
+                    "issues": [i.model_dump() for i in issues],
+                    "docs_used": [d.model_dump() for d in docs_used],
+                    "cached": False,
+                    "user_id": user_id,
+                    "language": body.language,
+                }
+                queue.put_nowait(("result", result_data))
+            except TimeoutError:
+                queue.put_nowait(("error", {"message": "LLM analysis timed out."}))
+            except Exception as exc:
+                queue.put_nowait(("error", {"message": str(exc)}))
+            finally:
+                queue.put_nowait(("done", {}))
+
+        task = asyncio.create_task(run_pipeline())
+
+        while True:
+            event, data = await queue.get()
+            yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
+            if event in ("done", "error"):
+                break
+
+        await task
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get(
