@@ -198,5 +198,105 @@
     "code": "class DataPoller {\n  constructor(interval) {\n    this.data = [];\n    this.interval = interval;\n  }\n  start() {\n    setTimeout(function() {\n      this.data.push(Date.now());\n      setTimeout(arguments.callee, this.interval);\n    }, this.interval);\n  }\n}",
     "expected_patterns": ["context_loss_this"],
     "notes": "Both this.data and this.interval are undefined inside function(). Also uses deprecated arguments.callee."
+  },
+  {
+    "id": "rw_21",
+    "category": "Sequential Awaits",
+    "source": "https://github.com/expressjs/session/issues/526",
+    "package": "express-session@1.x",
+    "description": "Session save not awaited before redirect — session data lost on logout",
+    "code": "app.post('/logout', (req, res) => {\n  req.logout(() => {\n    req.session.save();\n    res.redirect('/');\n  });\n});",
+    "expected_patterns": ["sequential_awaits"],
+    "notes": "req.session.save() is async but not awaited. Redirect fires before save completes — session data lost."
+  },
+  {
+    "id": "rw_22",
+    "category": "Double Callback",
+    "source": "https://github.com/caolan/async/issues/559",
+    "package": "async@1.5.2",
+    "description": "Task inside async.series calls done() twice — subsequent tasks execute multiple times",
+    "code": "async.series([\n  function(done) {\n    db.query('SELECT 1', function(err) {\n      done(err);\n      done(err);\n    });\n  },\n  function(done) {\n    done();\n  }\n], callback);",
+    "expected_patterns": ["double_callback"],
+    "notes": "async.series assumes single callback invocation per task. Double done() causes downstream tasks to run twice."
+  },
+  {
+    "id": "rw_23",
+    "category": "Resource Exhaustion",
+    "source": "https://github.com/sequelize/sequelize/issues/10976",
+    "package": "sequelize@6.x",
+    "description": "Unbounded Promise.all over 50 transactions exhausts connection pool — deadlock",
+    "code": "const txns = Array(50).fill(null).map(() =>\n  sequelize.transaction(t =>\n    User.create({ name: 'test' }, { transaction: t })\n  )\n);\nawait Promise.all(txns);",
+    "expected_patterns": ["unbounded_promise_all", "resource_exhaustion"],
+    "notes": "Connection pool has finite size (~5-10). 50 concurrent transactions exceed pool → deadlock waiting for connections."
+  },
+  {
+    "id": "rw_24",
+    "category": "Unhandled Rejection",
+    "source": "https://github.com/Automattic/mongoose/issues/8706",
+    "package": "mongoose@5.x",
+    "description": "mongoose.createConnection() returns unhandled rejected promise on connection failure",
+    "code": "const conn = mongoose.createConnection('mongodb://invalid-host:27017/db');\nconn.on('error', function(err) {\n  console.error('connection error:', err);\n});",
+    "expected_patterns": ["unhandled_rejection"],
+    "notes": "createConnection() returns a promise that rejects before the error event fires. Promise rejection unhandled."
+  },
+  {
+    "id": "rw_25",
+    "category": "Double Callback",
+    "source": "https://github.com/redis/node-redis/issues/2685",
+    "package": "node-redis@4.x",
+    "description": "Concurrent sUnsubscribe() calls race — first triggers disconnect, rest throw ClientClosedError",
+    "code": "const subscriptions = ['ch1', 'ch2', 'ch3'];\nconst promises = subscriptions.map(ch =>\n  client.sUnsubscribe(ch)\n);\nawait Promise.all(promises);",
+    "expected_patterns": ["race_condition"],
+    "notes": "First sUnsubscribe disconnects the client. Remaining concurrent calls fail with ClientClosedError."
+  },
+  {
+    "id": "rw_26",
+    "category": "Event Loop Blocking",
+    "source": "https://github.com/knex/knex/issues/5025",
+    "package": "knex@0.21.x",
+    "description": "Parallel transactions with forUpdate create lock contention — event loop stalls waiting for DB locks",
+    "code": "await Promise.all([\n  knex.transaction(t => t('users').forUpdate().select()),\n  knex.transaction(t => t('users').forUpdate().select()),\n  knex.transaction(t => t('users').forUpdate().select())\n]);",
+    "expected_patterns": ["event_loop_blocking", "unbounded_promise_all"],
+    "notes": "forUpdate locks rows. Parallel transactions deadlock waiting for each other's locks — event loop blocked."
+  },
+  {
+    "id": "rw_27",
+    "category": "Sequential Awaits",
+    "source": "https://github.com/expressjs/session/issues/340",
+    "package": "express-session@1.x",
+    "description": "session.touch() and session.save() race — concurrent read-modify-write loses data",
+    "code": "app.use(function(req, res, next) {\n  req.session.touch();\n  req.session.userId = req.user.id;\n  next();\n});",
+    "expected_patterns": ["sequential_awaits"],
+    "notes": "touch() is async write, not awaited. Modification + save at end races with touch() write — data loss possible."
+  },
+  {
+    "id": "rw_28",
+    "category": "Resource Exhaustion",
+    "source": "https://github.com/Automattic/mongoose/issues/5784",
+    "package": "mongoose@5.x",
+    "description": "insertMany with callback also returns promise — unhandled rejection if validation fails",
+    "code": "User.insertMany(\n  [{ name: 'Alice' }, { name: '' }],\n  function(err, docs) {\n    if (err) return console.log(err);\n    console.log(docs);\n  }\n);",
+    "expected_patterns": ["unhandled_rejection"],
+    "notes": "Mongoose dual callback+promise API. Validation error fires callback AND rejects promise — rejection unhandled."
+  },
+  {
+    "id": "rw_29",
+    "category": "Double Callback",
+    "source": "https://github.com/luin/ioredis/issues/1185",
+    "package": "ioredis@4.x",
+    "description": "Pipeline executed inside transaction retry loop — commands sent twice on EXECABORT",
+    "code": "async function transfer(from, to, amount) {\n  const pipeline = client.pipeline();\n  pipeline.decrby(from, amount);\n  pipeline.incrby(to, amount);\n  await pipeline.exec();\n  await pipeline.exec();\n}",
+    "expected_patterns": ["double_callback"],
+    "notes": "pipeline.exec() called twice — both decrby and incrby execute twice. Balance corrupted."
+  },
+  {
+    "id": "rw_30",
+    "category": "Unhandled Rejection",
+    "source": "https://github.com/expressjs/express/issues/2700",
+    "package": "express@4.x",
+    "description": "Multiple concurrent async middleware — first rejection not caught, subsequent middleware still run",
+    "code": "app.use(async function(req, res, next) {\n  const data = await fetchData(req.params.id);\n  req.data = data;\n  next();\n});\n\napp.use(async function(req, res, next) {\n  const result = await processData(req.data);\n  res.json(result);\n});",
+    "expected_patterns": ["unhandled_rejection"],
+    "notes": "Express 4 does not catch async errors. If fetchData() rejects, next() never called but processData middleware may still run on concurrent request."
   }
 ]
