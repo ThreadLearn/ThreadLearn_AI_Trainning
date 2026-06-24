@@ -41,7 +41,7 @@ def main():
         cases = json.load(f)
 
     print("=" * 65)
-    print("ThreadLearn race_detector — Real-World Benchmark (20 cases)")
+    print(f"ThreadLearn race_detector — Real-World Benchmark ({len(cases)} cases)")
     print("=" * 65)
 
     results = []
@@ -72,17 +72,18 @@ def main():
             "found_patterns": [d["pattern_id"] for d in detections],
         })
 
+    total = len(cases)
     print("=" * 65)
-    print(f"Detection rate: {detected}/20  ({detected/20*100:.0f}%)")
-    print(f"Missed:         {20 - detected}/20")
+    print(f"Detection rate: {detected}/{total}  ({detected/total*100:.0f}%)")
+    print(f"Missed:         {total - detected}/{total}")
 
     out_path = os.path.join(os.path.dirname(__file__), "eval_real_world_results.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump({
-            "total": 20,
+            "total": total,
             "detected": detected,
-            "missed": 20 - detected,
-            "detection_rate": f"{detected/20*100:.0f}%",
+            "missed": total - detected,
+            "detection_rate": f"{detected/total*100:.0f}%",
             "results": results,
         }, f, indent=2, ensure_ascii=False)
     print(f"\nSaved: {out_path}")

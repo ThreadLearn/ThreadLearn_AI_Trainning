@@ -87,9 +87,12 @@ ThreadLearn giải quyết cả hai hạn chế này bằng cách kết hợp b�
 (r=16, nén 4-bit NF4) trên 783 ví dụ huấn luyện có giải thích từng bước.
 Tại thời điểm suy luận, hệ thống tìm kiếm BM25 truy xuất 3 tài liệu liên quan nhất
 từ cơ sở tri thức 2050 tài liệu để bổ sung vào prompt.
-Trên bộ kiểm thử 20 lỗi đồng thời JavaScript thuộc 8 loại,
-ThreadLearn với RAG đạt \textbf{tỷ lệ vượt qua 75\% (15/20)}, so với 40\% của mô hình
-gốc chưa tinh chỉnh và 30\% của GPT-3.5-turbo---cải thiện $+$35 điểm phần trăm.
+Trên bộ kiểm thử \textbf{30 lỗi đồng thời JavaScript thực tế} (lấy từ các npm package
+production) thuộc 10 loại lỗi,
+ThreadLearn với pipeline BM25+AST đạt \textbf{tỷ lệ điểm 73,3\% (22,0/30)},
+vượt cả GPT-3.5-turbo với pipeline (65,0\%) và mô hình gốc chưa tinh chỉnh (60,0\%)
+--- chứng minh rằng tinh chỉnh chuyên biệt theo domain cộng với truy xuất tài liệu
+AST-based có thể vượt qua LLM thương mại lớn hơn nhiều lần.
 \end{abstract}
 
 \noindent\textbf{Từ khóa:} lỗi đồng thời, race condition, phân tích tĩnh,

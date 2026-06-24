@@ -1,0 +1,578 @@
+{
+  "model": "Qwen/Qwen2.5-Coder-1.5B (base) + BM25+AST pipeline",
+  "pipeline": "BM25+AST",
+  "pass": 8,
+  "partial": 20,
+  "fail": 2,
+  "score": "18.0/30",
+  "results": [
+    {
+      "id": "rw_01",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 29.97,
+      "bm25_query": "exists filePath readFile callback",
+      "docs_retrieved": [
+        [
+          "Race Condition: File System Concurrent Write (Node.js)",
+          19.909
+        ],
+        [
+          "Anti-Pattern: Promise Constructor Anti-Pattern",
+          19.297
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Anti-Pattern: Callback Hell [anti-patterns]:\nCallback hell is when you have nested callbacks that make code hard to follow. It's also known as pyramid of doom, spaghetti code, and callback hell.\n\nBad \u2014 callback hell:\n```javascript\nfetch('/users')\n  .then(users => {\n    users.forEach(user =>\n      fetch(`/user/${user.id}`)\n        .then(user => console.log(user))\n        .catch(e"
+    },
+    {
+      "id": "rw_02",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 28.07,
+      "bm25_query": "query sql connection connect err results",
+      "docs_retrieved": [
+        [
+          "Pattern: Async Initialization Guard",
+          22.578
+        ],
+        [
+          "Pattern: Async Singleton with Double-Check Locking",
+          16.866
+        ],
+        [
+          "Async Class Patterns: Constructors and Initialization",
+          16.688
+        ]
+      ],
+      "response_preview": "query('SELECT * FROM users', function(err, results) {\n  console.log(results);\n});\n\n// Convert to concurrent JavaScript:\nconst query = async (sql) => {\n  let err, res;\n  await new Promise((resolve, reject) => {\n    connection.connect((err) => {\n      if (err) reject(err);\n      resolve(connection);\n    });\n  }).then(conn => {\n    return new Promise((resolve, reject) => {\n      conn.query(sql, (err,"
+    },
+    {
+      "id": "rw_03",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 22.5,
+      "bm25_query": "getData key callback cache fetchFromDB err data",
+      "docs_retrieved": [
+        [
+          "Race Condition: Double-Fetch / Cache Stampede",
+          21.032
+        ],
+        [
+          "queueMicrotask: Explicit Microtask Scheduling [IoT Data Context]",
+          18.75
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Promise.all() [concurrency]: \nPromises are resolved in parallel. If any promise fails, it will reject the entire chain.\n```javascript\nconst promises = [\n  fetch('https://api.example.com/data1'),\n  fetch('https://api.example.com/data2'),\n];\n\nPromise.all(promises)\n  .then((responses) => {\n    responses.forEach(response => response.json());\n  })\n  .catch(error => {\n    console.erro"
+    },
+    {
+      "id": "rw_04",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 28.86,
+      "bm25_query": "app use req res next result body items length push heavyTransform json",
+      "docs_retrieved": [
+        [
+          "Anti-Pattern: Blocking the Event Loop",
+          27.601
+        ],
+        [
+          "Race Condition: Async Middleware Execution Order",
+          19.042
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Race Condition: Async Middleware Execution Order [race-conditions]:\nIn async middleware pipelines (Express, Koa), if a middleware calls next() but also does async work after it, that work races with downstream middleware.\n\nBUG \u2014 async work after next():\n```javascript\n// Express middleware\napp.use(async (req, res, next) => {\n  const start = Date.now();\n  await next(); // downstre"
+    },
+    {
+      "id": "rw_05",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "latency_s": 28.84,
+      "bm25_query": "UserController constructor this Database getUser req res user find params json ctrl app get",
+      "docs_retrieved": [
+        [
+          "Async Context Propagation with AsyncLocalStorage (Node.js)",
+          23.204
+        ],
+        [
+          "Anti-Pattern: Blocking the Event Loop",
+          19.432
+        ],
+        [
+          "IndexedDB: Async Transactions and Concurrency",
+          19.369
+        ]
+      ],
+      "response_preview": "```\n\nReference 4 \u2014 Async Hooks: Asynchronous Resource Management [patterns]:\nAsynchronous resource management is a pattern that allows you to manage resources asynchronously using hooks. It provides a way to register callbacks for different stages of asynchronous execution, such as when an operation starts, completes, or fails.\n\nExample usage:\n```javascript\nimport { AsyncHooks } from 'async_hooks'"
+    },
+    {
+      "id": "rw_06",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 18.71,
+      "bm25_query": "pool connect err client done query callback sql result",
+      "docs_retrieved": [
+        [
+          "Pattern: Async Singleton with Double-Check Locking",
+          25.746
+        ],
+        [
+          "Async Class Patterns: Constructors and Initialization",
+          23.45
+        ]
+      ],
+      "response_preview": "});\n\n// Usage:\nconst db = await DatabasePool.create({ host: 'localhost' });\nconst res = await db.query('SELECT * FROM users');\nconsole.log(res.rows);\n\nReference 3 \u2014 Async Class Patterns: Constructors and Initialization [patterns]: \nAsync class patterns for constructors and initialization.\n\nConstructor with async initializer:\n```javascript\nclass DatabasePool {\n  #pool;\n\n  async constructor(config) "
+    },
+    {
+      "id": "rw_07",
+      "category": "Stream Leak",
+      "verdict": "pass",
+      "latency_s": 28.87,
+      "bm25_query": "serveFile req res readStream createReadStream params file gzip zlib createGzip pipe",
+      "docs_retrieved": [
+        [
+          "Node.js Stream Piping and Transform Streams",
+          59.887
+        ],
+        [
+          "Pattern: Async Iterator for Streaming Data",
+          24.866
+        ]
+      ],
+      "response_preview": "```\nThis is a basic example of how you can convert the given code snippet into a more efficient and asynchronous approach using Node.js's built-in modules like `fs` and `zlib`. Here's an explanation of what each part does:\n\n- `fs.createReadStream`: This creates a readable stream from a file.\n- `zlib.createGzip`: This creates a transform stream that compresses data.\n- `readStream.pipe(gzip).pipe(re"
+    },
+    {
+      "id": "rw_08",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 1.94,
+      "bm25_query": "app post req res next passport authenticate err user logIn redirect",
+      "docs_retrieved": [
+        [
+          "Race Condition: Async Middleware Execution Order",
+          20.386
+        ],
+        [
+          "Anti-Pattern: God Async Function",
+          16.343
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Anti-Pattern: God Async Function [anti-patterns]:"
+    },
+    {
+      "id": "rw_09",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 28.54,
+      "bm25_query": "conn yield connect result query sql res json",
+      "docs_retrieved": [
+        [
+          "Pattern: Async Initialization Guard",
+          23.711
+        ],
+        [
+          "Async Class Patterns: Constructors and Initialization",
+          18.362
+        ]
+      ],
+      "response_preview": "});\n\nReference 3 \u2014 Async Class Patterns: Constructors and Initialization [patterns]:\nJavaScript constructors are synchronous and cannot await. Common patterns to handle async initialization in classes.\n\nAsync constructor (not recommended):\n```javascript\nclass Database {\n  async *connect() { this.connection = await openConnection(); }\n  async query(sql) { return this.connection.query(sql); } // nul"
+    },
+    {
+      "id": "rw_10",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 9.35,
+      "bm25_query": "readStream createReadStream chunk parsed parseCSVChunk writableDB write",
+      "docs_retrieved": [
+        [
+          "Node.js Stream Piping and Transform Streams",
+          42.352
+        ],
+        [
+          "WritableStream: Streaming Data Destination",
+          29.466
+        ]
+      ],
+      "response_preview": "readStream.on('end', function() {\n  writableDB.end();\n});\n\nfunction parseCSVChunk(csvData) {\n  // Parse CSV data into objects\n}\n\nfunction writeToDatabase(data) {\n  // Write data to database\n}\n```\nThis code reads a huge file, parses it concurrently, and writes the results to a database. It uses asynchronous functions like `parseCSVChunk` and `writeToDatabase`, which are executed concurrently with t"
+    },
+    {
+      "id": "rw_11",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 7.53,
+      "bm25_query": "getWithTimeout key timeout timer setTimeout Error client get err data",
+      "docs_retrieved": [
+        [
+          "Pattern: Timeout Wrapper for Any Async Operation [IoT Data Context]",
+          16.284
+        ],
+        [
+          "Pattern: Async Lock with Timeout [IoT Data Context]",
+          14.208
+        ],
+        [
+          "Pattern: Async Initialization Guard (isReady pattern)",
+          14.147
+        ]
+      ],
+      "response_preview": "getWithTimeout('key', 1000, function(err, result) {\n  console.log(result); // prints \"result\" or error object\n});\n\nasync function getWithTimeoutAsync(key, timeout) {\n  try {\n    const res = await getWithTimeout(key, timeout);\n    return res;\n  } catch(e) {\n    throw e;\n  }\n}"
+    },
+    {
+      "id": "rw_12",
+      "category": "Sequential Awaits",
+      "verdict": "fail",
+      "latency_s": 0.8,
+      "bm25_query": "getDashboard userId user users findById orders findByUser notifications",
+      "docs_retrieved": [
+        [
+          "Anti-Pattern: Creating Unnecessary Sequential Awaits",
+          25.476
+        ],
+        [
+          "Pattern: Concurrent Data Fetching with Dependency Graph",
+          24.33
+        ],
+        [
+          "Anti-Pattern: Sequential await in Unrelated Parallel Chains",
+          24.137
+        ]
+      ],
+      "response_preview": "// Total: ~1 sec"
+    },
+    {
+      "id": "rw_13",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 28.73,
+      "bm25_query": "queue process job done data status processJob err result",
+      "docs_retrieved": [
+        [
+          "Pattern: Async Polling with Exponential Backoff [IoT Data Context]",
+          26.681
+        ],
+        [
+          "Pattern: Async Distributed Lock with Lease Renewal [IoT Data Context]",
+          16.454
+        ]
+      ],
+      "response_preview": "```\n\nThis code snippet uses the `queue` library in Node.js to manage jobs that are processed concurrently. The `process` method takes a callback function as an argument, which will be called once all jobs have been processed. Inside the callback function, we check if the job's status is `'pending'`, and if so, update its status to `'processing'`. Then, we call the `processJob` function to perform "
+    },
+    {
+      "id": "rw_14",
+      "category": "Callback Hell",
+      "verdict": "pass",
+      "latency_s": 15.41,
+      "bm25_query": "readFile configPath err config callback connect JSON parse conn query sql rows forEach row transform result results push",
+      "docs_retrieved": [
+        [
+          "Pattern: Async Initialization Guard",
+          33.638
+        ],
+        [
+          "Async Class Patterns: Constructors and Initialization",
+          30.213
+        ]
+      ],
+      "response_preview": "});\n\nasync function main() {\n  let config = await fs.promises.readFile(configPath);\n  let db = await Database.create(JSON.parse(config));\n  let sql = 'SELECT * FROM table';\n  let results = [];\n  for (let row of await db.query(sql)) {\n    let transformedRow = await transform(row);\n    results.push(transformedRow);\n  }\n}\n\nmain().then(results => console.log('Results:', results));\n\n// Results: [ { id:"
+    },
+    {
+      "id": "rw_15",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 24.2,
+      "bm25_query": "notifyAllUsers users Promise all map user axios post userId",
+      "docs_retrieved": [
+        [
+          "Race Condition: Fetch Deduplication and Concurrent Identical Requests",
+          20.296
+        ],
+        [
+          "Pattern: Observable Store with Async Actions",
+          20.191
+        ]
+      ],
+      "response_preview": "```\nReference 3 \u2014 Pattern: Concurrent State Updates [patterns]: \nConcurrent updates of state in React or Vue.js. Use `useEffect` for side effects that depend on state changes.\n\n```javascript\nimport { useState, useEffect } from 'react';\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    console.log('side effect');\n  }, [count]);\n\n  return (\n    <div>\n"
+    },
+    {
+      "id": "rw_16",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "latency_s": 29.0,
+      "bm25_query": "app post req res hash crypto pbkdf2Sync body password username users create err json",
+      "docs_retrieved": [
+        [
+          "Anti-Pattern: Blocking the Event Loop",
+          20.478
+        ],
+        [
+          "Async Context Propagation with AsyncLocalStorage (Node.js)",
+          20.253
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Async/Await in Node.js [patterns]:\nAsynchronous functions return promises that resolve when their asynchronous operation completes.\nPromises provide a way to handle asynchronous operations and manage errors gracefully.\n\nExample of using await with an async function:\n```javascript\n(async () => {\n  try {\n    const result = await myAsyncFunction();\n    console.log(result);\n  } catc"
+    },
+    {
+      "id": "rw_17",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 25.84,
+      "bm25_query": "processItems items callback length item computedCache slice err rest concat asyncCompute result",
+      "docs_retrieved": [
+        [
+          "WeakRef: Garbage-Collection-Safe Cache References",
+          18.18
+        ],
+        [
+          "Anti-Pattern: async/await in forEach",
+          17.214
+        ],
+        [
+          "Pattern: Event Emitter for Async Events",
+          17.103
+        ]
+      ],
+      "response_preview": "processItems(items, function(err, results) {\n  if (err) throw err;\n  console.log(results);\n});\n```\nThis code is not thread-safe because it uses global variables `results` and `computedCache`. To make it thread-safe, you can use a lock to ensure that only one thread can access these variables at a time.\n```javascript\nlet resultsLock = false;\n\nfunction processItems(items, callback) {\n  if (items.len"
+    },
+    {
+      "id": "rw_18",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 28.81,
+      "bm25_query": "app get req res user findUser params json",
+      "docs_retrieved": [
+        [
+          "Async Context Propagation with AsyncLocalStorage (Node.js)",
+          18.02
+        ],
+        [
+          "Race Condition: Async Middleware Execution Order",
+          16.323
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Async Middleware Execution Order in Node.js [express]:\nThe order of execution depends on the order of middleware registration and the number of asynchronous operations performed by each middleware.\n\nExample:\n```javascript\napp.use(async (req, res, next) => {\n  console.log('Middleware A');\n  await next();\n});\n\napp.use(async (req, res, next) => {\n  console.log('Middleware B');\n  aw"
+    },
+    {
+      "id": "rw_19",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 5.29,
+      "bm25_query": "createFileIfNotExists filePath content callback access constants F_OK err writeFile",
+      "docs_retrieved": [
+        [
+          "Race Condition: File System Concurrent Write (Node.js)",
+          32.943
+        ],
+        [
+          "Node.js Stream Piping and Transform Streams",
+          22.825
+        ]
+      ],
+      "response_preview": "```\nThis function checks if a file exists at `filePath`. If it doesn't exist, it creates the file with the given `content` using `fs.writeFile`. If the file already exists, it calls the provided `callback` with no error (`null`)."
+    },
+    {
+      "id": "rw_20",
+      "category": "Context Loss",
+      "verdict": "pass",
+      "latency_s": 28.91,
+      "bm25_query": "DataPoller constructor interval this data start setTimeout push Date now arguments callee",
+      "docs_retrieved": [
+        [
+          "Race Condition: Async Middleware Execution Order [IoT Data Context]",
+          16.934
+        ],
+        [
+          "Pattern: Promise-Based Rate Limiter [IoT Data Context]",
+          16.882
+        ],
+        [
+          "Pattern: Throttle and Debounce for Async Concurrency Control [IoT Data Context]",
+          16.095
+        ]
+      ],
+      "response_preview": "const poller = new DataPoller(500);\n\npoller.start();\n\nconsole.log(poller.data); // [1678494000000, 1678494005000]\n\n---\n\nImplementing the above in Node.js using async/await:\n\nasync function main() {\n  const dataPoller = new DataPoller(500);\n  await dataPoller.start();\n  console.log(dataPoller.data); // [1678494000000, 1678494005000]\n}\n\nmain().catch(console.error);\n\n---\n\nImplementing the above in No"
+    },
+    {
+      "id": "rw_21",
+      "category": "Sequential Awaits",
+      "verdict": "pass",
+      "latency_s": 28.69,
+      "bm25_query": "app post req res logout session save redirect",
+      "docs_retrieved": [
+        [
+          "BroadcastChannel: Cross-Tab Communication",
+          22.191
+        ],
+        [
+          "Race Condition: Async Middleware Execution Order",
+          17.276
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Promise Chaining: Asynchronous Function Calls [promise-chaining]:\nPromises are used for asynchronous function calls in JavaScript. They help manage the order of execution and handle errors.\n\nAPI:\n- `Promise.resolve(value)` \u2014 create a resolved promise\n- `Promise.reject(reason)` \u2014 create a rejected promise\n- `Promise.all(iterable)` \u2014 wait for multiple promises to resolve\n- `Promis"
+    },
+    {
+      "id": "rw_22",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 28.81,
+      "bm25_query": "series done query err callback",
+      "docs_retrieved": [
+        [
+          "Pattern: Observable / Reactive Stream with AsyncIterator",
+          6.284
+        ],
+        [
+          "Pattern: Async Initialization Guard",
+          6.159
+        ]
+      ],
+      "response_preview": "```\n```javascript\nconst series = async (...fns) =>\n  fns.reduce(async (p, fn) => p.then(fn), Promise.resolve());\n\nseries([db.query.bind(db), () => {}])\n  .then(() => console.log('done'));\n```\n```javascript\n// Using async/await\nasync function main() {\n  try {\n    await db.query('SELECT 1');\n    await db.query('SELECT 2'); // will throw an error\n  } catch (err) {\n    console.error('error:', err.mess"
+    },
+    {
+      "id": "rw_23",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 1.9,
+      "bm25_query": "txns Array fill map sequelize transaction User create name Promise all",
+      "docs_retrieved": [
+        [
+          "IndexedDB: Async Transactions and Concurrency",
+          16.348
+        ],
+        [
+          "Race Condition: IndexedDB Transaction Scope",
+          13.536
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 IndexedDB: Async Transactions and Concurrency [concurrency]:"
+    },
+    {
+      "id": "rw_24",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 27.29,
+      "bm25_query": "conn mongoose createConnection err console error",
+      "docs_retrieved": [
+        [
+          "Async Class Patterns: Constructors and Initialization",
+          15.436
+        ],
+        [
+          "Pattern: Async Semaphore for Resource Pool Management",
+          15.177
+        ]
+      ],
+      "response_preview": "conn.once('open', function() {\n  console.log('connected!');\n});\n\n// The following code will throw an exception because the connection has not been opened yet.\nconsole.log(conn.readyState); // prints 'disconnected'\n\n// Wait for the connection to be open before trying again.\nsetTimeout(function() {\n  console.log(conn.readyState); // prints 'connected'\n}, 50);\n\n```\n\nIn this example, we're using a Mon"
+    },
+    {
+      "id": "rw_25",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 28.59,
+      "bm25_query": "subscriptions promises map client sUnsubscribe Promise all",
+      "docs_retrieved": [
+        [
+          "Pattern: Async Singleton with Double-Check Locking",
+          11.36
+        ],
+        [
+          "p-limit: Limiting concurrency for Promises (Variation 1)",
+          9.95
+        ],
+        [
+          "p-limit: Limiting concurrency for Promises (Variation 2)",
+          9.95
+        ]
+      ],
+      "response_preview": "// or\nconst promises = subscriptions.map(ch =>\n  client.sUnsubscribe(ch)\n);\nawait Promise.all(promises);\n\nReference 4 \u2014 p-limit: Limiting concurrency for Promises (Variation 3) [patterns]:\np-limit is a tiny third-party library to limit concurrent promise executions. It's often used when Promise.all is too aggressive and you need to batch operations.\n```javascript\nimport pLimit from 'p-limit';\n\ncon"
+    },
+    {
+      "id": "rw_26",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 28.49,
+      "bm25_query": "Promise all knex transaction forUpdate select",
+      "docs_retrieved": [
+        [
+          "Async Resource Management with Symbol.asyncDispose",
+          14.688
+        ],
+        [
+          "Race Condition: IndexedDB Transaction Scope",
+          13.536
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Race Condition: IndexedDB Transaction Scope [race-conditions]:\nIndexedDB transactions auto-commit when no more requests are pending. If an await yields control before all requests complete, the transaction commits prematurely.\n\nBug \u2014 transaction commits during await:\n```javascript\nasync function buggyTransaction(db) {\n  const tx = db.transaction('store', 'readwrite');\n  const st"
+    },
+    {
+      "id": "rw_27",
+      "category": "Sequential Awaits",
+      "verdict": "pass",
+      "latency_s": 28.47,
+      "bm25_query": "app use req res next session touch userId user",
+      "docs_retrieved": [
+        [
+          "Async Context Propagation with AsyncLocalStorage (Node.js)",
+          20.201
+        ],
+        [
+          "Race Condition: Async Middleware Execution Order",
+          18.372
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Async Middleware Execution Order in Node.js [express]:\nMiddleware execution order in Node.js using async functions and the express framework can lead to race conditions when asynchronous operations are performed within middleware.\n\nRace condition example:\n```javascript\napp.get('/users', async (req, res) => {\n  try {\n    const users = await User.find();\n    res.json(users);\n  } c"
+    },
+    {
+      "id": "rw_28",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 28.35,
+      "bm25_query": "User insertMany name err docs console log",
+      "docs_retrieved": [
+        [
+          "Anti-Pattern: Using try/catch to Swallow Async Errors",
+          11.101
+        ],
+        [
+          "BroadcastChannel: Cross-Tab Communication",
+          7.299
+        ]
+      ],
+      "response_preview": "// => [ { _id: 50934768d8b4f0a0c0000001,\n//       name: 'Alice',\n//       __v: 0 },\n//     { _id: 50934768d8b4f0a0c0000002,\n//       name: '',\n//       __v: 0 } ]\n\nReference 3 \u2014 Promise.all() [pattern]:\nPromise.all() is a method for creating a promise from an array of promises. It returns a single promise that resolves when all the input promises have resolved, or rejects as soon as one of the inp"
+    },
+    {
+      "id": "rw_29",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 28.52,
+      "bm25_query": "transfer amount pipeline client decrby incrby exec",
+      "docs_retrieved": [
+        [
+          "Race Condition: Lost Update in async increment",
+          10.822
+        ],
+        [
+          "Race Condition: Read-Modify-Write on Shared State",
+          7.788
+        ]
+      ],
+      "response_preview": "```\n\nReference 3 \u2014 Race Condition: Read-Modify-Write on Shared State [race-conditions]:\nRead-modify-write sequences are non-atomic in async code \u2014 another operation can modify shared state between the read and the write.\n\nPROBLEM \u2014 bank account:\n```javascript\nlet balance = 100;\n\nasync function withdraw(amount) {\n  const current = balance;  // read: 100\n  await validateWithBank(amount); // async \u2014 "
+    },
+    {
+      "id": "rw_30",
+      "category": "Unhandled Rejection",
+      "verdict": "fail",
+      "latency_s": 1.99,
+      "bm25_query": "app use req res next data fetchData params result processData json",
+      "docs_retrieved": [
+        [
+          "Race Condition: Async Middleware Execution Order [IoT Data Context]",
+          24.246
+        ],
+        [
+          "Anti-Pattern: Blocking the Event Loop [IoT Data Context]",
+          23.244
+        ]
+      ],
+      "response_preview": "```\n\nThis approach ensures that each request is processed concurrently and doesn't block the event loop."
+    }
+  ]
+}
