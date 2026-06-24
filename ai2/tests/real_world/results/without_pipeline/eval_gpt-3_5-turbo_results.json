@@ -1,0 +1,219 @@
+{
+  "model": "gpt-3.5-turbo",
+  "pass": 7,
+  "partial": 23,
+  "fail": 0,
+  "score": "18.5/30",
+  "results": [
+    {
+      "id": "rw_01",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "latency_s": 3.95,
+      "response_preview": "```javascript\nconst fs = require('fs');\n\nfs.access(filePath, fs.constants.F_OK, (err) => {\n  if (!err) {\n    fs.readFile(filePath, 'utf8', callback);\n  }\n});\n```"
+    },
+    {
+      "id": "rw_02",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 2.44,
+      "response_preview": "function query(sql, cb) {\n  connection.connect(function(err) {\n    if (err) cb(err);\n    connection.query(sql, function(err, results) {\n      cb(err, results);\n    });\n  });\n}"
+    },
+    {
+      "id": "rw_03",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 2.28,
+      "response_preview": "function getData(key, callback) {\n  if (cache[key]) {\n    callback(null, cache[key]);\n  } else {\n    fetchFromDB(key, function(err, data) {\n      cache[key] = data;\n      callback(err, data);\n    });\n  }\n}"
+    },
+    {
+      "id": "rw_04",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "latency_s": 2.21,
+      "response_preview": "app.use(async function(req, res, next) {\n  const result = [];\n  await Promise.all(req.body.items.map(async item => {\n    result.push(await heavyTransform(item));\n  }));\n  res.json(result);\n});"
+    },
+    {
+      "id": "rw_05",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "latency_s": 2.48,
+      "response_preview": "```javascript\nconst { Worker, isMainThread, parentPort, workerData } = require('worker_threads');\n\nclass UserController {\n  constructor() { this.db = new Database(); }\n  getUser(req, res) {\n    const worker = new Worker(`\n      const { parentPort, workerData } = require('worker_threads');\n      const Database = require('./Database');\n      const db = new Database();\n      \n      parentPort.once('m"
+    },
+    {
+      "id": "rw_06",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 2.43,
+      "response_preview": "pool.connect(function(err, client, done) {\n  client.query('BEGIN', function(err) {\n    if (err) {\n      client.query('ROLLBACK', function(err) { done(); callback(err); });\n    } else {\n      client.query(sql, function(err, result) {\n        if (err) {\n          client.query('ROLLBACK', function(err) { done(); });\n          callback(err);\n        } else {\n          client.query('COMMIT', function(e"
+    },
+    {
+      "id": "rw_07",
+      "category": "Stream Leak",
+      "verdict": "partial",
+      "latency_s": 2.4,
+      "response_preview": "```javascript\nconst { createReadStream } = require('fs');\nconst { createGzip } = require('zlib');\n\nfunction serveFile(req, res) {\n  const readStream = createReadStream(req.params.file);\n  const gzip = createGzip();\n  readStream.pipe(gzip).pipe(res);\n}\n```"
+    },
+    {
+      "id": "rw_08",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 1.42,
+      "response_preview": "app.post('/login', passport.authenticate('local'), function(req, res) {\n  req.logIn(req.user, function(err) {\n    if (err) return next(err);\n    return res.redirect('/');\n  });\n});"
+    },
+    {
+      "id": "rw_09",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 0.96,
+      "response_preview": "```javascript\n(async () => {\n  const conn = await db.connect();\n  const result = await conn.query(sql);\n  res.json(result);\n})();\n```"
+    },
+    {
+      "id": "rw_10",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 4.88,
+      "response_preview": "const { createReadStream } = require('fs');\nconst { Transform } = require('stream');\n\nconst readStream = createReadStream('huge-file.csv');\nconst transformStream = new Transform({\n  transform(chunk, encoding, callback) {\n    const parsed = parseCSVChunk(chunk);\n    callback(null, parsed);\n  }\n});\n\nreadStream.pipe(transformStream).pipe(writableDB);"
+    },
+    {
+      "id": "rw_11",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 2.49,
+      "response_preview": "```javascript\nfunction getWithTimeout(key, timeout, cb) {\n  let timer;\n  const timeoutError = new Error('timeout');\n\n  const timeoutCallback = function() {\n    cb(timeoutError);\n  };\n\n  const dataCallback = function(err, data) {\n    clearTimeout(timer);\n    cb(err, data);\n  };\n\n  timer = setTimeout(timeoutCallback, timeout);\n  client.get(key, dataCallback);\n}\n```"
+    },
+    {
+      "id": "rw_12",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 1.61,
+      "response_preview": "```javascript\nasync function getDashboard(userId) {\n  const userPromise = db.users.findById(userId);\n  const ordersPromise = db.orders.findByUser(userId);\n  const notificationsPromise = db.notifications.findByUser(userId);\n\n  const user = await userPromise;\n  const orders = await ordersPromise;\n  const notifications = await notificationsPromise;\n\n  return { user, orders, notifications };\n}\n```"
+    },
+    {
+      "id": "rw_13",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 2.02,
+      "response_preview": "queue.process(async function(job) {\n  if (job.data.status === 'pending') {\n    job.data.status = 'processing';\n    try {\n      const result = await processJob(job.data);\n      return result;\n    } catch (err) {\n      throw err;\n    }\n  }\n});"
+    },
+    {
+      "id": "rw_14",
+      "category": "Callback Hell",
+      "verdict": "pass",
+      "latency_s": 3.14,
+      "response_preview": "```javascript\nconst fs = require('fs');\nconst util = require('util');\nconst readFile = util.promisify(fs.readFile);\n\n(async () => {\n  try {\n    const config = await readFile(configPath);\n    const dbConfig = JSON.parse(config);\n    const conn = await db.connect(dbConfig);\n    const rows = await conn.query(sql);\n    const results = await Promise.all(rows.map(row => {\n      return new Promise((resol"
+    },
+    {
+      "id": "rw_15",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 0.97,
+      "response_preview": "```javascript\nasync function notifyAllUsers(users) {\n  await Promise.all(\n    users.map(user =>\n      fetch('/notify', {\n        method: 'POST',\n        body: JSON.stringify({ userId: user.id }),\n        headers: {\n          'Content-Type': 'application/json'\n        }\n      })\n    )\n  );\n}\n```"
+    },
+    {
+      "id": "rw_16",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 1.33,
+      "response_preview": "app.post('/register', function(req, res) {\n  crypto.pbkdf2(\n    req.body.password,\n    req.body.username,\n    100000, 64, 'sha512',\n    (err, hash) => {\n      db.users.create({ hash }, function(err) {\n        res.json({ ok: true });\n      });\n    }\n  );\n});"
+    },
+    {
+      "id": "rw_17",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 1.93,
+      "response_preview": "function processItems(items, callback) {\n  if (items.length === 0) { callback(null, []); return; }\n  const item = items[0];\n  if (computedCache[item]) {\n    processItems(items.slice(1), function(err, rest) {\n      callback(null, [computedCache[item]].concat(rest));\n    });\n  } else {\n    asyncCompute(item, function(err, result) {\n      computedCache[item] = result;\n      processItems(items.slice(1"
+    },
+    {
+      "id": "rw_18",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 1.28,
+      "response_preview": "app.get('/user/:id', function(req, res) {\n  db.findUser(req.params.id)\n    .then(user => {\n      res.json(user);\n    })\n    .catch(err => {\n      res.status(500).json({ error: 'An error occurred' });\n    });\n});"
+    },
+    {
+      "id": "rw_19",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 1.24,
+      "response_preview": "```javascript\nconst fs = require('fs');\n\nfunction createFileIfNotExists(filePath, content, callback) {\n  fs.access(filePath, fs.constants.F_OK, function(err) {\n    if (err) {\n      fs.writeFile(filePath, content, callback);\n    } else {\n      callback(null);\n    }\n  });\n}\n```"
+    },
+    {
+      "id": "rw_20",
+      "category": "Context Loss",
+      "verdict": "pass",
+      "latency_s": 1.03,
+      "response_preview": "class DataPoller {\n  constructor(interval) {\n    this.data = [];\n    this.interval = interval;\n  }\n  start() {\n    const pollData = () => {\n      this.data.push(Date.now());\n      setTimeout(pollData, this.interval);\n    };\n    setTimeout(pollData, this.interval);\n  }\n}"
+    },
+    {
+      "id": "rw_21",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 0.67,
+      "response_preview": "app.post('/logout', (req, res) => {\n  req.logout(() => {\n    req.session.save(() => {\n      res.redirect('/');\n    });\n  });\n});"
+    },
+    {
+      "id": "rw_22",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 1.98,
+      "response_preview": "```javascript\nasync.parallel([\n  function(done) {\n    db.query('SELECT 1', function(err) {\n      done(err);\n    });\n  },\n  function(done) {\n    done();\n  }\n], callback);\n```"
+    },
+    {
+      "id": "rw_23",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 1.87,
+      "response_preview": "```javascript\nconst txns = Array(50).fill(null).map(() =>\n  sequelize.transaction(async t =>\n    await User.create({ name: 'test' }, { transaction: t })\n  )\n);\nawait Promise.all(txns);\n```"
+    },
+    {
+      "id": "rw_24",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 0.85,
+      "response_preview": "```javascript\nconst mongoose = require('mongoose');\n\nmongoose.connect('mongodb://invalid-host:27017/db', { useNewUrlParser: true, useUnifiedTopology: true });\n\nconst conn = mongoose.connection;\nconn.on('error', (err) => {\n  console.error('connection error:', err);\n});\n```"
+    },
+    {
+      "id": "rw_25",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 0.8,
+      "response_preview": "```javascript\nconst subscriptions = ['ch1', 'ch2', 'ch3'];\nconst promises = subscriptions.map(ch =>\n  client.sUnsubscribe(ch)\n);\nawait Promise.all(promises);\n```"
+    },
+    {
+      "id": "rw_26",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 1.18,
+      "response_preview": "Promise.all([\n  knex.transaction(t => t('users').forUpdate().select()),\n  knex.transaction(t => t('users').forUpdate().select()),\n  knex.transaction(t => t('users').forUpdate().select())\n]);"
+    },
+    {
+      "id": "rw_27",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 1.43,
+      "response_preview": "app.use((req, res, next) => {\n  req.session.touch();\n  req.session.userId = req.user.id;\n  next();\n});"
+    },
+    {
+      "id": "rw_28",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 1.68,
+      "response_preview": "(async () => {\n  try {\n    const docs = await User.insertMany([{ name: 'Alice' }, { name: '' }]);\n    console.log(docs);\n  } catch (err) {\n    console.log(err);\n  }\n})();"
+    },
+    {
+      "id": "rw_29",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 1.18,
+      "response_preview": "async function transfer(from, to, amount) {\n  const pipeline = client.pipeline();\n  pipeline.decrby(from, amount);\n  pipeline.incrby(to, amount);\n  await Promise.all([pipeline.exec(), pipeline.exec()]);\n}"
+    },
+    {
+      "id": "rw_30",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 1.65,
+      "response_preview": "app.use(async function(req, res, next) {\n  const data = await fetchData(req.params.id);\n  req.data = data;\n  next();\n});\n\napp.use(async function(req, res) {\n  const result = await processData(req.data);\n  res.json(result);\n});"
+    }
+  ]
+}
