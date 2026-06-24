@@ -90,41 +90,21 @@ def score_response(keywords, response):
         return "partial"
     return "fail"
 
+from huggingface_hub import InferenceClient
+
 def call_base_model_api(code, prompt):
-    # Sử dụng Qwen2.5-Coder-1.5B-Instruct làm base model (hoặc bản base nếu không chat)
-    API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-1.5B-Instruct"
-    
     if not HF_TOKEN:
         print("Lỗi: Cần HF_TOKEN để gọi API.")
         return ""
         
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 512,
-            "temperature": 0.2,
-            "do_sample": False,
-            "return_full_text": False,
-        },
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {HF_TOKEN}"
-    }
-    
     try:
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(API_URL, data=data, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=60) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            if isinstance(result, list) and result:
-                raw_output = result[0].get("generated_text", "")
-            elif isinstance(result, dict) and "error" in result:
-                print(f"Model loading, estimated time: {result.get('estimated_time', 'unknown')}s. Vui lòng thử lại sau.")
-                return ""
-            else:
-                raw_output = str(result)
-            return raw_output
+        client = InferenceClient(model="Qwen/Qwen2.5-Coder-32B-Instruct", token=HF_TOKEN)
+        result = client.chat_completion(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=512,
+            temperature=0.2
+        )
+        return result.choices[0].message.content
     except Exception as e:
         print(f"API Error: {e}")
         return ""
