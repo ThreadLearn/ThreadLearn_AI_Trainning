@@ -75,7 +75,37 @@ REAL_WORLD_CASES = [
      "pass_keywords": ["wx", "exclusive", "atomic", "flag", "race", "toctou"]},
     {"id": "rw_20", "category": "Context Loss",
      "code": "class DataPoller {\n  constructor(interval) {\n    this.data = [];\n    this.interval = interval;\n  }\n  start() {\n    setTimeout(function() {\n      this.data.push(Date.now());\n      setTimeout(arguments.callee, this.interval);\n    }, this.interval);\n  }\n}",
-     "pass_keywords": ["arrow", "bind", "this", "=>", ".bind(this)"]}
+     "pass_keywords": ["arrow", "bind", "this", "=>", ".bind(this)"]},
+    {"id": "rw_21", "category": "Sequential Awaits",
+     "code": "app.post('/logout', (req, res) => {\n  req.logout(() => {\n    req.session.save();\n    res.redirect('/');\n  });\n});",
+     "pass_keywords": ["await", "callback", "promise", "session.save", "then"]},
+    {"id": "rw_22", "category": "Double Callback",
+     "code": "async.series([\n  function(done) {\n    db.query('SELECT 1', function(err) {\n      done(err);\n      done(err);\n    });\n  },\n  function(done) {\n    done();\n  }\n], callback);",
+     "pass_keywords": ["return done", "return callback", "once", "called twice", "guard"]},
+    {"id": "rw_23", "category": "Resource Exhaustion",
+     "code": "const txns = Array(50).fill(null).map(() =>\n  sequelize.transaction(t =>\n    User.create({ name: 'test' }, { transaction: t })\n  )\n);\nawait Promise.all(txns);",
+     "pass_keywords": ["limit", "chunk", "batch", "pool", "concurren", "slice", "p-limit"]},
+    {"id": "rw_24", "category": "Unhandled Rejection",
+     "code": "const conn = mongoose.createConnection('mongodb://invalid-host:27017/db');\nconn.on('error', function(err) {\n  console.error('connection error:', err);\n});",
+     "pass_keywords": ["catch", ".catch", "try", "rejection", "promise", "await"]},
+    {"id": "rw_25", "category": "Race Condition",
+     "code": "const subscriptions = ['ch1', 'ch2', 'ch3'];\nconst promises = subscriptions.map(ch =>\n  client.sUnsubscribe(ch)\n);\nawait Promise.all(promises);",
+     "pass_keywords": ["sequential", "await", "race", "disconnect", "series", "loop"]},
+    {"id": "rw_26", "category": "Event Loop Blocking",
+     "code": "await Promise.all([\n  knex.transaction(t => t('users').forUpdate().select()),\n  knex.transaction(t => t('users').forUpdate().select()),\n  knex.transaction(t => t('users').forUpdate().select())\n]);",
+     "pass_keywords": ["deadlock", "sequential", "lock", "timeout", "series", "queue"]},
+    {"id": "rw_27", "category": "Sequential Awaits",
+     "code": "app.use(function(req, res, next) {\n  req.session.touch();\n  req.session.userId = req.user.id;\n  next();\n});",
+     "pass_keywords": ["await", "callback", "promise", "race", "async", "then"]},
+    {"id": "rw_28", "category": "Unhandled Rejection",
+     "code": "User.insertMany(\n  [{ name: 'Alice' }, { name: '' }],\n  function(err, docs) {\n    if (err) return console.log(err);\n    console.log(docs);\n  }\n);",
+     "pass_keywords": ["catch", ".catch", "promise", "rejection", "try", "await"]},
+    {"id": "rw_29", "category": "Double Callback",
+     "code": "async function transfer(from, to, amount) {\n  const pipeline = client.pipeline();\n  pipeline.decrby(from, amount);\n  pipeline.incrby(to, amount);\n  await pipeline.exec();\n  await pipeline.exec();\n}",
+     "pass_keywords": ["once", "return", "called twice", "remove", "exec once", "duplicate"]},
+    {"id": "rw_30", "category": "Unhandled Rejection",
+     "code": "app.use(async function(req, res, next) {\n  const data = await fetchData(req.params.id);\n  req.data = data;\n  next();\n});\n\napp.use(async function(req, res, next) {\n  const result = await processData(req.data);\n  res.json(result);\n});",
+     "pass_keywords": ["try", "catch", "next(err", "rejection", "express-async-errors", ".catch"]}
 ]
 
 def score_response(keywords, response):
@@ -165,13 +195,14 @@ def main():
             "response_preview": response_text[:200]
         })
         
+    total = len(REAL_WORLD_CASES)
     score = pass_count + partial_count * 0.5
     print("\n" + "=" * 70)
     print(f"RESULTS — {MODEL_LABEL}")
-    print(f"  Pass:    {pass_count}/20")
-    print(f"  Partial: {partial_count}/20")
-    print(f"  Fail:    {fail_count}/20")
-    print(f"  Score:   {score:.1f}/20  ({pass_count/20*100:.0f}% full pass)")
+    print(f"  Pass:    {pass_count}/{total}")
+    print(f"  Partial: {partial_count}/{total}")
+    print(f"  Fail:    {fail_count}/{total}")
+    print(f"  Score:   {score:.1f}/{total}  ({pass_count/total*100:.0f}% full pass)")
     print("=" * 70)
 
 if __name__ == "__main__":
