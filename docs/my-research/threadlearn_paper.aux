@@ -2,6 +2,7 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{qwen25coder}
 \citation{nodecb2017}
 \citation{pcwms2026}
 \@writefile{toc}{\contentsline {title}{ThreadLearn: A RAG-Augmented Fine-Tuned Language Model\unskip \ \ignorespaces  for JavaScript Concurrency Bug Detection and Remediation}{1}{chapter.1}\protected@file@percent }
@@ -53,6 +54,7 @@
 \newlabel{sec:design:arch}{{4.3}{7}{Model Architecture}{subsection.4.3}{}}
 \newlabel{sec:design:detector}{{4.3}{7}{Static Race Detector}{section*.7}{}}
 \@writefile{toc}{\contentsline {subsubsection}{Static Race Detector.}{7}{section*.7}\protected@file@percent }
+\citation{qwen25coder}
 \@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces The 5 race condition patterns detected by ThreadLearn.}}{8}{table.caption.8}\protected@file@percent }
 \newlabel{tab:patterns}{{6}{8}{The 5 race condition patterns detected by ThreadLearn}{table.caption.8}{}}
 \@writefile{lol}{\contentsline {lstlisting}{\numberline {1.1}{\ignorespaces Bug: \texttt  {var i} shared across all callbacks.}}{8}{lstlisting.1.1}\protected@file@percent }
@@ -79,22 +81,26 @@
 \newlabel{sec:eval:ablation}{{5.4}{11}{Ablation: Contribution of Each Component}{subsection.5.4}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times $PARTIAL).}}{11}{table.caption.14}\protected@file@percent }
 \newlabel{tab:ablation}{{11}{11}{Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times $PARTIAL)}{table.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Ablation study: score (\%) across all six configurations on the 30-case real-world benchmark. Solid bars = no pipeline; hatched bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral) achieves 73.3\%, a $+$13.3\,pp gain over the base model.}}{12}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:ablation}{{1}{12}{Ablation study: score (\%) across all six configurations on the 30-case real-world benchmark. Solid bars = no pipeline; hatched bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral) achieves 73.3\%, a $+$13.3\,pp gain over the base model}{figure.caption.15}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Per-Category Analysis}{12}{subsection.5.5}\protected@file@percent }
 \newlabel{sec:eval:category}{{5.5}{12}{Per-Category Analysis}{subsection.5.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Per-category scores for ThreadLearn+pipeline on 30-case benchmark.}}{12}{table.caption.15}\protected@file@percent }
-\newlabel{tab:category}{{12}{12}{Per-category scores for ThreadLearn+pipeline on 30-case benchmark}{table.caption.15}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Inference Latency}{12}{subsection.5.6}\protected@file@percent }
-\newlabel{sec:eval:latency}{{5.6}{12}{Inference Latency}{subsection.5.6}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Observed inference latency per case on Kaggle evaluation runs.}}{12}{table.caption.16}\protected@file@percent }
-\newlabel{tab:latency}{{13}{12}{Observed inference latency per case on Kaggle evaluation runs}{table.caption.16}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Per-category scores for ThreadLearn+pipeline on 30-case benchmark.}}{12}{table.caption.16}\protected@file@percent }
+\newlabel{tab:category}{{12}{12}{Per-category scores for ThreadLearn+pipeline on 30-case benchmark}{table.caption.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Per-category scores (\%) for all three models with the BM25+AST pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7 of 10 categories, with perfect scores on Sequential Awaits and Callback Hell. ``n='' annotations show the number of test cases per category.}}{13}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:category}{{2}{13}{Per-category scores (\%) for all three models with the BM25+AST pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7 of 10 categories, with perfect scores on Sequential Awaits and Callback Hell. ``n='' annotations show the number of test cases per category}{figure.caption.17}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Inference Latency}{13}{subsection.5.6}\protected@file@percent }
+\newlabel{sec:eval:latency}{{5.6}{13}{Inference Latency}{subsection.5.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Observed inference latency per case on Kaggle evaluation runs.}}{13}{table.caption.18}\protected@file@percent }
+\newlabel{tab:latency}{{13}{13}{Observed inference latency per case on Kaggle evaluation runs}{table.caption.18}{}}
 \bibcite{nodecb2017}{1}
 \bibcite{pcwms2026}{2}
 \bibcite{qlora}{3}
 \bibcite{threadsanitizer}{4}
 \bibcite{qwen25coder}{5}
 \bibcite{bm25robertson}{6}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion and Research Directions}{14}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{14}{Conclusion and Research Directions}{section.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Acknowledgment.}{14}{section*.19}\protected@file@percent }
 \bibcite{rag_survey}{7}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion and Research Directions}{13}{section.6}\protected@file@percent }
-\newlabel{sec:conclusion}{{6}{13}{Conclusion and Research Directions}{section.6}{}}
-\@writefile{toc}{\contentsline {paragraph}{Acknowledgment.}{13}{section*.17}\protected@file@percent }
-\gdef \@abspage@last{13}
+\gdef \@abspage@last{15}
