@@ -1,0 +1,219 @@
+{
+  "model": "anha12/threadlearn-qwen2.5-coder-1.5b-cot-v2",
+  "pass": 16,
+  "partial": 14,
+  "fail": 0,
+  "score": "23.0/30",
+  "results": [
+    {
+      "id": "rw_01",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "latency_s": 25.44,
+      "response_preview": "function existsAsync(filePath, callback) {\n  fs.stat(filePath, (err, stats) => {\n    if (err && err.code === 'ENOENT') {\n      callback(false);\n    } else {\n      callback(true);\n    }\n  });\n}\nasync function readFileAsync(filePath) {\n  const exists = await existsAsync(filePath);\n  if (exists) {\n    return new Promise((resolve, reject) => {\n      fs.readFile(filePath, 'utf8', (err, data) => {\n     "
+    },
+    {
+      "id": "rw_02",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 25.59,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `query` g\u1ecdi `connection.connect()` v\u00e0 `connection.query()` l\u1ea7n l\u01b0\u1ee3t nh\u01b0ng KH\u00d4NG d\u00f9ng l\u1ec7nh `await`. H\u1ec7 qu\u1ea3 l\u00e0 code ch\u1ea1y \u1edf b\u1ea5t \u0111\u1ed3ng b\u1ed9. N\u1ebfu c\u00f3 nhi\u1ec1u requests g\u1ecdi h\u00e0m n\u00e0y c\u00f9ng l\u00fac, ch\u00fang s\u1ebd t\u1ea1o ra nhi\u1ec1u context `connection` g\u1ecdi c\u00f9ng m\u1ed9t database, g\u00e2y s\u1eadp r\u00e1c (Race Condition).\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam t\u1eeb kh\u00f3a `await` tr\u01b0\u1edbc c\u00e1c h\u00e0m `connect` v\u00e0 `query` \u0111\u1ec3 l\u00e0m trung"
+    },
+    {
+      "id": "rw_03",
+      "category": "Zalgo",
+      "verdict": "pass",
+      "latency_s": 25.53,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m getData g\u1ecdi callback \u0111\u1ed3ng b\u1ed9 (synchronous) khi c\u00f3 cache, nh\u01b0ng l\u1ea1i g\u1ecdi d\u1ecb b\u1ed9 (asynchronous) khi truy v\u1ea5n DB. \u0110\u00e2y l\u00e0 l\u1ed7i Zalgo kinh \u0111i\u1ec3n, g\u00e2y r\u1ee7i ro Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n chu\u1ea9n h\u00f3a lu\u1ed3ng th\u1ef1c thi b\u1eb1ng c\u00e1ch \u0111\u01b0a nh\u00e1nh \u0111\u1ed3ng b\u1ed9 v\u00e0o Event Loop th\u00f4ng qua `process.nextTick` ho\u1eb7c `setImmediate`.\n\nconst cache = {};\nfunct"
+    },
+    {
+      "id": "rw_04",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "latency_s": 25.41,
+      "response_preview": "app.use(async function(req, res, next) {\n  const transformed = await Promise.all(req.body.items.map(item => heavyTransform(item)));\n  res.json(transformed);\n});\nconst cache = new Map();\napp.use(function(req, res, next) {\n  const key = JSON.stringify(req.body.items);\n  if (cache.has(key)) {\n    res.json(cache.get(key));\n    return;\n  }\n  const promise = fetch('/api/heavy/transform').then(r => r.jso"
+    },
+    {
+      "id": "rw_05",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "latency_s": 25.36,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: Class `UserController` c\u1ed1 g\u1eafng l\u01b0u cache v\u00e0o `this.db`. Nh\u01b0ng qu\u00e1 tr\u00ecnh `find` l\u00e0 b\u1ea5t \u0111\u1ed3ng b\u1ed9. N\u1ebfu c\u00f3 nhi\u1ec1u requests g\u1ecdi h\u00e0m n\u00e0y c\u00f9ng l\u00fac, ch\u00fang s\u1ebd b\u1ecb l\u1ed7i Race Condition (R\u00f2 r\u1ec9 d\u1eef li\u1ec7u). Ngo\u00e0i ra n\u00f3 tr\u1ea3 v\u1ec1 data b\u1ecb `await` \u1edf t\u1ea7ng server.\n// 2. Gi\u1ea3i ph\u00e1p: Thay v\u00ec l\u01b0u k\u1ebft qu\u1ea3 cu\u1ed1i c\u00f9ng, h\u00e3y l\u01b0u ch\u00ednh c\u00e1i `Promise` \u0111ang g\u1ecdi. C\u00e1c request sau s\u1ebd ch\u1edd chung c\u00e1i Promise"
+    },
+    {
+      "id": "rw_06",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 25.39,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `pool.connect` g\u1ecdi h\u00e0m `done()` nh\u01b0ng KH\u00d4NG d\u00f9ng l\u1ec7nh `return`. H\u1ec7 qu\u1ea3 l\u00e0 code s\u1ebd ti\u1ebfp t\u1ee5c ch\u1ea1y xu\u1ed1ng d\u01b0\u1edbi v\u00e0 g\u1ecdi `callback(err)` th\u00eam l\u1ea7n n\u1eefa. \u0110\u00e2y l\u00e0 l\u1ed7i Double Callback (G\u1eedi Response 2 l\u1ea7n) g\u00e2y s\u1eadp server.\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam t\u1eeb kh\u00f3a `return` tr\u01b0\u1edbc c\u00e1c call back l\u1ed7i \u0111\u1ec3 ng\u1eaft ngay lu\u1ed3ng th\u1ef1c thi.\n\npool.connect(function(err, client, done) {\n  if (err) retu"
+    },
+    {
+      "id": "rw_07",
+      "category": "Stream Leak",
+      "verdict": "pass",
+      "latency_s": 25.52,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: \u0110o\u1ea1n code pipe stream `readStream` th\u1eb3ng v\u00e0o `res`. Tuy nhi\u00ean, n\u1ebfu ph\u00eda client (ng\u01b0\u1eddi d\u00f9ng) \u0111\u1ed9t ng\u1ed9t ng\u1eaft k\u1ebft n\u1ed1i (\u0111\u00f3ng tab, r\u1edbt m\u1ea1ng), stream ngu\u1ed3n v\u1eabn ti\u1ebfp t\u1ee5c t\u1ea3i d\u1eef li\u1ec7u v\u00e0o b\u1ed9 nh\u1edb, g\u00e2y ra l\u1ed7i Buffer Leak (R\u00f2 r\u1ec9 RAM).\n// 2. Gi\u1ea3i ph\u00e1p: Ph\u1ea3i l\u1eafng nghe s\u1ef1 ki\u1ec7n `close` tr\u00ean request (req) \u0111\u1ec3 ch\u1ee7 \u0111\u1ed9ng ti\u00eau h\u1ee7y (destroy) stream ngu\u1ed3n khi client ng\u1eaft m\u1ea1ng.\n\nfunctio"
+    },
+    {
+      "id": "rw_08",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 25.27,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: \u0110o\u1ea1n code g\u1ecdi h\u00e0m `passport.authenticate` v\u00e0 `req.logIn` l\u00e0 b\u1ea5t \u0111\u1ed3ng b\u1ed9. Trong event loop, khi c\u00f3 request \u0111\u1ebfn `/login`, h\u00e0m \u0111\u00f3 \u0111\u01b0\u1ee3c g\u1ecdi nh\u01b0ng kh\u00f4ng b\u1ecb ng\u1eaft ngay l\u1eadp t\u1ee9c. Nh\u01b0ng sau khi ho\u00e0n th\u00e0nh, h\u00e0m `res.redirect` v\u1eabn \u0111\u01b0\u1ee3c g\u1ecdi, g\u00e2y ra l\u1ed7i Race Condition (R\u00f2 r\u1ec9 Context).\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n ch\u1edd s\u1ef1 ki\u1ec7n `finish` (\u0111\u00f3ng vai) c\u1ee7a request tr\u01b0\u1edbc khi redirect.\n\napp.p"
+    },
+    {
+      "id": "rw_09",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 25.34,
+      "response_preview": "function loadSessionData(cb) {\n  db.connect((err, conn) => {\n    conn.query(sql, (err, result) => {\n      conn.release();\n      cb(err, result);\n    });\n  });\n}\nco(loadSessionData).then(res.json).catch(res.status(500));\nfunction loadSessionData(cb) {\n  db.connect((err, conn) => {\n    const query = conn.query(sql, (err, result) => {\n      conn.release();\n      cb(err, result);\n    });\n    query.on("
+    },
+    {
+      "id": "rw_10",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 25.11,
+      "response_preview": "const readStream = fs.createReadStream('huge-file.csv', { highWaterMark: 1024 * 1024 });\nlet buffer = '';\nreadStream.on('data', chunk => {\n  buffer += chunk.toString();\n  processBuffer();\n});\nfunction processBuffer() {\n  while (buffer.indexOf('\\n') !== -1) {\n    const line = buffer.substring(0, buffer.indexOf('\\n'));\n    const parsed = parseCSV(line);\n    writableDB.write(parsed);\n    buffer = buf"
+    },
+    {
+      "id": "rw_11",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 25.57,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m getWithTimeout g\u1ecdi callback \u0111\u1ed3ng b\u1ed9 (synchronous) khi c\u00f3 l\u1ed7i ho\u1eb7c c\u00f3 k\u1ebft qu\u1ea3. Nh\u01b0ng l\u1ea1i g\u1ecdi d\u1ecb b\u1ed9 (asynchronous) khi set timer. \u0110\u00e2y l\u00e0 l\u1ed7i Zalgo kinh \u0111i\u1ec3n, g\u00e2y r\u1ee7i ro Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n chu\u1ea9n h\u00f3a lu\u1ed3ng th\u1ef1c thi b\u1eb1ng c\u00e1ch \u0111\u01b0a nh\u00e1nh \u0111\u1ed3ng b\u1ed9 v\u00e0o Event Loop th\u00f4ng qua `process.nextTick` ho\u1eb7c `setImmediate`.\n\nfunc"
+    },
+    {
+      "id": "rw_12",
+      "category": "Sequential Awaits",
+      "verdict": "pass",
+      "latency_s": 25.46,
+      "response_preview": "async function getDashboard(userId) {\n  const [user, orders, notifications] = await Promise.all([db.users.findById(userId), db.orders.findByUser(userId), db.notifications.findByUser(userId)]);\n  return { user, orders, notifications };\n}\nasync function getDashboard(userId, timeoutMs = 5000) {\n  const [user, orders, notifications] = await Promise.allSettled([db.users.findById(userId), db.orders.find"
+    },
+    {
+      "id": "rw_13",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 25.31,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `processJob` l\u00e0 h\u00e0m th\u1ef1c thi b\u1ea5t \u0111\u1ed3ng b\u1ed9. Trong callback `done`, we pass error and result. Tuy nhi\u00ean, kh\u00f4ng c\u00f3 code g\u1ecdi h\u00e0m `queue.process` n\u00e0o g\u1ecdi callback v\u1edbi l\u1ed7i ho\u1eb7c k\u1ebft qu\u1ea3. \u0110\u00e2y l\u00e0 l\u1ed7i Zalgo kinh \u0111i\u1ec3n, g\u00e2y r\u1ee7i ro Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam l\u1ed7i ki\u1ec3m tra v\u00e0o callback `done` \u0111\u1ec3 b\u00e1o l\u1ed7i n\u1ebfu c\u00f3.\n\nqueue.process(func"
+    },
+    {
+      "id": "rw_14",
+      "category": "Callback Hell",
+      "verdict": "pass",
+      "latency_s": 25.53,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `readFile` l\u00e0 h\u00e0m b\u1ea5t \u0111\u1ed3ng b\u1ed9. N\u1ebfu c\u00f3 nhi\u1ec1u ti\u1ebfn tr\u00ecnh g\u1ecdi h\u00e0m n\u00e0y c\u00f9ng l\u00fac, ch\u00fang s\u1ebd \u0111\u1ecdc file c\u00f9ng m\u1ed9t l\u1ea7n v\u00e0 g\u00e2y ra l\u1ed7i Race Condition. Ngo\u00e0i ra n\u00f3 g\u1ecdi `connect` v\u00e0 `query` nh\u01b0ng KH\u00d4NG d\u00f9ng `await` ho\u1eb7c `Promise.all`. H\u1ec7 qu\u1ea3 l\u00e0 code s\u1ebd b\u1ecb g\u1ecdi \u0111i g\u1ecdi l\u1ea1i nhi\u1ec1u l\u1ea7n (Race Condition).\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam t\u1eeb kh\u00f3a `await` tr\u01b0\u1edbc c\u00e1c h\u00e0m `connect` v\u00e0 `query`. N"
+    },
+    {
+      "id": "rw_15",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 25.11,
+      "response_preview": "async function* streamAllUsers(users) {\n  for (const user of users) {\n    yield await axios.post('/notify', { userId: user.id });\n  }\n}\nasync function notifyAllUsers(users) {\n  const results = [];\n  for await (const result of streamAllUsers(users)) {\n    results.push(result);\n  }\n  return results;\n}\nasync function* streamAllUsers(users, concurrency = 4) {\n  const workers = [];\n  let index = 0;\n  w"
+    },
+    {
+      "id": "rw_16",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "latency_s": 25.49,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: \u0110o\u1ea1n code th\u1ef1c hi\u1ec7n l\u01b0u cache v\u00e0o database r\u1ed3i tr\u1ea3 v\u1ec1 json. Trong Node.js, I/O l\u00e0 b\u1ea5t \u0111\u1ed3ng b\u1ed9. N\u1ebfu c\u00f3 nhi\u1ec1u requests g\u1ecdi h\u00e0m n\u00e0y c\u00f9ng l\u00fac, ch\u00fang s\u1ebd c\u1ed1 g\u1eafng ghi \u0111\u00e8 l\u1eabn nhau (Race Condition). Ngo\u00e0i ra n\u00f3 kh\u00f4ng d\u00f9ng l\u1ec7nh `await` ho\u1eb7c `Promise.resolve()` \u0111\u1ec3 ch\u1edd lu\u1ed3ng execute.\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam t\u1eeb kh\u00f3a `async` tr\u01b0\u1edbc h\u00e0m `handle`, s\u1eed d\u1ee5ng `await` \u0111\u1ec3 ch\u1edd lu\u1ed3ng exe"
+    },
+    {
+      "id": "rw_17",
+      "category": "Zalgo",
+      "verdict": "pass",
+      "latency_s": 25.48,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `processItems` g\u1ecdi callback \u0111\u1ed3ng b\u1ed9 (synchronous) khi c\u00f3 cache, nh\u01b0ng l\u1ea1i g\u1ecdi d\u1ecb b\u1ed9 (asynchronous) khi g\u1ecdi external function `asyncCompute`. \u0110\u00e2y l\u00e0 l\u1ed7i Zalgo kinh \u0111i\u1ec3n, g\u00e2y r\u1ee7i ro Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n chu\u1ea9n h\u00f3a lu\u1ed3ng th\u1ef1c thi b\u1eb1ng c\u00e1ch \u0111\u01b0a nh\u00e1nh \u0111\u1ed3ng b\u1ed9 v\u00e0o Event Loop th\u00f4ng qua `process.nextTick` ho\u1eb7c `setImme"
+    },
+    {
+      "id": "rw_18",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 25.36,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: \u0110o\u1ea1n code `await db.findUser(req.params.id);` g\u1ecdi h\u00e0m `findUser` v\u1edbi parameter `req.params.id`. Trong Node.js, khi d\u00f9ng `await`, server s\u1ebd ch\u1edd chung th\u1ef1c thi \u0111\u1ebfn cu\u1ed1i h\u00e0m. Nh\u01b0ng trong tr\u01b0\u1eddng h\u1ee3p n\u00e0y, server kh\u00f4ng ngay l\u1eadp t\u1ee9c tr\u1ea3 v\u1ec1 response. Thay v\u00ec ch\u1edd, server h\u00e3y g\u1eedi response l\u00ean client ngay l\u1ea7n \u0111\u1ea7u ti\u00ean.\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam t\u1eeb kh\u00f3a `return` tr\u01b0\u1edbc c\u00e1c resp"
+    },
+    {
+      "id": "rw_19",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 25.08,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `createFileIfNotExists` g\u1ecdi `fs.access` \u0111\u1ec3 ki\u1ec3m tra\u662f\u5426\u5b58\u5728 file. N\u1ebfu kh\u00f4ng t\u1ed3n t\u1ea1i, n\u00f3 g\u1ecdi `fs.writeFile`. Nh\u01b0ng qu\u00e1 tr\u00ecnh `access` l\u00e0 b\u1ea5t \u0111\u1ed3ng b\u1ed9. N\u1ebfu c\u00f3 nhi\u1ec1u ti\u1ebfn tr\u00ecnh g\u1ecdi h\u00e0m n\u00e0y c\u00f9ng l\u00fac, ch\u00fang s\u1ebd g\u1ecdi `access` v\u00e0 `writeFile` nhau, g\u00e2y ra l\u1ed7i Race Condition (R\u00f2 r\u1ec9 RAM).\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n s\u1eed d\u1ee5ng h\u00e0m `fs.stat` \u0111\u1ec3 ki\u1ec3m tra\u662f\u5426\u5b58\u5728\uff0c\u0111\u1eb7c bi\u1ec7t l\u00e0 `fs.statSync` ("
+    },
+    {
+      "id": "rw_20",
+      "category": "Context Loss",
+      "verdict": "pass",
+      "latency_s": 25.34,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: Class `DataPoller` s\u1eed d\u1ee5ng `setTimeout` \u0111\u1ec3 g\u1ecdi h\u00e0m itself. Nh\u01b0ng qu\u00e1 tr\u00ecnh `setTimeout` l\u00e0 b\u1ea5t \u0111\u1ed3ng b\u1ed9. N\u1ebfu c\u00f3 nhi\u1ec1u instances c\u00f9ng g\u1ecdi h\u00e0m `start()` c\u00f9ng l\u00fac, ch\u00fang s\u1ebd d\u00f9ng c\u00f9ng m\u1ed9t callback v\u00e0 ghi \u0111\u00e8 l\u1eabn nhau v\u00e0o `this.data`. Ngo\u00e0i ra n\u00f3 kh\u00f4ng d\u00f9ng l\u1ec7nh `return` \u1edf cu\u1ed1i function, g\u00e2y r\u1ee7i ro Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: Thay "
+    },
+    {
+      "id": "rw_21",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 25.35,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: \u0110o\u1ea1n code `req.logout()` l\u00e0 h\u00e0m g\u1ecdi out-of-band (\u00f4 tay). H\u1ec7 \u0111i\u1ec1u h\u00e0nh Node.js kh\u00f4ng c\u00f3 s\u1ef1 ki\u1ec7n n\u00e0o t\u1ef1 \u0111\u1ed9ng g\u1ecdi \u0111\u1ec3 th\u00f4ng b\u00e1o l\u1ed7i n\u1ebfu h\u00e0m n\u00e0y b\u1ecb l\u1ed7i. \u0110\u00e2y l\u00e0 r\u1ee7i ro Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n s\u1eed d\u1ee5ng h\u00e0m `res.locals` ho\u1eb7c `res.render` \u0111\u1ec3 g\u1eedi response ngay l\u1ea7n \u0111\u1ea7u ti\u00ean, tr\u00e1nhRace Condition.\n\napp.post('/logout', (req, res) ="
+    },
+    {
+      "id": "rw_22",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 25.35,
+      "response_preview": "function waitQueryReady(emitter, cb) {\n  emitter.once('query_ready', data => {\n    cb(null, data);\n  });\n  emitter.once('error', cb);\n}\nasync.series([\n  em => waitQueryReady(em, done => {\n    db.query('SELECT 1', (err, data) => done(err, data));\n  }),\n  done => done()\n], (err, results) => {});\nconst waitQueryReady = (emitter, cb) => {\n  const onReady = data => {\n    cleanup();\n    cb(null, data);\n"
+    },
+    {
+      "id": "rw_23",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 25.44,
+      "response_preview": "async function* generateTxns() {\n  for (let i = 0; i < 50; i++) {\n    yield await sequelize.transaction(async t => {\n      return await User.create({ name: 'test' }, { transaction: t });\n    });\n  }\n}\nconst txns = [...generateTxns()];\nawait Promise.all(txns);\nfunction* generateTxns() {\n  const tx = yield* sequelize.transaction();\n  try {\n    for (let i = 0; i < 50; i++) {\n      yield* [User.create"
+    },
+    {
+      "id": "rw_24",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 25.58,
+      "response_preview": "const fs = require('fs');\nfunction readConfigData(cb) {\n  fs.readFile('./config.json', 'utf8', (err, data) => {\n    if (err) return cb(err);\n    cb(null, JSON.parse(data));\n  });\n}\nconst fs = require('fs').promises;\nasync function readConfigData() {\n  const data = await fs.readFile('./config.json', 'utf8');\n  return JSON.parse(data);\n}\nconst http = require('http');\nfunction getArticleData(cb) {\n  "
+    },
+    {
+      "id": "rw_25",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 25.52,
+      "response_preview": "const subscriptions = ['ch1', 'ch2', 'ch3'];\nPromise.all(subscriptions.map(ch => client.sUnsubscribe(ch))).then(() => {});\nconst subscriptions = ['ch1', 'ch2', 'ch3'];\nPromise.all(subscriptions.map(ch => client.sUnsubscribe(ch))).catch(err => {\n  console.error('Failed to unsubscribe', err);\n});\nconst subscriptions = ['ch1', 'ch2', 'ch3'];\nPromise.all(subscriptions.map(ch => client.sUnsubscribe(ch)"
+    },
+    {
+      "id": "rw_26",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 25.59,
+      "response_preview": "const results = await Promise.all([knex('users').forUpdate().select()]);\nconst [user1, user2, user3] = results;\nconst knex = require('knex');\nasync function getAllUsers() {\n  const users = [];\n  for (let i = 0; i < 3; i++) {\n    const result = await knex('users').forUpdate().select();\n    users.push(result);\n  }\n  return users;\n}\nconst [user1, user2, user3] = await getAllUsers();\nconst knex = requ"
+    },
+    {
+      "id": "rw_27",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 25.14,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: \u0110o\u1ea1n code `req.session.touch();` v\u00e0 `req.session.userId = req.user.id;` g\u1ecdi h\u00e0m `touch()` \u0111\u1ec3 c\u1eadp nh\u1eadt th\u1eddi \u0111i\u1ec3m expires c\u1ee7a session, nh\u01b0ng KH\u00d4NG d\u00f9ng l\u1ec7nh `save()` \u0111\u1ec3 ghi \u0111\u00e8 l\u00ean database. \u0110\u00e2y l\u00e0 l\u1ed7i Double Update (G\u1eedi Request Duplicate) g\u00e2y s\u1eadp server.\n// 2. Gi\u1ea3i ph\u00e1p: Th\u00eam l\u1ec7nh `save()` v\u00e0o cu\u1ed1i c\u00f9ng \u0111\u1ec3 ghi \u0111\u00e8 l\u00ean database.\n\napp.use(function(req, res, next) {\n"
+    },
+    {
+      "id": "rw_28",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 25.48,
+      "response_preview": "const User = require('./models/User');\nUser.insertMany([{ name: 'Alice' }, { name: '' }], (err, docs) => {\n  if (err) return console.error(err);\n  console.log(docs);\n});\nconst User = require('./models/User');\nasync function insertUsers(users) {\n  const results = await User.insertMany(users);\n  return results;\n}\nconst users = [{ name: 'Alice' }, { name: '' }];\ninsertUsers(users).then(docs => consol"
+    },
+    {
+      "id": "rw_29",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 25.51,
+      "response_preview": "// THOUGHT PROCESS:\n// 1. Ph\u00e2n t\u00edch: H\u00e0m `transfer` th\u1ef1c hi\u1ec7n giao d\u1ecbch trung b\u00ecnh (Average Transaction). Trong h\u00e0m, khi g\u1ecdi `decrby` v\u00e0 `incrby` c\u00f9ng l\u00fac tr\u00ean c\u00f9ng m\u1ed9t connection, n\u00f3 g\u00e2y ra l\u1ed7i Race Condition kh\u00f4ng l\u01b0\u1eddng tr\u01b0\u1edbc cho lu\u1ed3ng g\u1ecdi.\n// 2. Gi\u1ea3i ph\u00e1p: C\u1ea7n s\u1eed d\u1ee5ng transaction \u0111\u1ec3 ghi \u0111\u00e8 l\u1eabn nhau n\u1ebfu c\u00f3 l\u1ed7i Race Condition.\n\nasync function transfer(from, to, amount) {\n  const pipeline = client"
+    },
+    {
+      "id": "rw_30",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 25.26,
+      "response_preview": "app.get('/stream/cfg', async (req, res) => {\n  const stream = http.request(`http://internal-service/cfg.dat`);\n  stream.pipe(res);\n  stream.on('error', (e) => res.status(500).end());\n});\nconst fs = require('fs');\napp.get('/stream/cfg', (req, res) => {\n  const readStream = fs.createReadStream('./cfg.dat');\n  readStream.pipe(res);\n  readStream.on('error', (e) => res.status(500).end());\n});\nfunction "
+    }
+  ]
+}

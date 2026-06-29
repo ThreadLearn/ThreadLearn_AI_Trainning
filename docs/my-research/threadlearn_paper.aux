@@ -3,6 +3,7 @@
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \citation{qwen25coder}
+\citation{nodejs}
 \citation{nodecb2017}
 \citation{pcwms2026}
 \@writefile{toc}{\contentsline {title}{ThreadLearn: A RAG-Augmented Fine-Tuned Language Model\unskip \ \ignorespaces  for JavaScript Concurrency Bug Detection and Remediation}{1}{chapter.1}\protected@file@percent }
@@ -10,6 +11,7 @@
 \@writefile{toc}{\contentsline {author}{Lê Trí Trung \and Hà Văn Ân}{1}{chapter.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
+\citation{fastapi}
 \citation{nodecb2017}
 \citation{nodecb2017}
 \citation{nodecb2017}
@@ -18,9 +20,17 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Concurrency Bug Taxonomy in Node.js}{2}{subsection.2.1}\protected@file@percent }
 \newlabel{sec:bg:taxonomy}{{2.1}{2}{Concurrency Bug Taxonomy in Node.js}{subsection.2.1}{}}
 \citation{bm25robertson}
+\citation{rankbm25}
 \citation{qlora}
+\citation{lora}
+\citation{transformers}
+\citation{peft}
+\citation{bitsandbytes}
+\citation{pytorch}
 \citation{threadsanitizer}
+\citation{eslint}
 \citation{nodecb2017}
+\citation{nacd2025}
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Concurrency bug types in Node.js (from NodeCB~\cite  {nodecb2017}).}}{3}{table.caption.2}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
 \newlabel{tab:taxonomy}{{1}{3}{Concurrency bug types in Node.js (from NodeCB~\cite {nodecb2017})}{table.caption.2}{}}
@@ -32,6 +42,8 @@
 \newlabel{sec:related}{{3}{3}{Related Work}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Heuristic and Rule-Based Approaches}{3}{subsection.3.1}\protected@file@percent }
 \newlabel{sec:related:rules}{{3.1}{3}{Heuristic and Rule-Based Approaches}{subsection.3.1}{}}
+\citation{codebert}
+\citation{codet5}
 \citation{pcwms2026}
 \citation{rag_survey}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}ML-Based and LLM-Based Approaches}{4}{subsection.3.2}\protected@file@percent }
@@ -42,65 +54,107 @@
 \newlabel{sec:design}{{4}{4}{Proposed Approach}{section.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Dataset}{4}{subsection.4.1}\protected@file@percent }
 \newlabel{sec:design:dataset}{{4.1}{4}{Dataset}{subsection.4.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Real-world benchmark distribution (30 cases from production npm packages).}}{5}{table.caption.4}\protected@file@percent }
-\newlabel{tab:benchmark}{{3}{5}{Real-world benchmark distribution (30 cases from production npm packages)}{table.caption.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Real-world benchmark sources (30 cases, rw\_01--rw\_30). All bugs originate from official GitHub issue trackers or Node.js documentation.}}{6}{table.caption.5}\protected@file@percent }
-\newlabel{tab:benchmark_sources}{{4}{6}{Real-world benchmark sources (30 cases, rw\_01--rw\_30). All bugs originate from official GitHub issue trackers or Node.js documentation}{table.caption.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Data Preprocessing and Evaluation Strategy}{6}{subsection.4.2}\protected@file@percent }
-\newlabel{sec:design:preprocess}{{4.2}{6}{Data Preprocessing and Evaluation Strategy}{subsection.4.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces AST preprocessor functions.}}{7}{table.caption.6}\protected@file@percent }
-\newlabel{tab:ast}{{5}{7}{AST preprocessor functions}{table.caption.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Model Architecture}{7}{subsection.4.3}\protected@file@percent }
-\newlabel{sec:design:arch}{{4.3}{7}{Model Architecture}{subsection.4.3}{}}
-\newlabel{sec:design:detector}{{4.3}{7}{Static Race Detector}{section*.7}{}}
-\@writefile{toc}{\contentsline {subsubsection}{Static Race Detector.}{7}{section*.7}\protected@file@percent }
+\citation{mdn}
+\citation{rxjs}
+\citation{plimit}
+\citation{asyncmutex}
+\citation{bluebird}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Generator functions in \texttt  {generate\_pairs()} and their transformations.}}{6}{table.caption.4}\protected@file@percent }
+\newlabel{tab:generators}{{3}{6}{Generator functions in \texttt {generate\_pairs()} and their transformations}{table.caption.4}{}}
+\citation{nodebestpractices}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Real-world benchmark distribution (30 cases from production npm packages).}}{7}{table.caption.5}\protected@file@percent }
+\newlabel{tab:benchmark}{{4}{7}{Real-world benchmark distribution (30 cases from production npm packages)}{table.caption.5}{}}
+\citation{esprima}
+\citation{esprima}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Real-world benchmark sources (30 cases, rw\_01--rw\_30). All bugs originate from official GitHub issue trackers or Node.js documentation.}}{8}{table.caption.6}\protected@file@percent }
+\newlabel{tab:benchmark_sources}{{5}{8}{Real-world benchmark sources (30 cases, rw\_01--rw\_30). All bugs originate from official GitHub issue trackers or Node.js documentation}{table.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces ThreadLearn end-to-end pipeline. Buggy JavaScript code flows through five modules: static race detection, AST keyword extraction, BM25 retrieval from a 2,050-document knowledge base, prompt construction, and fine-tuned LLM inference to produce both a diagnosis and a corrected fix.}}{9}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:overview}{{1}{9}{ThreadLearn end-to-end pipeline. Buggy JavaScript code flows through five modules: static race detection, AST keyword extraction, BM25 retrieval from a 2,050-document knowledge base, prompt construction, and fine-tuned LLM inference to produce both a diagnosis and a corrected fix}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Data Preprocessing and Evaluation Strategy}{9}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:design:preprocess}{{4.2}{9}{Data Preprocessing and Evaluation Strategy}{subsection.4.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces AST preprocessor functions.}}{9}{table.caption.7}\protected@file@percent }
+\newlabel{tab:ast}{{6}{9}{AST preprocessor functions}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Model Architecture}{9}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:design:arch}{{4.3}{9}{Model Architecture}{subsection.4.3}{}}
+\newlabel{sec:design:detector}{{4.3}{10}{Static Race Detector}{section*.9}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Static Race Detector.}{10}{section*.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces The 5 race condition patterns detected by ThreadLearn.}}{10}{table.caption.10}\protected@file@percent }
+\newlabel{tab:patterns}{{7}{10}{The 5 race condition patterns detected by ThreadLearn}{table.caption.10}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1.1}{\ignorespaces Bug: \texttt  {var i} shared across all callbacks.}}{10}{lstlisting.1.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1.2}{\ignorespaces Fix: \texttt  {let i} creates a separate binding per iteration.}}{10}{lstlisting.1.2}\protected@file@percent }
+\citation{cot}
 \citation{qwen25coder}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces The 5 race condition patterns detected by ThreadLearn.}}{8}{table.caption.8}\protected@file@percent }
-\newlabel{tab:patterns}{{6}{8}{The 5 race condition patterns detected by ThreadLearn}{table.caption.8}{}}
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {1.1}{\ignorespaces Bug: \texttt  {var i} shared across all callbacks.}}{8}{lstlisting.1.1}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {1.2}{\ignorespaces Fix: \texttt  {let i} creates a separate binding per iteration.}}{8}{lstlisting.1.2}\protected@file@percent }
-\newlabel{sec:design:finetuning}{{4.3}{8}{Hindsight Chain-of-Thought Fine-Tuning}{section*.9}{}}
-\@writefile{toc}{\contentsline {subsubsection}{Hindsight Chain-of-Thought Fine-Tuning.}{8}{section*.9}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Fine-tuning configuration.}}{9}{table.caption.10}\protected@file@percent }
-\newlabel{tab:finetune}{{7}{9}{Fine-tuning configuration}{table.caption.10}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Experimental Results and Discussions}{9}{section.5}\protected@file@percent }
-\newlabel{sec:eval}{{5}{9}{Experimental Results and Discussions}{section.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Experimental Setup}{9}{subsection.5.1}\protected@file@percent }
-\newlabel{sec:eval:setup}{{5.1}{9}{Experimental Setup}{subsection.5.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Evaluation configurations.}}{9}{table.caption.11}\protected@file@percent }
-\newlabel{tab:setup}{{8}{9}{Evaluation configurations}{table.caption.11}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Results Without Pipeline}{9}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:eval:nopipeline}{{5.2}{9}{Results Without Pipeline}{subsection.5.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Results without pipeline on 30 real-world cases (raw buggy code input only).}}{10}{table.caption.12}\protected@file@percent }
-\newlabel{tab:nopipeline}{{9}{10}{Results without pipeline on 30 real-world cases (raw buggy code input only)}{table.caption.12}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Results With BM25+AST Pipeline}{10}{subsection.5.3}\protected@file@percent }
-\newlabel{sec:eval:pipeline}{{5.3}{10}{Results With BM25+AST Pipeline}{subsection.5.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Results with BM25+AST pipeline on 30 real-world cases.}}{10}{table.caption.13}\protected@file@percent }
-\newlabel{tab:pipeline}{{10}{10}{Results with BM25+AST pipeline on 30 real-world cases}{table.caption.13}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Ablation: Contribution of Each Component}{11}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:eval:ablation}{{5.4}{11}{Ablation: Contribution of Each Component}{subsection.5.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times $PARTIAL).}}{11}{table.caption.14}\protected@file@percent }
-\newlabel{tab:ablation}{{11}{11}{Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times $PARTIAL)}{table.caption.14}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Ablation study: score (\%) across all six configurations on the 30-case real-world benchmark. Solid bars = no pipeline; hatched bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral) achieves 73.3\%, a $+$13.3\,pp gain over the base model.}}{12}{figure.caption.15}\protected@file@percent }
-\newlabel{fig:ablation}{{1}{12}{Ablation study: score (\%) across all six configurations on the 30-case real-world benchmark. Solid bars = no pipeline; hatched bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral) achieves 73.3\%, a $+$13.3\,pp gain over the base model}{figure.caption.15}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Per-Category Analysis}{12}{subsection.5.5}\protected@file@percent }
-\newlabel{sec:eval:category}{{5.5}{12}{Per-Category Analysis}{subsection.5.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Per-category scores for ThreadLearn+pipeline on 30-case benchmark.}}{12}{table.caption.16}\protected@file@percent }
-\newlabel{tab:category}{{12}{12}{Per-category scores for ThreadLearn+pipeline on 30-case benchmark}{table.caption.16}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Per-category scores (\%) for all three models with the BM25+AST pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7 of 10 categories, with perfect scores on Sequential Awaits and Callback Hell. ``n='' annotations show the number of test cases per category.}}{13}{figure.caption.17}\protected@file@percent }
-\newlabel{fig:category}{{2}{13}{Per-category scores (\%) for all three models with the BM25+AST pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7 of 10 categories, with perfect scores on Sequential Awaits and Callback Hell. ``n='' annotations show the number of test cases per category}{figure.caption.17}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Inference Latency}{13}{subsection.5.6}\protected@file@percent }
-\newlabel{sec:eval:latency}{{5.6}{13}{Inference Latency}{subsection.5.6}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Observed inference latency per case on Kaggle evaluation runs.}}{13}{table.caption.18}\protected@file@percent }
-\newlabel{tab:latency}{{13}{13}{Observed inference latency per case on Kaggle evaluation runs}{table.caption.18}{}}
+\citation{trl}
+\citation{kaggle}
+\citation{gpt35}
+\newlabel{sec:design:finetuning}{{4.3}{11}{Hindsight Chain-of-Thought Fine-Tuning}{section*.11}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Hindsight Chain-of-Thought Fine-Tuning.}{11}{section*.11}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Fine-tuning configuration.}}{11}{table.caption.12}\protected@file@percent }
+\newlabel{tab:finetune}{{8}{11}{Fine-tuning configuration}{table.caption.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Experimental Results and Discussions}{11}{section.5}\protected@file@percent }
+\newlabel{sec:eval}{{5}{11}{Experimental Results and Discussions}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Experimental Setup}{11}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:eval:setup}{{5.1}{11}{Experimental Setup}{subsection.5.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Evaluation configurations.}}{11}{table.caption.13}\protected@file@percent }
+\newlabel{tab:setup}{{9}{11}{Evaluation configurations}{table.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Results Without Pipeline}{12}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:eval:nopipeline}{{5.2}{12}{Results Without Pipeline}{subsection.5.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Results without pipeline on 30 real-world cases (raw buggy code input only).}}{12}{table.caption.14}\protected@file@percent }
+\newlabel{tab:nopipeline}{{10}{12}{Results without pipeline on 30 real-world cases (raw buggy code input only)}{table.caption.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Results With BM25+AST Pipeline}{12}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:eval:pipeline}{{5.3}{12}{Results With BM25+AST Pipeline}{subsection.5.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Results with BM25+AST pipeline on 30 real-world cases.}}{12}{table.caption.15}\protected@file@percent }
+\newlabel{tab:pipeline}{{11}{12}{Results with BM25+AST pipeline on 30 real-world cases}{table.caption.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Ablation: Contribution of Each Component}{13}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:eval:ablation}{{5.4}{13}{Ablation: Contribution of Each Component}{subsection.5.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times $PARTIAL).}}{13}{table.caption.16}\protected@file@percent }
+\newlabel{tab:ablation}{{12}{13}{Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times $PARTIAL)}{table.caption.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Score (\%) across all six configurations on the 30-case real-world benchmark. Fine-tuning alone adds $+$3.3\,pp; the BM25+AST pipeline adds $+$10\,pp on top of fine-tuning for a combined $+$13.3\,pp gain over the base model.}}{14}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:contribution}{{2}{14}{Score (\%) across all six configurations on the 30-case real-world benchmark. Fine-tuning alone adds $+$3.3\,pp; the BM25+AST pipeline adds $+$10\,pp on top of fine-tuning for a combined $+$13.3\,pp gain over the base model}{figure.caption.17}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Ablation study: score (\%) across all six configurations on the 30-case real-world benchmark. Solid bars = no pipeline; hatched bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral) achieves 73.3\%, a $+$13.3\,pp gain over the base model.}}{14}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:ablation}{{3}{14}{Ablation study: score (\%) across all six configurations on the 30-case real-world benchmark. Solid bars = no pipeline; hatched bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral) achieves 73.3\%, a $+$13.3\,pp gain over the base model}{figure.caption.18}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Per-Category Analysis}{15}{subsection.5.5}\protected@file@percent }
+\newlabel{sec:eval:category}{{5.5}{15}{Per-Category Analysis}{subsection.5.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Per-category scores for ThreadLearn+pipeline on 30-case benchmark.}}{15}{table.caption.19}\protected@file@percent }
+\newlabel{tab:category}{{13}{15}{Per-category scores for ThreadLearn+pipeline on 30-case benchmark}{table.caption.19}{}}
+\citation{pcwms2026}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Per-category scores (\%) for all three models with the BM25+AST pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7 of 10 categories, with perfect scores on Sequential Awaits and Callback Hell. ``n='' annotations show the number of test cases per category.}}{16}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:category}{{4}{16}{Per-category scores (\%) for all three models with the BM25+AST pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7 of 10 categories, with perfect scores on Sequential Awaits and Callback Hell. ``n='' annotations show the number of test cases per category}{figure.caption.20}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Inference Latency}{16}{subsection.5.6}\protected@file@percent }
+\newlabel{sec:eval:latency}{{5.6}{16}{Inference Latency}{subsection.5.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Observed inference latency per case on Kaggle evaluation runs.}}{16}{table.caption.21}\protected@file@percent }
+\newlabel{tab:latency}{{14}{16}{Observed inference latency per case on Kaggle evaluation runs}{table.caption.21}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion and Research Directions}{16}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{16}{Conclusion and Research Directions}{section.6}{}}
 \bibcite{nodecb2017}{1}
 \bibcite{pcwms2026}{2}
 \bibcite{qlora}{3}
 \bibcite{threadsanitizer}{4}
-\bibcite{qwen25coder}{5}
-\bibcite{bm25robertson}{6}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion and Research Directions}{14}{section.6}\protected@file@percent }
-\newlabel{sec:conclusion}{{6}{14}{Conclusion and Research Directions}{section.6}{}}
-\@writefile{toc}{\contentsline {paragraph}{Acknowledgment.}{14}{section*.19}\protected@file@percent }
-\bibcite{rag_survey}{7}
-\gdef \@abspage@last{15}
+\bibcite{nacd2025}{5}
+\bibcite{qwen25coder}{6}
+\bibcite{bm25robertson}{7}
+\bibcite{rag_survey}{8}
+\bibcite{codebert}{9}
+\@writefile{toc}{\contentsline {paragraph}{Acknowledgment.}{17}{section*.22}\protected@file@percent }
+\bibcite{codet5}{10}
+\bibcite{lora}{11}
+\bibcite{trl}{12}
+\bibcite{esprima}{13}
+\bibcite{eslint}{14}
+\bibcite{nodejs}{15}
+\bibcite{gpt35}{16}
+\bibcite{mdn}{17}
+\bibcite{fastapi}{18}
+\bibcite{kaggle}{19}
+\bibcite{rxjs}{20}
+\bibcite{plimit}{21}
+\bibcite{asyncmutex}{22}
+\bibcite{bluebird}{23}
+\bibcite{nodebestpractices}{24}
+\bibcite{cot}{25}
+\bibcite{transformers}{26}
+\bibcite{peft}{27}
+\bibcite{bitsandbytes}{28}
+\bibcite{pytorch}{29}
+\bibcite{rankbm25}{30}
+\gdef \@abspage@last{18}

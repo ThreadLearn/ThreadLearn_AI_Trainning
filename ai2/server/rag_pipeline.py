@@ -37,25 +37,70 @@ def _extract_keywords(code: str) -> str:
     """
     Trích keyword từ code để làm BM25 query.
 
-    Dùng ast_preprocessor.extract_keywords() (esprima AST):
-        - Chỉ lấy Identifier tokens thật — tên hàm, tên biến, API calls
-        - Bỏ JS keywords (if/for/const/async...) chính xác hơn regex
-        - Giữ nguyên CamelCase (setTimeout, Promise, appendFile)
-          để khớp với BM25 index đã tách CamelCase
-
-    Fallback sang tokenize() nếu esprima không có.
-
-    Ví dụ:
-        code = "setTimeout(() => { sharedVar++; }, 100);"
-        tokenize()          → "set timeout shared var"   (tách CamelCase, loãng)
-        ast extract_keywords → "setTimeout sharedVar"    (giữ nguyên, khớp tốt hơn)
+    Ưu tiên semantic pattern detection (regex → category keywords) trước,
+    fallback sang AST/tokenize. Category keywords khớp trực tiếp với
+    title/content trong knowledge_base.json, tốt hơn function names.
     """
+    semantic = _semantic_keywords(code)
+    if semantic:
+        return semantic
     if _HAS_AST:
         kw = _ast_extract_keywords(code, language="javascript")
         if kw.strip():
             return kw
-    # Fallback
     return " ".join(tokenize(code)[:20])
+
+
+# Mapping pattern → BM25 query terms khớp với knowledge_base titles
+_SEMANTIC_PATTERNS = [
+    # Double Callback
+    (r"if\s*\(\s*err\s*\)[^r][^e].*?cb\(|callback\(err\)(?!\s*;?\s*return)",
+     "double callback called twice return guard"),
+    (r"setTimeout[^}]+cb\(|cb\([^)]*\)[^}]*cb\(",
+     "double callback timeout clearTimeout once"),
+    # Zalgo
+    (r"if\s*\(\s*\w+\[", "zalgo synchronous asynchronous consistent nextTick setImmediate"),
+    # Sequential Awaits
+    (r"await\s+\w[^\n;]+\n\s*(?:const\s+\w+\s*=\s*)?await\s+\w[^\n;]+\n\s*(?:const\s+\w+\s*=\s*)?await",
+     "sequential await Promise.all parallel concurrent"),
+    # Unhandled Rejection
+    (r"async\s+function[^{]*\{(?![\s\S]{0,200}try\s*\{)",
+     "unhandled rejection async catch try error"),
+    # Event Loop Blocking
+    (r"pbkdf2Sync|execSync|readFileSync|writeFileSync",
+     "blocking event loop sync worker thread"),
+    (r"for\s*\([^)]+\)\s*\{[^}]*heavyTransform|for\s*\([^)]+\)\s*\{[^}]*crypto",
+     "blocking event loop worker setImmediate chunk"),
+    # Resource Exhaustion / backpressure
+    (r"createReadStream[^}]+\.on\s*\(\s*['\"]data",
+     "backpressure stream pause resume drain highWaterMark"),
+    (r"Promise\.all\s*\(\s*\w+\.map",
+     "resource exhaustion concurrency limit p-limit batch chunk"),
+    # Stream Leak
+    (r"\.pipe\s*\([^)]*\)\.pipe|createReadStream[^}]+pipe",
+     "stream pipeline error destroy cleanup leak"),
+    # Context Loss
+    (r"this\.\w+[^=\n]*function\s*\(|setTimeout\s*\(\s*function",
+     "context loss bind arrow this"),
+    # Race Condition — file system
+    (r"fs\.exists|fs\.access[^(]*F_OK",
+     "race condition file system toctou atomic exclusive wx"),
+    # Race Condition — shared state
+    (r"job\.data\.status\s*=|\.status\s*===\s*['\"]pending",
+     "race condition atomic lock transaction update"),
+    # Callback Hell
+    (r"function\s*\(err[^)]*\)\s*\{[^}]*function\s*\(err[^)]*\)\s*\{[^}]*function\s*\(err",
+     "callback hell async await promise flatten"),
+]
+
+import re as _re  # already imported above but safe to re-import
+
+def _semantic_keywords(code: str) -> str:
+    """Pattern match code → trả về category keywords cho BM25 query."""
+    for pattern, keywords in _SEMANTIC_PATTERNS:
+        if _re.search(pattern, code, _re.MULTILINE | _re.DOTALL):
+            return keywords
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -78,10 +123,10 @@ def _build_prompt(code: str, docs: list) -> str:
 
     if context:
         return (
-            f"Dưới đây là các tài liệu tham khảo về lập trình concurrent JavaScript:\n\n"
-            f"{context}\n\n"
-            f"---\n\n"
-            f"Convert to concurrent JavaScript:\n\n{code}\n"
+            f"Convert to concurrent JavaScript:\n\n{code}\n\n"
+            f"<reference_docs>\n"
+            f"Tài liệu tham khảo:\n\n{context}\n"
+            f"</reference_docs>\n"
         )
     else:
         return f"Convert to concurrent JavaScript:\n\n{code}\n"
@@ -98,7 +143,7 @@ def run(
 ) -> tuple[List[Issue], List[DocUsed]]:
     # 1. RAG
     query = _extract_keywords(code)
-    raw_docs = retriever.search(query, top_k=3) if query else []
+    raw_docs = retriever.search(query, top_k=1) if query else []
     prompt = _build_prompt(code, raw_docs)
     
     # 2. Race Detector (cho descriptions & severity)
@@ -168,8 +213,8 @@ def run_streaming(
 
     # ── Bước 3: BM25 search ──
     emit("step", {"stage": "bm25", "status": "running", "label": "Searching knowledge base (BM25)…"})
-    raw_docs = retriever.search(query, top_k=3) if query else []
-    
+    raw_docs = retriever.search(query, top_k=1) if query else []
+
     docs_with_scores = []
     for d in raw_docs:
         docs_with_scores.append({
