@@ -81,7 +81,7 @@ language models (LLMs) that can reason about code but tend to miss the
 exact buggy line and require large model sizes (7B--32B parameters) to
 perform well.
 ThreadLearn addresses both weaknesses by combining a 5-pattern static
-race detector with a small language model (Qwen2.5-Coder-1.5B) fine-tuned
+race detector with a small language model (Qwen2.5-Coder-1.5B~\cite{qwen25coder}) fine-tuned
 using QLoRA on 783 training examples with hindsight Chain-of-Thought
 reasoning.
 At inference time, a BM25 retrieval pipeline fetches the 3 most relevant
@@ -513,7 +513,7 @@ Fine-tuning settings are summarized in Table~\ref{tab:finetune}.
     \toprule
     \textbf{Setting} & \textbf{Value} \\
     \midrule
-    Base model         & Qwen2.5-Coder-1.5B \\
+    Base model         & Qwen2.5-Coder-1.5B~\cite{qwen25coder} \\
     Method             & QLoRA: $r$=16, $\alpha$=32, 4-bit NF4 \\
     Framework          & \texttt{SFTTrainer} (trl $\geq$ 1.5.0) \\
     Training samples   & 783 JSONL examples \\
@@ -679,6 +679,16 @@ Three findings stand out from the ablation:
     general-purpose LLM augmented with the same retrieval pipeline.
 \end{enumerate}
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig_ablation.pdf}
+  \caption{Ablation study: score (\%) across all six configurations on the
+           30-case real-world benchmark. Solid bars = no pipeline; hatched
+           bars = with BM25+AST pipeline. ThreadLearn + pipeline (coral)
+           achieves 73.3\%, a $+$13.3\,pp gain over the base model.}
+  \label{fig:ablation}
+\end{figure}
+
 \subsection{Per-Category Analysis}
 \label{sec:eval:category}
 
@@ -721,6 +731,17 @@ rather than syntactic fix substitution.
 Stream Leak (50\%) is the one category where ThreadLearn underperforms
 the base model (100\%), suggesting stream error-handling is
 underrepresented in the fine-tuning data.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig_category.pdf}
+  \caption{Per-category scores (\%) for all three models with the BM25+AST
+           pipeline on the 30-case benchmark. ThreadLearn (coral) leads in 7
+           of 10 categories, with perfect scores on Sequential Awaits and
+           Callback Hell. ``n='' annotations show the number of test cases
+           per category.}
+  \label{fig:category}
+\end{figure}
 
 \subsection{Inference Latency}
 \label{sec:eval:latency}
