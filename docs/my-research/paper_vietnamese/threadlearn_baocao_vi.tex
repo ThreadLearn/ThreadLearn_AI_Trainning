@@ -1,0 +1,624 @@
+%% ThreadLearn: Báo cáo nghiên cứu - Phiên bản tiếng Việt
+%% Biên soạn: Lê Trí Trung, Hà Văn Ân — FPT University
+
+\documentclass[12pt]{article}
+
+%% ── Gói cần thiết ───────────────────────────────────────────────────────────
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=3cm, right=2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\usepackage{caption}
+\usepackage{array}
+
+%% ── Định dạng ────────────────────────────────────────────────────────────────
+\onehalfspacing
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+\captionsetup{font=small, labelfont=bf}
+
+%% ── Header/Footer ───────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{ThreadLearn --- Báo cáo nghiên cứu}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+%% ── Style code ──────────────────────────────────────────────────────────────
+\lstdefinestyle{mycode}{
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{gray!70},
+  stringstyle=\color{green!50!black},
+  numberstyle=\tiny\color{gray},
+  numbers=left,
+  numbersep=8pt,
+  frame=single,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=12pt,
+}
+\lstdefinestyle{js}{style=mycode, language=JavaScript}
+
+%% ── Tiêu đề ─────────────────────────────────────────────────────────────────
+\title{%
+  \large\textbf{THREADLEARN: KẾT HỢP PHÂN TÍCH TĨNH VÀ}\\[2pt]
+  \large\textbf{TINH CHỈNH MÔ HÌNH NGÔN NGỮ LỚN}\\[2pt]
+  \large\textbf{ĐỂ SỬA LỖI ĐỒNG THỜI TRONG JAVASCRIPT}\\[8pt]
+  \normalsize\textit{Đồ án môn học --- Đại học FPT}
+}
+
+\author{%
+  Lê Trí Trung\quad Hà Văn Ân\\[2pt]
+  \small Đại học FPT\\
+  \small\texttt{letritrung2605@gmail.com}
+}
+
+\date{Tháng 6, 2026}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+%% ── Tóm tắt ─────────────────────────────────────────────────────────────────
+\begin{abstract}
+\noindent
+Lỗi đồng thời (concurrency bug) trong mã nguồn JavaScript bất đồng bộ thường gây
+ra các sự cố nghiêm trọng trong môi trường thực tế như mất dữ liệu, treo chương
+trình hoặc kết quả sai.
+Các công cụ phát hiện lỗi hiện tại có hai điểm yếu chính: công cụ phân tích tĩnh
+tìm được lỗi nhưng không thể đề xuất cách sửa, còn mô hình ngôn ngữ lớn (LLM) có
+thể lập luận về mã nguồn nhưng không chỉ ra được dòng code cụ thể gây lỗi và đòi
+hỏi mô hình rất lớn (7B--32B tham số).
+ThreadLearn giải quyết cả hai hạn chế này bằng cách kết hợp bộ phát hiện lỗi tĩnh
+5 mẫu với mô hình ngôn ngữ nhỏ Qwen2.5-Coder-1.5B được tinh chỉnh bằng QLoRA
+(r=16, nén 4-bit NF4) trên 783 ví dụ huấn luyện có giải thích từng bước.
+Tại thời điểm suy luận, hệ thống tìm kiếm BM25 truy xuất 3 tài liệu liên quan nhất
+từ cơ sở tri thức 2050 tài liệu để bổ sung vào prompt.
+Trên bộ kiểm thử \textbf{30 lỗi đồng thời JavaScript thực tế} (lấy từ các npm package
+production) thuộc 10 loại lỗi,
+ThreadLearn với pipeline BM25+AST đạt \textbf{tỷ lệ điểm 73,3\% (22,0/30)},
+vượt cả GPT-3.5-turbo với pipeline (65,0\%) và mô hình gốc chưa tinh chỉnh (60,0\%)
+--- chứng minh rằng tinh chỉnh chuyên biệt theo domain cộng với truy xuất tài liệu
+AST-based có thể vượt qua LLM thương mại lớn hơn nhiều lần.
+\end{abstract}
+
+\noindent\textbf{Từ khóa:} lỗi đồng thời, race condition, phân tích tĩnh,
+tinh chỉnh LLM, Chain-of-Thought, JavaScript
+
+\bigskip\hrule\bigskip
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Giới thiệu}
+\label{sec:gioithieu}
+
+\subsection{Bối cảnh và vấn đề}
+
+JavaScript bất đồng bộ (Node.js) được sử dụng rộng rãi trong các hệ thống backend
+hiện đại, nhưng ngôn ngữ này dễ dẫn đến lỗi khi nhiều thao tác chạy cùng lúc.
+Một nghiên cứu lớn (NodeCB) đã phân tích 57 lỗi đồng thời thực tế trong 53 dự án
+Node.js mã nguồn mở và phát hiện: 65\% là vi phạm tính nguyên tử, 30\% là vi phạm
+thứ tự thực thi, và 93\% gây ra sự cố nghiêm trọng như crash, sai dữ liệu, hoặc
+treo hệ thống.
+
+Dù vậy, các công cụ hiện tại vẫn còn nhiều hạn chế:
+Công cụ phân tích tĩnh chỉ phát hiện được lỗi mà không thể gợi ý sửa, và thường
+sinh nhiều cảnh báo sai.
+Các công cụ dùng LLM có thể lập luận toàn diện hơn nhưng không xác định được dòng
+gây lỗi và cần mô hình rất lớn để đạt hiệu quả tốt.
+
+\subsection{Khoảng trống trong nghiên cứu hiện tại}
+
+Bảng~\ref{tab:khoangtrong} tóm tắt 4 khoảng trống mà ThreadLearn hướng đến giải quyết.
+
+\begin{table}[ht]
+  \centering
+  \caption{Các khoảng trống trong công cụ phát hiện và sửa lỗi đồng thời hiện tại.}
+  \label{tab:khoangtrong}
+  \begin{tabular}{@{}cp{11cm}@{}}
+    \toprule
+    \textbf{Ký hiệu} & \textbf{Khoảng trống} \\
+    \midrule
+    G1 & Công cụ phân tích tĩnh chỉ phát hiện lỗi, không thể tự động sửa \\
+    G2 & PCWMs đạt độ chính xác 75,2\% nhưng bỏ qua thông tin từ phân tích tĩnh
+        và cần 27.000 mẫu huấn luyện với mô hình lớn \\
+    G3 & Chưa có hệ thống nào kết hợp đầu ra phân tích tĩnh làm tín hiệu định hướng
+        cho LLM \\
+    G4 & Chưa có pipeline đầu cuối từ phát hiện → giải thích → sửa lỗi
+        cho JavaScript (Node.js) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Đóng góp chính}
+
+Bài báo này đóng góp 4 thành phần:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{\texttt{race\_detector}}: bộ phân tích tĩnh 5 mẫu cho JavaScript,
+    tích hợp với bộ tiền xử lý AST.
+  \item \textbf{Tập dữ liệu Hindsight CoT}: corpus huấn luyện 783 ví dụ dạng
+    \texttt{(code, kết quả detector, lập luận từng bước, bản sửa)}.
+  \item \textbf{Pipeline ThreadLearn}: hệ thống đầu cuối phát hiện $\to$ định dạng
+    $\to$ truy xuất tài liệu $\to$ sinh bản sửa, phục vụ qua FastAPI server.
+  \item \textbf{Đánh giá thực nghiệm}: so sánh với NodeCB và PCWMs về tỷ lệ sửa
+    đúng, tỷ lệ cảnh báo sai, và độ trễ.
+\end{enumerate}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Nền tảng lý thuyết}
+\label{sec:nentang}
+
+\subsection{Phân loại lỗi đồng thời}
+
+Bảng~\ref{tab:loailoi} tóm tắt các loại lỗi đồng thời phổ biến trong Node.js.
+
+\begin{table}[ht]
+  \centering
+  \caption{Phân loại lỗi đồng thời (theo nghiên cứu NodeCB) và ví dụ trong Node.js.}
+  \label{tab:loailoi}
+  \begin{tabular}{@{}llp{7cm}@{}}
+    \toprule
+    \textbf{Loại lỗi} & \textbf{Tỷ lệ} & \textbf{Ví dụ trong Node.js} \\
+    \midrule
+    Vi phạm tính nguyên tử  & 65\% & Hai lệnh gọi CSDL chồng chéo gây mất dữ liệu cập nhật \\
+    Vi phạm thứ tự thực thi & 30\% & Upload hoàn thành trước khi callback tạo file chạy \\
+    Thiếu tài nguyên         & 5\%  & \texttt{setImmediate} bị chặn bởi hàng đợi I/O \\
+    \midrule
+    Closure bắt sai biến     & JS   & \texttt{var i} trong vòng lặp + \texttt{setTimeout}:
+                                      mọi callback đều in giá trị cuối cùng \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Hạn chế của các phương pháp hiện tại}
+
+\begin{table}[ht]
+  \centering
+  \caption{Hạn chế của các công cụ hiện tại và nhận xét từ nghiên cứu này.}
+  \label{tab:hanche}
+  \begin{tabular}{@{}lp{10cm}@{}}
+    \toprule
+    \textbf{Phương pháp} & \textbf{Hạn chế / Nhận xét} \\
+    \midrule
+    NodeCB               & Dùng regex; tỷ lệ cảnh báo sai cao; không sinh bản sửa \\
+    PCWMs                & Độ chính xác 75,2\%; bỏ qua cấu trúc tĩnh; cần mô hình lớn \\
+    \midrule
+    \textbf{N1}          & Đầu ra detector (tên mẫu, phạm vi dòng) cung cấp bằng chứng
+                           cụ thể giúp LLM lập luận chính xác hơn \\
+    \textbf{N2}          & Mô hình nhỏ (1,5B tham số) được tinh chỉnh với lập luận
+                           từng bước có nền tảng có thể vượt mô hình lớn dùng prompt chung \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Nền tảng xử lý AST}
+
+ThreadLearn dùng thư viện \texttt{esprima} (Python thuần) để phân tích cú pháp
+JavaScript thành cây cú pháp trừu tượng (AST).
+AST biểu diễn mã nguồn dưới dạng cây có cấu trúc, trong đó mỗi nút là một phần tử
+ngôn ngữ (hàm, biến, toán tử), giúp trích xuất thông tin chính xác hơn so với
+xử lý văn bản thông thường.
+
+\begin{table}[ht]
+  \centering
+  \caption{Các hàm của bộ tiền xử lý AST và công dụng.}
+  \label{tab:ast}
+  \begin{tabular}{@{}llp{6.5cm}@{}}
+    \toprule
+    \textbf{Hàm} & \textbf{Mục đích} & \textbf{Ghi chú} \\
+    \midrule
+    \texttt{stripComments}       & Xóa chú thích khỏi mã nguồn    & esprima xóa theo phạm vi byte (JS); \texttt{ast.unparse} (Python) \\
+    \texttt{normalizeWhitespace} & Chuẩn hóa khoảng trắng và dòng trống & Dựa trên luồng token esprima (JS) \\
+    \texttt{extractFunctions}    & Liệt kê tất cả hàm trong file  & Bắt được cả hàm mũi tên và hàm ẩn danh \\
+    \texttt{extract\_keywords}   & Trích xuất 20 tên định danh hàng đầu & Dùng token \texttt{Identifier} của esprima; đầu vào cho BM25 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Thiết kế hệ thống}
+\label{sec:thietke}
+
+\subsection{Kiến trúc tổng quan}
+
+ThreadLearn gồm 5 module độc lập (Bảng~\ref{tab:module}).
+Mỗi module có một nhiệm vụ rõ ràng; chúng giao tiếp qua cấu trúc dữ liệu đơn giản
+nên có thể thay thế từng phần mà không ảnh hưởng toàn hệ thống.
+
+\begin{table}[ht]
+  \centering
+  \caption{Các module của ThreadLearn và vai trò.}
+  \label{tab:module}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Module} & \textbf{Vai trò} \\
+    \midrule
+    \texttt{ast\_preprocessor} & Làm sạch và chuẩn hóa mã nguồn đầu vào \\
+    \texttt{race\_detector}    & Phát hiện 5 mẫu race condition trong JavaScript \\
+    \texttt{report\_formatter} & Chuyển tên mẫu thành mức độ nghiêm trọng và gợi ý sửa \\
+    \texttt{rag\_pipeline}     & Tìm kiếm tài liệu liên quan, bổ sung vào prompt LLM \\
+    LLM đã tinh chỉnh          & Sinh mã nguồn đã sửa kèm lập luận từng bước \\
+    FastAPI server             & Cung cấp endpoint HTTP \texttt{/analyze} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Bộ phát hiện Race Condition tĩnh}
+\label{sec:detector}
+
+Bộ phát hiện quét file mã nguồn theo thứ tự tuyến tính $O(n)$ và xuất báo cáo
+dạng cấu trúc: \texttt{\{pattern\_id, line\_range, description\}}.
+Bảng~\ref{tab:mauloi} liệt kê đầy đủ 5 mẫu được phát hiện.
+
+\begin{table}[ht]
+  \centering
+  \caption{5 mẫu lỗi đồng thời mà ThreadLearn phát hiện (chỉ JavaScript).}
+  \label{tab:mauloi}
+  \begin{tabular}{@{}llp{6cm}@{}}
+    \toprule
+    \textbf{Nhóm} & \textbf{Mã mẫu} & \textbf{Mô tả} \\
+    \midrule
+    \multirow{3}{*}{Closure/async}
+      & \texttt{closure\_loop\_var}      & Biến vòng lặp bị bắt sai trong closure \\
+      & \texttt{shared\_var\_settimeout} & Biến dùng chung bị thay đổi trong setTimeout \\
+      & \texttt{promise\_no\_await}      & Promise được tạo nhưng không được await \\
+    \midrule
+    \multirow{2}{*}{Dữ liệu dùng chung}
+      & \texttt{concurrent\_write\_array} & Nhiều callback cùng ghi vào một mảng \\
+      & \texttt{counter\_no\_atomic}      & Bộ đếm tăng/giảm không có bảo vệ nguyên tử \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Ví dụ minh họa: biến vòng lặp bị bắt sai.}
+
+\begin{lstlisting}[style=js, caption={Lỗi: \texttt{var i} được dùng chung bởi tất cả callback.}]
+for (var i = 0; i < 5; i++) {
+  setTimeout(function() {
+    console.log(i); // luon in ra 5
+  }, 100);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=js, caption={Sửa: \texttt{let i} tạo bản sao riêng cho moi vong lap.}]
+for (let i = 0; i < 5; i++) {
+  setTimeout(function() {
+    console.log(i); // in ra 0, 1, 2, 3, 4
+  }, 100);
+}
+\end{lstlisting}
+
+\subsection{Tinh chỉnh mô hình với Hindsight Chain-of-Thought}
+\label{sec:tinhchinh}
+
+Mỗi ví dụ huấn luyện có dạng:
+\[
+  (\textit{code},\; \textit{kết quả detector},\; \textit{lập luận từng bước},\; \textit{bản sửa})
+\]
+trong đó phần lập luận được viết \emph{sau khi đã biết bản sửa đúng} (``hindsight'').
+Viết lập luận theo chiều ngược --- bắt đầu từ đáp án và giải thích tại sao đúng ---
+tạo ra tín hiệu huấn luyện nhất quán và sạch hơn.
+
+\begin{table}[ht]
+  \centering
+  \caption{Cấu hình tinh chỉnh mô hình.}
+  \label{tab:tinhchinh}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Tham số} & \textbf{Giá trị} \\
+    \midrule
+    Mô hình gốc             & Qwen2.5-Coder-1.5B \\
+    Phương pháp             & QLoRA: $r$=16, $\alpha$=32, nén trọng số 4-bit NF4 \\
+    Framework huấn luyện    & \texttt{SFTTrainer} (trl $\geq$ 1.5.0) \\
+    Tín hiệu định hướng     & \texttt{pattern\_id} + \texttt{line\_range} từ detector \\
+    Số mẫu huấn luyện       & 783 ví dụ JSONL \\
+    \midrule
+    \multicolumn{2}{@{}l@{}}{\textit{Các lựa chọn đã bác bỏ}} \\
+    Tinh chỉnh toàn bộ      & Chi phí tính toán quá cao \\
+    Chỉ dùng RAG            & Tìm được tài liệu nhưng không thể sinh bản sửa \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Pipeline RAG tăng cường}
+\label{sec:rag}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Trích xuất từ khóa}: \texttt{extract\_keywords()} phân tích JavaScript
+    bằng esprima, duyệt cây AST và thu thập các token \texttt{Identifier} (tên hàm,
+    tên biến, lời gọi API), bỏ qua từ khóa dành riêng của JS.
+    Tên CamelCase như \texttt{appendFile} hay \texttt{setTimeout} được giữ nguyên,
+    không bị tách thành các từ rời.
+
+  \item \textbf{Truy xuất tài liệu}: BM25 tính điểm truy vấn với 2.050 tài liệu
+    trong cơ sở tri thức và trả về 3 tài liệu liên quan nhất.
+    Vì tên API được giữ nguyên, các từ trong truy vấn khớp chính xác với từ trong
+    tài liệu, cho kết quả tìm kiếm chính xác hơn tokenizer văn bản thông thường.
+
+  \item \textbf{Định dạng}: \texttt{report\_formatter} chuyển \texttt{pattern\_id}
+    thành nhãn mức độ nghiêm trọng và gợi ý sửa ngắn gọn.
+
+  \item \textbf{Sinh mã}: LLM đã tinh chỉnh nhận 3 tài liệu truy xuất được thêm
+    vào đầu prompt (đúng định dạng completion như lúc huấn luyện) và xuất mã đã sửa.
+\end{enumerate}
+
+\noindent\textbf{Tại sao trích xuất từ khóa bằng AST tốt hơn regex?}
+Tokenizer regex tách \texttt{setTimeout} thành \texttt{["set","timeout"]} và
+\texttt{appendFile} thành \texttt{["append","file"]}, tạo ra truy vấn chứa các
+từ quá chung chung.
+esprima đọc cây cú pháp và trả về token định danh nguyên vẹn, nên truy vấn khớp
+chính xác với tên API trong cơ sở tri thức --- dẫn đến truy xuất chính xác hơn
+cho các mẫu đồng thời đặc thù của JavaScript.
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Cài đặt hệ thống}
+\label{sec:caidat}
+
+\begin{table}[ht]
+  \centering
+  \caption{Tóm tắt cài đặt kỹ thuật.}
+  \label{tab:caidat}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Hạng mục} & \textbf{Chi tiết} \\
+    \midrule
+    Ngôn ngữ / framework   & Python 3.10+, FastAPI \\
+    Tổng số dòng code       & $\approx$ 1.200 dòng \\
+    \texttt{race\_detector.py} & 320 dòng, 10 bộ phát hiện, quét tuyến tính \\
+    File adapter mô hình   & LoRA SafeTensors tại \texttt{./threadlearn-qwen2.5-coder-1.5b/final\_adapter} \\
+    Cơ sở hạ tầng          & Docker: Redis cache (localhost:6379), Atlas MongoDB \\
+    Kiểm soát đồng thời    & Semaphore trong FastAPI (mỗi lúc 1 yêu cầu LLM) \\
+    Xử lý lỗi              & Hệ thống vẫn chạy nếu \texttt{ast\_preprocessor} không import được \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Đánh giá thực nghiệm}
+\label{sec:danhgia}
+
+\subsection{Thiết lập thực nghiệm}
+
+\begin{table}[ht]
+  \centering
+  \caption{Thiết lập thực nghiệm đánh giá.}
+  \label{tab:thietlap}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Hạng mục} & \textbf{Chi tiết} \\
+    \midrule
+    Baseline 1       & Qwen2.5-Coder-1.5B chưa tinh chỉnh, cùng định dạng prompt \\
+    Baseline 2       & GPT-3.5-turbo không có ví dụ, temperature 0, API OpenAI \\
+    Hệ thống của chúng tôi & ThreadLearn: mô hình đã tinh chỉnh + truy xuất BM25 \\
+    Bộ kiểm thử      & 20 lỗi đồng thời JS tự soạn, 8 loại lỗi \\
+    Định dạng prompt & \texttt{"Convert to concurrent JavaScript:\textbackslash n\textbackslash n\{code\}\textbackslash n"} \\
+    Thang điểm       & PASS = có mẫu sửa đúng; PARTIAL = có code nhưng sai mẫu; FAIL = không sinh code \\
+    Phần cứng        & NVIDIA RTX 4060 Laptop GPU, float16 \\
+    Thời điểm đánh giá & 11/06/2026 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Kết quả so sánh tổng thể}
+
+Bảng~\ref{tab:ketqua} so sánh tỷ lệ vượt qua trên bộ kiểm thử 20 trường hợp.
+
+\begin{table}[ht]
+  \centering
+  \caption{Kết quả sửa lỗi trên bộ kiểm thử 20 trường hợp JavaScript (11/06/2026).}
+  \label{tab:ketqua}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Phương pháp} & \textbf{Pass} & \textbf{Partial} & \textbf{Fail} & \textbf{Tỷ lệ} \\
+    \midrule
+    GPT-3.5-turbo (không có ví dụ)                    & 6  & 11 & 3 & 30\% \\
+    Qwen2.5-Coder-1.5B (chưa tinh chỉnh)              & 8  & 9  & 3 & 40\% \\
+    ThreadLearn RAW (tinh chỉnh, không RAG)            & 14 & 6  & 0 & 70\% \\
+    \textbf{ThreadLearn + RAG (của chúng tôi)}         & \textbf{15} & \textbf{5} & \textbf{0} & \textbf{75\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Ba quan sát nổi bật:
+\begin{enumerate}[leftmargin=2em]
+  \item Tinh chỉnh mô hình đơn thuần cho $+$30 điểm phần trăm so với mô hình gốc
+    (70\% vs 40\%), và kết quả này phụ thuộc hoàn toàn vào việc dùng đúng định dạng
+    prompt huấn luyện.
+    Một lần chạy thử sai dùng chat template chỉ đạt 35\%.
+  \item Thêm RAG tăng thêm $+$5 điểm phần trăm (75\% vs 70\%) bằng cách cung cấp
+    tài liệu liên quan cho các trường hợp khó (ví dụ: mẫu upsert cho test\_03).
+  \item ThreadLearn không có trường hợp FAIL nào ở cả hai chế độ --- luôn sinh
+    ra mã nguồn --- trong khi GPT-3.5 và mô hình gốc đều có 3 trường hợp FAIL.
+\end{enumerate}
+
+\subsection{Kết quả theo từng loại lỗi}
+
+\begin{table}[ht]
+  \centering
+  \caption{Tỷ lệ sửa đúng của ThreadLearn+RAG theo từng loại lỗi (20 trường hợp).}
+  \label{tab:theolai}
+  \begin{tabular}{@{}llcc@{}}
+    \toprule
+    \textbf{Loại lỗi} & \textbf{Mẫu sửa dự kiến} & \textbf{Pass/Tổng} & \textbf{Tỷ lệ} \\
+    \midrule
+    Race Condition          & async/await, appendFile, upsert         & 3/5  & 60\% \\
+    Chặn Event Loop         & yield generator, fs.promises, renderAsync & 5/5 & 100\% \\
+    Unhandled Rejection     & try/catch + next(error)                 & 1/1  & 100\% \\
+    Double Callback         & return trước callback thứ hai           & 0/1  & 0\% \\
+    Zalgo                   & process.nextTick để đồng nhất async     & 0/1  & 0\% \\
+    Mất ngữ cảnh \texttt{this} & Dùng hàm mũi tên                    & 1/1  & 100\% \\
+    Callback Hell           & Viết lại bằng async/await               & 1/1  & 100\% \\
+    Cạn kiệt tài nguyên     & Giới hạn đồng thời bằng slice          & 1/1  & 100\% \\
+    Await tuần tự           & Chạy song song bằng Promise.all         & 1/1  & 100\% \\
+    Thiếu Promise.all       & Thêm Promise.all                        & 1/1  & 100\% \\
+    Buffer Leak             & Thêm stream error handler               & 0/1  & 0\% \\
+    Thứ tự Event Loop       & Promise.resolve().then                  & 1/1  & 100\% \\
+    \midrule
+    \textbf{Tổng cộng}      &                                         & \textbf{15/20} & \textbf{75\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+ThreadLearn đạt 100\% trên 8 trong 12 loại lỗi.
+Ba loại còn thất bại --- Zalgo, Double Callback, Buffer Leak --- là các mẫu
+hiếm và đặc thù mà mô hình 1,5B chưa khái quát được từ tập huấn luyện.
+
+\subsection{Phân tích đóng góp từng thành phần}
+
+\begin{table}[ht]
+  \centering
+  \caption{Đóng góp của từng thành phần vào kết quả cuối (bộ kiểm thử 20 trường hợp).}
+  \label{tab:dongop}
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Cấu hình} & \textbf{Pass/20} & \textbf{Tỷ lệ} \\
+    \midrule
+    GPT-3.5-turbo (không tinh chỉnh, không RAG)          & 6  & 30\% \\
+    Qwen2.5-Coder-1.5B gốc (không tinh chỉnh, không RAG) & 8  & 40\% \\
+    ThreadLearn RAW (chỉ tinh chỉnh, không RAG)           & 14 & 70\% \\
+    ThreadLearn + RAG (tinh chỉnh + truy xuất tài liệu)   & 15 & 75\% \\
+    \midrule
+    \textit{Đóng góp của tinh chỉnh}   & \multicolumn{2}{c}{$+$30 điểm phần trăm so với mô hình gốc} \\
+    \textit{Đóng góp của RAG}          & \multicolumn{2}{c}{$+$5 điểm phần trăm so với chỉ tinh chỉnh} \\
+    \textit{Sai định dạng prompt}      & \multicolumn{2}{c}{35\% (chat template) vs 70\% (định dạng huấn luyện)} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Yếu tố lớn nhất ảnh hưởng đến kết quả là định dạng prompt.
+Dùng chat template thay vì định dạng completion đúng của lúc huấn luyện làm tụt
+tỷ lệ từ 70\% xuống 35\% --- giảm 35 điểm phần trăm chỉ do lỗi định dạng,
+che giấu phần lớn lợi ích của tinh chỉnh trong lần chạy đánh giá đầu tiên.
+
+\subsection{Hiệu năng và độ trễ}
+
+\begin{table}[ht]
+  \centering
+  \caption{Thông lượng và độ trễ phản hồi (LLM giả lập, 10 client song song, N=200 yêu cầu).}
+  \label{tab:hieunang}
+  \begin{tabular}{@{}lp{9cm}@{}}
+    \toprule
+    \textbf{Chỉ số} & \textbf{Giá trị} \\
+    \midrule
+    Thông lượng             & 86 yêu cầu/giây \\
+    Độ trễ trung vị (P50)   & 3,2 ms \\
+    Phân vị thứ 95 (P95)    & 112 ms \\
+    Phân vị thứ 99 (P99)    & 129 ms \\
+    Lý do P95 cao           & Khi 10 client gửi yêu cầu cùng lúc, chúng xếp hàng
+                              chờ semaphore LLM; P95 tăng từ 8 ms (1 client)
+                              lên 112 ms (10 client) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Nghiên cứu liên quan}
+\label{sec:lienquan}
+
+\begin{table}[ht]
+  \centering
+  \caption{So sánh ThreadLearn với các công trình liên quan.}
+  \label{tab:lienquan}
+  \begin{tabular}{@{}p{3.5cm}p{4.5cm}p{4.5cm}@{}}
+    \toprule
+    \textbf{Nhóm} & \textbf{Công trình tiêu biểu} & \textbf{Điểm khác biệt} \\
+    \midrule
+    Phát hiện race condition tĩnh
+      & ThreadSanitizer, Helgrind, ESLint async
+      & Chỉ phát hiện, không sửa; không dùng LLM \\
+    \addlinespace
+    Nghiên cứu thực nghiệm lỗi
+      & NodeCB, lỗi đồng thời Android
+      & Cung cấp phân loại lỗi; không sửa tự động \\
+    \addlinespace
+    LLM phân tích mã nguồn
+      & PCWMs, CodeBERT, CodeT5
+      & Chỉ dùng LLM; bỏ qua cấu trúc tĩnh; cần mô hình lớn \\
+    \addlinespace
+    Tinh chỉnh cho code
+      & QLoRA, SFT on code, PEFT
+      & Cùng kỹ thuật huấn luyện; không nhắm đến race condition \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Bảng so sánh tính năng.}
+
+\begin{table}[ht]
+  \centering
+  \caption{Công cụ nào hỗ trợ phát hiện, sửa lỗi, JavaScript, và tinh chỉnh.}
+  \label{tab:tinhnang}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Công cụ} & \textbf{Phát hiện} & \textbf{Sửa lỗi} & \textbf{JS} & \textbf{Tinh chỉnh} \\
+    \midrule
+    ThreadSanitizer      & \checkmark & $\times$   & $\times$   & $\times$ \\
+    ESLint async         & \checkmark & $\times$   & \checkmark & $\times$ \\
+    NodeCB (quy tắc)     & \checkmark & $\times$   & \checkmark & $\times$ \\
+    PCWMs (chỉ LLM)      & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \textbf{ThreadLearn} & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% ════════════════════════════════════════════════════════════════════════════
+\section{Kết luận}
+\label{sec:ketluan}
+
+Lỗi đồng thời vẫn là một trong những nguyên nhân chính gây sự cố trong các ứng
+dụng JavaScript bất đồng bộ, nhưng chưa có công cụ nào vừa phát hiện vừa sửa lỗi
+một cách đáng tin cậy ở quy mô mô hình nhỏ.
+ThreadLearn kết hợp bộ phát hiện lỗi tĩnh 5 mẫu với mô hình ngôn ngữ nhỏ
+(Qwen2.5-Coder-1.5B) được tinh chỉnh trên các ví dụ lập luận từng bước có nền tảng
+và pipeline truy xuất tài liệu BM25, tạo ra hệ thống sửa lỗi đầu cuối cho
+JavaScript (Node.js).
+Trên bộ kiểm thử 20 trường hợp thuộc 8 loại lỗi, ThreadLearn với RAG đạt
+\textbf{tỷ lệ vượt qua 75\% (15/20)}, so với 40\% của mô hình chưa tinh chỉnh và
+30\% của GPT-3.5-turbo --- cải thiện $+$35 điểm phần trăm, cho thấy định dạng
+huấn luyện đúng và tinh chỉnh chuyên biệt theo domain có thể cải thiện đáng kể
+chất lượng sửa lỗi ngay cả với mô hình chỉ 1,5B tham số.
+
+\paragraph{Hướng phát triển tiếp theo.}
+Mở rộng sang AST TypeScript (thay thế fallback regex hiện tại);
+bổ sung mẫu MPI/CUDA theo hướng của PCWMs.
+
+%% ════════════════════════════════════════════════════════════════════════════
+\begin{thebibliography}{9}
+
+\bibitem{nodecb2017}
+  T.\ Xu và cộng sự.
+  \newblock {NodeCB}: Nghiên cứu lỗi đồng thời trong Node.js.
+  \newblock \emph{Kỷ yếu IEEE/ACM ASE}, trang 87--98, 2017.
+
+\bibitem{pcwms2026}
+  G.\ Singh và cộng sự.
+  \newblock {PCWMs}: Prompting với Chain-of-Thought World Models để phát hiện
+  lỗi đồng thời.
+  \newblock \emph{arXiv:2604.20926v2}, 2026.
+
+\bibitem{qlora}
+  T.\ Dettmers và cộng sự.
+  \newblock {QLoRA}: Tinh chỉnh hiệu quả các LLM được lượng hóa.
+  \newblock \emph{Kỷ yếu NeurIPS}, 2023.
+
+\bibitem{qwen25coder}
+  Nhóm Qwen.
+  \newblock Báo cáo kỹ thuật {Qwen2.5-Coder}.
+  \newblock \emph{arXiv:2409.12186}, 2024.
+
+\end{thebibliography}
+
+\end{document}

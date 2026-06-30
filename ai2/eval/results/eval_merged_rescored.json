@@ -1,0 +1,171 @@
+{
+  "model": "ThreadLearn (Qwen2.5-Coder-1.5B fine-tuned)",
+  "total": 20,
+  "pass": 7,
+  "partial": 7,
+  "fail": 6,
+  "pass_rate": "35%",
+  "results": [
+    {
+      "id": "test_01",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Race Condition:\nThe code has a race condition because the setTimeout callback is executed asynchronously, and the order of execution is not guaranteed. The increment function may be called multiple times before the setTimeout callback is executed, leading to incorrect counter values.\nFixed code snip",
+      "verdict_old": "partial",
+      "rescore_reason": "partial keyword match"
+    },
+    {
+      "id": "test_02",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Race Condition:\nThe code has a race condition because the `setTimeout` callback is executed asynchronously, and the `db.setBalance` call may be executed before the `setTimeout` callback. This can lead to inconsistent state.\nFixed code snippet:\n```javascript\nconst updateAccount = async (id, amount) =",
+      "verdict_old": "partial",
+      "rescore_reason": "partial keyword match"
+    },
+    {
+      "id": "test_03",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "response_preview": "Race Condition:\nThe code has a race condition because the `db.find()` and `db.create()` operations are not atomic. If another request comes in while the first request is still processing, it could create a new user with the same email as the one being checked.\n\nFixed code snippet:\n```javascript\ncons",
+      "verdict_old": "pass",
+      "rescore_reason": "matched group ['race', 'atomic']"
+    },
+    {
+      "id": "test_04",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "response_preview": "Race condition detected. The getCache function may return stale data if fetchData is called before the promise resolves. Fixed code snippet:\n\n```javascript\nlet cache = null;\nfunction getCache() {\n  if (!cache) {\n    fetchData().then(d => cache = d);\n  }\n  return cache;\n}\nasync function getCacheAsync",
+      "verdict_old": "partial",
+      "rescore_reason": "matched group ['race', 'promise']"
+    },
+    {
+      "id": "test_05",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "response_preview": "Race Condition:\nThe code has a race condition because the fs.readFile and fs.writeFile operations are asynchronous and can be executed out of order. This can lead to data corruption or missing data.\nFixed code snippet:\n```javascript\nlet logs = '';\nfunction appendLog(msg) {\n  fs.readFile('log.txt', '",
+      "verdict_old": "partial",
+      "rescore_reason": "partial keyword match"
+    },
+    {
+      "id": "test_06",
+      "category": "Event Loop Blocking",
+      "verdict": "fail",
+      "response_preview": "Race Condition:\nThe code above is susceptible to a race condition because the loop variable `i` is not declared with the `let` keyword. This means that it is a global variable and can be modified by other code. As a result, the loop may not iterate over the entire array, leading to incorrect results",
+      "verdict_old": "pass",
+      "rescore_reason": "no keyword match"
+    },
+    {
+      "id": "test_07",
+      "category": "Event Loop Blocking",
+      "verdict": "fail",
+      "response_preview": "Race condition detected in the `encryptPasswords` function. The `forEach` loop is not guaranteed to execute in order, so the hash property of each user object may not be updated in the correct order. To fix this, use the `map` method instead of `forEach` and return a new array of updated user object",
+      "verdict_old": "pass",
+      "rescore_reason": "no keyword match"
+    },
+    {
+      "id": "test_08",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "response_preview": "Analyze this JavaScript code for concurrency bugs:\n\n```javascript\nconst parseJSONLines = (lines) => {\n  lines.forEach(line => {\n    setTimeout(() => {\n      JSON.parse(line);\n    }, 0);\n  });\n};\n```\n\nRespond with:\n1. Bug type (e.g. Race Condition, Event Loop Blocking, etc.)\n2. Brief explanation (1-2",
+      "verdict_old": "partial",
+      "rescore_reason": "partial keyword match"
+    },
+    {
+      "id": "test_09",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "Race Condition:\nThe `renderPages` function uses the `map` method to render each page synchronously. This can lead to race conditions if multiple pages are rendered at the same time.\nFixed code snippet:\n```javascript\nfunction renderPages(pages) {\n  return Promise.all(pages.map(page => renderAsync(pag",
+      "verdict_old": "pass",
+      "rescore_reason": "matched group ['promise.all', 'async']"
+    },
+    {
+      "id": "test_10",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "response_preview": "Race Condition:\nThe code has a race condition because the `fs.readFileSync` and `fs.writeFileSync` functions are asynchronous and can execute out of order. This can lead to data corruption or incomplete backups.\nFixed code snippet:\n```javascript\nconst fs = require('fs').promises;\nasync function back",
+      "verdict_old": "pass",
+      "rescore_reason": "matched group ['readfile', 'async']"
+    },
+    {
+      "id": "test_11",
+      "category": "Unhandled Rejection",
+      "verdict": "fail",
+      "response_preview": "Race Condition:\nThe code above is susceptible to a race condition because the database query is asynchronous and the response is sent before the query completes. To fix this, use a callback or Promise to ensure the response is sent after the query completes.\nFixed code snippet:\n```javascript\napp.get",
+      "verdict_old": "partial",
+      "rescore_reason": "no keyword match"
+    },
+    {
+      "id": "test_12",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "response_preview": "Race Condition:\nThe getUser function has a race condition because it does not handle the case where the database returns null or an error before the callback is called.\n\nFixed code snippet:\n```javascript\nfunction getUser(id, cb) {\n  db.findById(id, (err, user) => {\n    if (err) return cb(err);\n    i",
+      "verdict_old": "partial",
+      "rescore_reason": "matched group ['return cb']"
+    },
+    {
+      "id": "test_13",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "response_preview": "Race Condition:\nThe code has a race condition because the networkFetch function is asynchronous and the cache[id] assignment may occur before the networkFetch callback is called.\n\nFixed code snippet:\n```javascript\nconst cache = {};\nfunction fetchObj(id, cb) {\n  if (cache[id]) return cb(cache[id]);\n ",
+      "verdict_old": "partial",
+      "rescore_reason": "partial keyword match"
+    },
+    {
+      "id": "test_14",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "response_preview": "Race Condition:\nThe setTimeout function is asynchronous, so the console.log statement will not execute immediately after the setTimeout call. Instead, it will execute after the current execution context has finished.\nFixed code snippet:\n```javascript\nclass Service {\n  constructor() { this.name = 'Se",
+      "verdict_old": "pass",
+      "rescore_reason": "partial keyword match"
+    },
+    {
+      "id": "test_15",
+      "category": "Callback Hell",
+      "verdict": "fail",
+      "response_preview": "Race Condition:\nThe code has a race condition because the order of execution is not guaranteed. The callback functions are called in an undefined order.\nFixed code snippet:\n```javascript\nfunction doTask(cb) {\n  step1(r1 => {\n    step2(r1, r2 => {\n      step3(r2, r3 => {\n        cb(r3);\n      });\n   ",
+      "verdict_old": "partial",
+      "rescore_reason": "no keyword match"
+    },
+    {
+      "id": "test_16",
+      "category": "Resource Exhaustion",
+      "verdict": "fail",
+      "response_preview": "Race Condition:\nThe code above is vulnerable to a race condition because the `fetch` calls are not guaranteed to complete in the same order as the `urls` array. This can lead to unexpected results if the order of the `fetch` calls matters.\nFixed code snippet:\n```javascript\nasync function downloadAll",
+      "verdict_old": "partial",
+      "rescore_reason": "no keyword match"
+    },
+    {
+      "id": "test_17",
+      "category": "Sequential Awaits",
+      "verdict": "pass",
+      "response_preview": "Analyze this JavaScript code for concurrency bugs:\n\n```javascript\nasync function getDashboard(id) {\n  const [user, stats, friends] = await Promise.all([db.getUser(id), db.getStats(id), db.getFriends(id)]);\n  return {user, stats, friends};\n}\n```\n\nRespond with:\n1. Bug type (e.g. Race Condition, Event ",
+      "verdict_old": "partial",
+      "rescore_reason": "matched group ['promise.all']"
+    },
+    {
+      "id": "test_18",
+      "category": "Missing Promise.all",
+      "verdict": "fail",
+      "response_preview": "Race condition detected in the code. The loop is not properly synchronized with the asynchronous operation of the emailService.send() function. Fixed code snippet:\n```javascript\nasync function sendEmails(users) {\n  for(let i=0; i<users.length; i++) {\n    await emailService.send(users[i].email);\n  }\n",
+      "verdict_old": "fail",
+      "rescore_reason": "no keyword match"
+    },
+    {
+      "id": "test_19",
+      "category": "Buffer Leak",
+      "verdict": "pass",
+      "response_preview": "Analyze this JavaScript code for concurrency bugs:\n\n```javascript\nfunction streamData(req, res) {\n  const rs = fs.createReadStream('file.mp4');\n  rs.on('end', () => res.end());\n  rs.on('error', (err) => res.status(500).send(err.message));\n}\n```\n\nRespond with:\n1. Bug type (e.g. Race Condition, Event ",
+      "verdict_old": "partial",
+      "rescore_reason": "matched group ['stream', 'error']"
+    },
+    {
+      "id": "test_20",
+      "category": "Event Loop Ordering",
+      "verdict": "partial",
+      "response_preview": "Race Condition:\nThe code has a race condition because the initialization of the `init` variable is done asynchronously using `process.nextTick`, which means it may not be fully initialized by the time the `setTimeout` callback is executed. To fix this, you can use a Promise or a callback-based appro",
+      "verdict_old": "pass",
+      "rescore_reason": "partial keyword match"
+    }
+  ],
+  "note": "rescored with flexible keyword groups + prompt-echo detection"
+}

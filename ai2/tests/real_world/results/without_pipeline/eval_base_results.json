@@ -1,0 +1,219 @@
+{
+  "model": "Qwen/Qwen2.5-Coder-1.5B (base, no fine-tune)",
+  "pass": 6,
+  "partial": 24,
+  "fail": 0,
+  "score": "18.0/30",
+  "results": [
+    {
+      "id": "rw_01",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 5.14,
+      "response_preview": "function existsSync(path) {\n  return fs.existsSync(path);\n}\nvar fileExists = existsSync(filePath);\n\nif (fileExists) {\n  fs.readFile(filePath, 'utf8', callback);\n}"
+    },
+    {
+      "id": "rw_02",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 7.74,
+      "response_preview": "Here is the code in JavaScript with async/await syntax:\n\nasync function query(sql) {\n  try {\n    const result = await new Promise((resolve, reject) => {\n      connection.connect((err) => {\n        if (err) return reject(err);\n        resolve(connection.query(sql));\n      });\n    });\n\n    return result;\n  } catch (error) {\n    throw error;\n  }\n}"
+    },
+    {
+      "id": "rw_03",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 28.75,
+      "response_preview": "The provided code is already in JavaScript. Here's the same code with comments explaining each step:\n\n```javascript\n// Function to get data from a key and call the callback function when done.\nfunction getData(key, callback) {\n  // Check if the data for this key is already cached.\n  if (cache[key]) {\n    // If it is, return the cached data immediately.\n    callback(null, cache[key]);\n  } else {\n  "
+    },
+    {
+      "id": "rw_04",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "latency_s": 25.39,
+      "response_preview": "function heavyTransform(item) {\n  // some complex logic here\n}\nHere is the equivalent code in JavaScript using async/await and Promise.all:\n```javascript\nasync function handleRequest(req) {\n  try {\n    const items = await getItemsFromBody(req); // assuming this function fetches the items from the request body\n    const results = await transformItems(items); // assuming this function transforms the"
+    },
+    {
+      "id": "rw_05",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "latency_s": 14.5,
+      "response_preview": "In the above code, we have a class called \"UserController\" which has an instance of \"Database\". The \"getUser\" method is used to fetch a user from the database based on the provided ID. We are using async/await syntax for handling asynchronous operations.\n\nThe \"ctrl\" object is created by instantiating the \"UserController\" class and then calling its constructor with no arguments. This creates an ins"
+    },
+    {
+      "id": "rw_06",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 27.78,
+      "response_preview": "const pool = new Pool({\n  user: 'user',\n  password: 'password',\n  host: 'localhost',\n  database: 'mydb'\n});\n\nasync function run() {\n  try {\n    const client = await pool.connect();\n    await client.query('BEGIN');\n    const result = await client.query('SELECT * FROM mytable WHERE id = $1', [1]);\n    console.log(result.rows);\n    await client.query('COMMIT');\n  } catch (error) {\n    console.error(e"
+    },
+    {
+      "id": "rw_07",
+      "category": "Stream Leak",
+      "verdict": "partial",
+      "latency_s": 26.39,
+      "response_preview": "Here is the code in JavaScript with comments explaining each step:\n```javascript\n// Import necessary modules\nconst fs = require('fs');\nconst zlib = require('zlib');\n\n/**\n * Function to serve a file from the server.\n *\n * @param {IncomingMessage} req - The request object containing information about the incoming HTTP request.\n * @param {ServerResponse} res - The response object used to send data ba"
+    },
+    {
+      "id": "rw_08",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 4.64,
+      "response_preview": "const express = require('express');\nconst router = express.Router();\nconst passport = require('passport');\n\nrouter.post('/login', passport.authenticate('local'), (req, res) => {\n  res.redirect('/');\n});\n\nmodule.exports = router;"
+    },
+    {
+      "id": "rw_09",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 5.77,
+      "response_preview": "const { co } = require('co');\nconst { connect, query } = require('./db');\n\nfunction* main() {\n  let conn = yield connect();\n  let result = yield query(conn);\n  return result;\n}\n\nco(main).then((result) => {\n  res.json(result);\n});"
+    },
+    {
+      "id": "rw_10",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 28.47,
+      "response_preview": "Here is the code in JavaScript with comments explaining each step:\n```javascript\n// Create a readable stream from the file 'huge-file.csv'\nconst { createReadStream } = require('fs'); // Import the fs module for creating streams\nconst readStream = createReadStream('huge-file.csv');\n\n// Listen for data events on the readable stream and process them concurrently\nreadStream.on('data', (chunk) => {\n  /"
+    },
+    {
+      "id": "rw_11",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 11.59,
+      "response_preview": "Here is the code in JavaScript with async/await syntax:\nasync function getWithTimeout(key, timeout) {\n  return new Promise((resolve, reject) => {\n    const timer = setTimeout(() => {\n      reject(new Error('timeout'));\n    }, timeout);\n\n    client.get(key, (err, data) => {\n      if (err) {\n        clearTimeout(timer);\n        reject(err);\n      } else {\n        resolve(data);\n      }\n    });\n  });"
+    },
+    {
+      "id": "rw_12",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 28.25,
+      "response_preview": "const dashboardData = await getDashboard(userId);\nconsole.log(dashboardData);\n\nPlease note that the above code is written in Node.js and uses MongoDB as an example. The actual implementation may vary depending on your database of choice.\n\nHere's how you can convert it into a more readable format for JavaScript:\n\n```javascript\n// Assuming you have a library like 'mongoose' or 'sequelize' installed."
+    },
+    {
+      "id": "rw_13",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 9.22,
+      "response_preview": "function queue() {\n  return new Queue();\n}\nclass Queue {\n  constructor() {\n    this.jobs = [];\n  }\n\n  add(data) {\n    const job = { data };\n    this.jobs.push(job);\n    return job;\n  }\n\n  process(callback) {\n    const job = this.jobs.shift();\n    if (!job) {\n      throw new Error('No jobs in the queue');\n    }\n    callback(job, () => {});\n  }\n}"
+    },
+    {
+      "id": "rw_14",
+      "category": "Callback Hell",
+      "verdict": "partial",
+      "latency_s": 17.55,
+      "response_preview": "const fs = require('fs');\nconst path = require('path');\n\nfunction readFile(path, callback) {\n  fs.readFile(path, (err, data) => {\n    if (err) throw err;\n    callback(data.toString());\n  });\n}\n\nreadFile(path.join(__dirname, 'config.json'), (data) => {\n  const db = connect(JSON.parse(data));\n  const sql = 'SELECT * FROM table';\n  let results = [];\n\n  function transform(row, callback) {\n    // Your "
+    },
+    {
+      "id": "rw_15",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 25.26,
+      "response_preview": "Here is the code in JavaScript with async/await syntax:\n```javascript\nconst axios = require('axios');\n\nasync function notifyAllUsers(users) {\n  try {\n    const promises = users.map(async (user) => {\n      return await axios.post('/notify', { userId: user.id });\n    });\n\n    // Wait for all promises to resolve or reject\n    await Promise.all(promises);\n\n    console.log('Notifications sent successfu"
+    },
+    {
+      "id": "rw_16",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 15.33,
+      "response_preview": "const bcrypt = require('bcrypt');\nconst { promisify } = require('util');\n\nasync function register(username, password) {\n  try {\n    const saltRounds = 10;\n    const hashedPassword = await bcrypt.hash(password, saltRounds);\n    // Store the hashed password in your database\n    console.log(`Hashed Password for ${username}: ${hashedPassword}`);\n    return { ok: true };\n  } catch (error) {\n    console"
+    },
+    {
+      "id": "rw_17",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 23.73,
+      "response_preview": "The provided code is already in a form that can be converted into JavaScript. Here's the equivalent code in JavaScript:\n\n```javascript\nconst processItems = (items, callback) => {\n  if (items.length === 0) {\n    callback(null, []);\n    return;\n  }\n\n  const item = items[0];\n\n  if (computedCache[item]) {\n    processItems(items.slice(1), (err, rest) => {\n      callback(null, [computedCache[item]].conc"
+    },
+    {
+      "id": "rw_18",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 8.83,
+      "response_preview": "const express = require('express');\nconst app = express();\nconst db = require('./db');\n\napp.get('/user/:id', async (req, res) => {\n  try {\n    const user = await db.findUser(req.params.id);\n    res.json(user);\n  } catch (error) {\n    console.error(error);\n    res.status(500).send('Internal Server Error');\n  }\n});\n\nmodule.exports = app;"
+    },
+    {
+      "id": "rw_19",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 28.71,
+      "response_preview": "Here is the code in JavaScript with comments explaining each step:\n```javascript\n// Import the 'fs' module for file system operations\nconst fs = require('fs');\n\n/**\n * Creates a new file at the specified path if it does not already exist.\n *\n * @param {string} filePath - The path of the file to be created.\n * @param {string} content - The content to write into the file.\n * @param {Function} callba"
+    },
+    {
+      "id": "rw_20",
+      "category": "Context Loss",
+      "verdict": "pass",
+      "latency_s": 26.84,
+      "response_preview": "const poller = new DataPoller(1000);\npoller.start();\nconsole.log(poller.data); // [1632458799000, ...]\nHere is the equivalent code in JavaScript using ES6 syntax and features like arrow functions for better readability and conciseness.\n\n```javascript\nclass DataPoller {\n  constructor(interval) {\n    this.data = []; \n    this.interval = interval; \n  }\n\n  async start() { \n    await new Promise(resolv"
+    },
+    {
+      "id": "rw_21",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 16.85,
+      "response_preview": "const express = require('express');\nconst session = require('express-session');\n\nconst app = express();\n\napp.use(session({\n  secret: 'secret',\n  resave: false,\n  saveUninitialized: true\n}));\n\napp.get('/', (req, res) => {\n  if (!req.session.user) {\n    res.render('login.ejs');\n  } else {\n    res.send(`Welcome back ${req.session.user}`);\n  }\n});\n\napp.post('/login', (req, res) => {\n  const { username"
+    },
+    {
+      "id": "rw_22",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 4.44,
+      "response_preview": "function asyncSeries(arr, callback) {\n  var i = 0;\n  (function next() {\n    if(i >= arr.length) return callback();\n    arr[i++]().then(next);\n  })();\n}"
+    },
+    {
+      "id": "rw_23",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 19.8,
+      "response_preview": "Here is the equivalent code in JavaScript using async/await and Promises:\n\n```javascript\nasync function createTransactions() {\n  const txns = [];\n  \n  for (let i = 0; i < 50; i++) {\n    txns.push(\n      await sequelize.transaction(async (t) => {\n        return await User.create({\n          name: 'test'\n        }, { transaction: t });\n      })\n    );\n  }\n  \n  // Wait for all transactions to complet"
+    },
+    {
+      "id": "rw_24",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 20.67,
+      "response_preview": "conn.once('open', function() {\n  console.log('connected!');\n});\n\nconsole.log(conn.readyState); // should be disconnected\nThe provided code is already in JavaScript, so no changes are needed. Here's the equivalent code in JavaScript:\n\n```javascript\nconst mongoose = require('mongoose');\n\n// Create a new connection\nconst conn = mongoose.createConnection('mongodb://localhost:27017/mydb');\n\n// Handle e"
+    },
+    {
+      "id": "rw_25",
+      "category": "Race Condition",
+      "verdict": "partial",
+      "latency_s": 19.31,
+      "response_preview": "Here is the code in JavaScript using async/await syntax:\n\n```javascript\nasync function unsubscribeChannels() {\n    const subscriptions = ['ch1', 'ch2', 'ch3'];\n    const promises = subscriptions.map(async ch => {\n        return await client.sUnsubscribe(ch);\n    });\n    try {\n        await Promise.all(promises);\n        console.log('All channels unsubscribed successfully.');\n    } catch (error) {\n"
+    },
+    {
+      "id": "rw_26",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 9.84,
+      "response_preview": "const { knex } = require('knex');\n\nasync function main() {\n  const users1 = await knex.transaction(async (t) => {\n    return t('users').forUpdate().select();\n  });\n\n  const users2 = await knex.transaction(async (t) => {\n    return t('users').forUpdate().select();\n  });\n\n  const users3 = await knex.transaction(async (t) => {\n    return t('users').forUpdate().select();\n  });\n}\n\nmain();"
+    },
+    {
+      "id": "rw_27",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 17.58,
+      "response_preview": "In Python, you can use the Flask framework. Here's how you could write it in Python:\n\n```python\nfrom flask import session\n\n@app.route('/your_route', methods=['GET'])\ndef your_function():\n    if 'userId' not in session:\n        # If userId is not found in session, set it to some value or do something else.\n        session['userId'] = \"some_value\"\n    \n    return \"Your response\"\n```\nPlease note that"
+    },
+    {
+      "id": "rw_28",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 4.69,
+      "response_preview": "const User = require('./models/User');\n\nUser.insertMany([{ name: 'Alice' }, { name: '' }], function(err, docs) {\n  if (err) return console.log(err);\n  console.log(docs);\n});"
+    },
+    {
+      "id": "rw_29",
+      "category": "Double Callback",
+      "verdict": "partial",
+      "latency_s": 29.29,
+      "response_preview": "Here is the code in JavaScript with async/await syntax:\n```javascript\nconst { Client } = require('redis');\n\n// Create a new Redis client instance\nconst client = new Client();\n\n// Connect to the Redis server\nclient.connect().then(() => console.log('Connected to Redis'));\n\n// Define the transfer function\nasync function transfer(from, to, amount) {\n  // Create a pipeline object\n  const pipeline = cli"
+    },
+    {
+      "id": "rw_30",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 28.98,
+      "response_preview": "Here is the equivalent code in JavaScript using async/await and Promise.all() for concurrency:\n\n```javascript\nconst app = require('express')();\n\nasync function fetchData(id) {\n  // Your fetch logic here\n}\n\nasync function processData(data) {\n  // Your process logic here\n}\n\napp.get('/data/:id', async (req, res, next) => {\n  try {\n    const data = await fetchData(req.params.id);\n    req.data = data;\n"
+    }
+  ]
+}

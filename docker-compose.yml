@@ -1,0 +1,97 @@
+version: "3.9"
+
+# ThreadLearn AI2 — Docker Compose
+# Services: fastapi (AI server) + redis (cache) + mongodb (history)
+# Ollama service: thêm vào khi AI2-08 unblock (cần GPU host)
+#
+# Chạy: docker compose up -d
+# Stop: docker compose down
+
+services:
+
+  # ------------------------------------------------------------------
+  # AI2 FastAPI Server
+  # ------------------------------------------------------------------
+  fastapi:
+    build:
+      context: ./ai2
+      dockerfile: Dockerfile
+    container_name: threadlearn-ai2
+    ports:
+      - "8001:8001"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-mock}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://mongodb:27017
+      - OLLAMA_URL=http://ollama:11434
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ------------------------------------------------------------------
+  # Redis — Cache layer (AI2-07)
+  # ------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: threadlearn-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no   # no persistence — cache only
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ------------------------------------------------------------------
+  # MongoDB — History storage (AI2-09)
+  # ------------------------------------------------------------------
+  mongodb:
+    image: mongo:7
+    container_name: threadlearn-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ------------------------------------------------------------------
+  # Ollama — Local LLM (AI2-08, uncomment khi unblock)
+  # ------------------------------------------------------------------
+  # ollama:
+  #   image: ollama/ollama
+  #   container_name: threadlearn-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  # ollama_models:    # uncomment khi dùng Ollama

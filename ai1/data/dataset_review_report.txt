@@ -1,0 +1,1197 @@
+======================================================================
+   THREADLEARN — BÁO CÁO KIỂM TRA DATASET AI1-01
+   Thời gian: 2026-05-24 14:59:05
+======================================================================
+
+──────────────────────────────────────────────────────────────────────
+📁 FILE: my_dataset.json
+──────────────────────────────────────────────────────────────────────
+  📊 Tổng mẫu  : 892
+  ✅ Đạt chuẩn : 717  (80.4%)
+  ❌ Có lỗi    : 175   (19.6%)
+
+  📌 THỐNG KÊ LỖI THEO LOẠI:
+     • syntax_error                  : 138 mẫu
+     • wrong_transformation          : 42 mẫu
+     • duplicate_url_fetch           : 40 mẫu
+     • template_literal_bug          : 30 mẫu
+
+  📋 CHI TIẾT MẪU CÓ VẤN ĐỀ (215 mẫu):
+    ❌ Mẫu #131  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #132  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #133  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #134  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #135  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #136  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #137  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #138  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #139  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #140  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #141  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #142  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #143  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #144  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #145  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #146  [category: race_condition_fix]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 9: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 18: Unexpected identifier
+    ❌ Mẫu #147  [category: race_condition_fix]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 12: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected identifier
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #148  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #164  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #165  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #166  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #167  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #168  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #169  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #170  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #171  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #172  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #173  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #174  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #175  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #176  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #177  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #178  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #179  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #180  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #181  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #182  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #183  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #184  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #185  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #186  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #187  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #188  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #189  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #190  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #191  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #192  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #193  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #194  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #195  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #196  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #197  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #198  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #199  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #200  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #201  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #202  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #203  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #204  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #205  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #206  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #207  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #208  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #254  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #255  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #256  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #257  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #258  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #259  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #260  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #261  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #262  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #263  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #264  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #265  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #266  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #267  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #268  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #269  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #270  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #271  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #272  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #273  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #274  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #275  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #276  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #277  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #278  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #279  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #280  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #281  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #282  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #283  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #329  [category: concurrency_limit]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 6: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 17: Unexpected identifier
+    ❌ Mẫu #331  [category: error_handling]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 7: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 19: Unexpected identifier
+    ❌ Mẫu #342  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #343  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #346  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/posts/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/posts/${id}`']
+    ❌ Mẫu #356  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #357  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #360  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/comments/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/comments/${id}`']
+    ❌ Mẫu #370  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #371  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #374  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/products/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/products/${id}`']
+    ❌ Mẫu #384  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #385  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #388  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/articles/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/articles/${id}`']
+    ❌ Mẫu #398  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #399  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #402  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/reports/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/reports/${id}`']
+    ❌ Mẫu #412  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #413  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #416  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/invoices/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/invoices/${id}`']
+    ❌ Mẫu #426  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #427  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #430  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tasks/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tasks/${id}`']
+    ❌ Mẫu #440  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #441  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #444  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/events/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/events/${id}`']
+    ❌ Mẫu #454  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #455  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #458  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/messages/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/messages/${id}`']
+    ❌ Mẫu #468  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #469  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #472  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/sessions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/sessions/${id}`']
+    ❌ Mẫu #482  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #483  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #486  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/users/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/users/${id}`']
+    ❌ Mẫu #496  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #497  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #500  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/orders/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/orders/${id}`']
+    ❌ Mẫu #510  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #511  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #514  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/payments/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/payments/${id}`']
+    ❌ Mẫu #524  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #525  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #528  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/reviews/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/reviews/${id}`']
+    ❌ Mẫu #538  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #539  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #542  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/categories/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/categories/${id}`']
+    ❌ Mẫu #552  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #553  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #556  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tags/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tags/${id}`']
+    ❌ Mẫu #566  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #567  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #570  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/files/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/files/${id}`']
+    ❌ Mẫu #580  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #581  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #584  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tickets/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tickets/${id}`']
+    ❌ Mẫu #594  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #595  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #598  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/campaigns/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/campaigns/${id}`']
+    ❌ Mẫu #608  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #609  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #612  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/surveys/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/surveys/${id}`']
+    ❌ Mẫu #622  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #623  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #626  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/projects/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/projects/${id}`']
+    ❌ Mẫu #636  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #637  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #640  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/documents/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/documents/${id}`']
+    ❌ Mẫu #650  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #651  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #654  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/images/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/images/${id}`']
+    ❌ Mẫu #664  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #665  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #668  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/videos/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/videos/${id}`']
+    ❌ Mẫu #678  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #679  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #682  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/playlists/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/playlists/${id}`']
+    ❌ Mẫu #692  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #693  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #696  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/notifications/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/notifications/${id}`']
+    ❌ Mẫu #706  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #707  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #710  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/subscriptions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/subscriptions/${id}`']
+    ❌ Mẫu #720  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #721  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #724  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/transactions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/transactions/${id}`']
+    ❌ Mẫu #734  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #735  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #738  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/permissions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/permissions/${id}`']
+    ❌ Mẫu #748  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #749  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #752  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/audits/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/audits/${id}`']
+    ❌ Mẫu #762  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #763  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #766  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/exports/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/exports/${id}`']
+    ❌ Mẫu #776  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #777  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #780  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/imports/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/imports/${id}`']
+    ❌ Mẫu #790  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #791  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #794  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/webhooks/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/webhooks/${id}`']
+    ❌ Mẫu #804  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #805  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #808  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/schedules/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/schedules/${id}`']
+    ❌ Mẫu #818  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #819  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #822  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/analytics/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/analytics/${id}`']
+    ❌ Mẫu #832  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #833  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #836  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/logs/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/logs/${id}`']
+    ❌ Mẫu #846  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #847  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #850  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/configs/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/configs/${id}`']
+    ❌ Mẫu #860  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #861  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #864  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tokens/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tokens/${id}`']
+    ❌ Mẫu #874  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #875  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #878  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/caches/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/caches/${id}`']
+    ❌ Mẫu #888  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #889  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #892  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/jobs/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/jobs/${id}`']
+
+  📊 PHÂN BỐ CATEGORY:
+     sequential_await_to_parallel            162 ( 18.2%) █████████
+     concurrency_limit                        82 (  9.2%) ████
+     sequential_loop_to_parallel              45 (  5.0%) ██
+     chain_to_async                           45 (  5.0%) ██
+     callback_to_async                        43 (  4.8%) ██
+     race_condition_fix                       43 (  4.8%) ██
+     error_handling                           42 (  4.7%) ██
+     streaming                                40 (  4.5%) ██
+     debounce                                 40 (  4.5%) ██
+     pagination_parallel                      40 (  4.5%) ██
+     read_transform_write_parallel            40 (  4.5%) ██
+     sync_to_async                            30 (  3.4%) █
+     worker_threads                           30 (  3.4%) █
+     jquery_to_fetch                          30 (  3.4%) █
+     event_to_promise                         30 (  3.4%) █
+     polling_to_generator                     30 (  3.4%) █
+     abort_controller                         30 (  3.4%) █
+     fs_callback_to_async                     15 (  1.7%) 
+     http_callback_to_async                   15 (  1.7%) 
+     xhr_to_fetch                             15 (  1.7%) 
+     promise_any                              15 (  1.7%) 
+     for_await_of                             15 (  1.7%) 
+     cluster_module                           15 (  1.7%) 
+
+
+──────────────────────────────────────────────────────────────────────
+📁 FILE: raw_dataset.json
+──────────────────────────────────────────────────────────────────────
+  📊 Tổng mẫu  : 838
+  ✅ Đạt chuẩn : 667  (79.6%)
+  ❌ Có lỗi    : 171   (20.4%)
+
+  📌 THỐNG KÊ LỖI THEO LOẠI:
+     • syntax_error                  : 134 mẫu
+     • wrong_transformation          : 42 mẫu
+     • duplicate_url_fetch           : 40 mẫu
+     • template_literal_bug          : 2 mẫu
+
+  📋 CHI TIẾT MẪU CÓ VẤN ĐỀ (211 mẫu):
+    ❌ Mẫu #19  [category: jquery_to_fetch]
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["').then(r => r.json());\n  const user   = await fetch(`/api/user?lang=${config.lang}`).then(r => r.json());\n  document.getElementById('"]
+    ❌ Mẫu #20  [category: race_condition_fix]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 9: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 18: Unexpected identifier
+    ❌ Mẫu #21  [category: race_condition_fix]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 12: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected identifier
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #22  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #24  [category: event_to_promise]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 15: Unexpected identifier
+    ❌ Mẫu #25  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #26  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #30  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #31  [category: cluster_module]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 5: Unexpected token ILLEGAL
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 16: Unexpected token ILLEGAL
+         ❌ [TEMPLATE_BUG] Output dùng quote thay backtick: ["', (worker, code, signal) => {\n    console.log(`worker ${worker.process.pid} died`);\n    cluster.fork(); // restart\n  });\n} else {\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('"]
+    ❌ Mẫu #35  [category: concurrency_limit]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 6: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 17: Unexpected identifier
+    ❌ Mẫu #37  [category: error_handling]
+         ❌ [SYNTAX] Input lỗi cú pháp: Line 7: Unexpected identifier
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 19: Unexpected identifier
+    ❌ Mẫu #46  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #47  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #50  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/posts/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/posts/${id}`']
+    ❌ Mẫu #55  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #58  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #66  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #67  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #70  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/comments/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/comments/${id}`']
+    ❌ Mẫu #75  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #78  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #86  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #87  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #90  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/products/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/products/${id}`']
+    ❌ Mẫu #95  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #98  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #106  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #107  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #110  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/articles/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/articles/${id}`']
+    ❌ Mẫu #115  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #118  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #126  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #127  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #130  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/reports/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/reports/${id}`']
+    ❌ Mẫu #135  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #138  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #146  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #147  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #150  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/invoices/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/invoices/${id}`']
+    ❌ Mẫu #155  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #158  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #166  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #167  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #170  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tasks/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tasks/${id}`']
+    ❌ Mẫu #175  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #178  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #186  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #187  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #190  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/events/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/events/${id}`']
+    ❌ Mẫu #195  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #198  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #206  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #207  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #210  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/messages/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/messages/${id}`']
+    ❌ Mẫu #215  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #218  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #226  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #227  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #230  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/sessions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/sessions/${id}`']
+    ❌ Mẫu #235  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #238  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #246  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #247  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #250  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/users/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/users/${id}`']
+    ❌ Mẫu #255  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #258  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #266  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #267  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #270  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/orders/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/orders/${id}`']
+    ❌ Mẫu #275  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #278  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #286  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #287  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #290  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/payments/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/payments/${id}`']
+    ❌ Mẫu #295  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #298  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #306  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #307  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #310  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/reviews/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/reviews/${id}`']
+    ❌ Mẫu #315  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #318  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #326  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #327  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #330  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/categories/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/categories/${id}`']
+    ❌ Mẫu #335  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #338  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #346  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #347  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #350  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tags/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tags/${id}`']
+    ❌ Mẫu #355  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #358  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #366  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #367  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #370  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/files/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/files/${id}`']
+    ❌ Mẫu #375  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #378  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #386  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #387  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #390  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tickets/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tickets/${id}`']
+    ❌ Mẫu #395  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #398  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #406  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #407  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #410  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/campaigns/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/campaigns/${id}`']
+    ❌ Mẫu #415  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #418  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #426  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #427  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #430  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/surveys/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/surveys/${id}`']
+    ❌ Mẫu #435  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #438  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #446  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #447  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #450  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/projects/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/projects/${id}`']
+    ❌ Mẫu #455  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #458  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #466  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #467  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #470  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/documents/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/documents/${id}`']
+    ❌ Mẫu #475  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #478  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #486  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #487  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #490  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/images/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/images/${id}`']
+    ❌ Mẫu #495  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #498  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #506  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #507  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #510  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/videos/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/videos/${id}`']
+    ❌ Mẫu #515  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #518  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #526  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #527  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #530  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/playlists/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/playlists/${id}`']
+    ❌ Mẫu #535  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #538  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #546  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #547  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #550  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/notifications/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/notifications/${id}`']
+    ❌ Mẫu #555  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #558  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #566  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #567  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #570  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/subscriptions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/subscriptions/${id}`']
+    ❌ Mẫu #575  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #578  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #586  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #587  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #590  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/transactions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/transactions/${id}`']
+    ❌ Mẫu #595  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #598  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #606  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #607  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #610  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/permissions/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/permissions/${id}`']
+    ❌ Mẫu #615  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #618  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #626  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #627  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #630  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/audits/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/audits/${id}`']
+    ❌ Mẫu #635  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #638  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #646  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #647  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #650  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/exports/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/exports/${id}`']
+    ❌ Mẫu #655  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #658  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #666  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #667  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #670  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/imports/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/imports/${id}`']
+    ❌ Mẫu #675  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #678  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #686  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #687  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #690  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/webhooks/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/webhooks/${id}`']
+    ❌ Mẫu #695  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #698  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #706  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #707  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #710  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/schedules/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/schedules/${id}`']
+    ❌ Mẫu #715  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #718  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #726  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #727  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #730  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/analytics/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/analytics/${id}`']
+    ❌ Mẫu #735  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #738  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #746  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #747  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #750  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/logs/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/logs/${id}`']
+    ❌ Mẫu #755  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #758  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #766  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #767  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #770  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/configs/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/configs/${id}`']
+    ❌ Mẫu #775  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #778  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #786  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #787  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #790  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/tokens/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/tokens/${id}`']
+    ❌ Mẫu #795  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #798  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #806  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #807  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #810  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/caches/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/caches/${id}`']
+    ❌ Mẫu #815  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #818  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #826  [category: race_condition_fix]
+         ❌ [TRANSFORM] Output không có pattern đúng cho 'race_condition_fix' (cần một trong: #queue|#lock|mutex|Mutex|SafeCounter|\.then\s*\(async)
+    ❌ Mẫu #827  [category: streaming]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+         ⚠️  [COMPAT] Dùng Web Streams API (getReader) — yêu cầu Node.js >= 18
+    ⚠️  Mẫu #830  [category: read_transform_write_parallel]
+         ⚠️  [DUP_URL] Input fetch cùng URL nhiều lần: ['`/api/jobs/${id}`']
+         ⚠️  [DUP_URL] Output fetch cùng URL nhiều lần: ['`/api/jobs/${id}`']
+    ❌ Mẫu #835  [category: polling_to_generator]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+    ❌ Mẫu #838  [category: for_await_of]
+         ❌ [SYNTAX] Output lỗi cú pháp: Line 1: Unexpected token *
+
+  📊 PHÂN BỐ CATEGORY:
+     sequential_await_to_parallel             82 (  9.8%) ████
+     concurrency_limit                        82 (  9.8%) ████
+     sequential_loop_to_parallel              45 (  5.4%) ██
+     callback_to_async                        43 (  5.1%) ██
+     race_condition_fix                       43 (  5.1%) ██
+     worker_threads                           42 (  5.0%) ██
+     event_to_promise                         42 (  5.0%) ██
+     polling_to_generator                     42 (  5.0%) ██
+     abort_controller                         42 (  5.0%) ██
+     error_handling                           42 (  5.0%) ██
+     fs_callback_to_async                     41 (  4.9%) ██
+     xhr_to_fetch                             41 (  4.9%) ██
+     promise_any                              41 (  4.9%) ██
+     for_await_of                             41 (  4.9%) ██
+     streaming                                40 (  4.8%) ██
+     debounce                                 40 (  4.8%) ██
+     pagination_parallel                      40 (  4.8%) ██
+     read_transform_write_parallel            40 (  4.8%) ██
+     chain_to_async                            3 (  0.4%)  🔴 QUÁ ÍT
+     sync_to_async                             2 (  0.2%)  🔴 QUÁ ÍT
+     jquery_to_fetch                           2 (  0.2%)  🔴 QUÁ ÍT
+     http_callback_to_async                    1 (  0.1%)  🔴 QUÁ ÍT
+     cluster_module                            1 (  0.1%)  🔴 QUÁ ÍT
+
+  🌐 CẢNH BÁO TỔNG QUAN (5 mục):
+     [BALANCE] Category 'http_callback_to_async' chỉ có 1 cặp — dưới ngưỡng tối thiểu 15, model khó học được
+     [BALANCE] Category 'sync_to_async' chỉ có 2 cặp — dưới ngưỡng tối thiểu 15, model khó học được
+     [BALANCE] Category 'jquery_to_fetch' chỉ có 2 cặp — dưới ngưỡng tối thiểu 15, model khó học được
+     [BALANCE] Category 'cluster_module' chỉ có 1 cặp — dưới ngưỡng tối thiểu 15, model khó học được
+     [BALANCE] Category 'chain_to_async' chỉ có 3 cặp — dưới ngưỡng tối thiểu 15, model khó học được
+
+======================================================================
+   TỔNG KẾT TOÀN BỘ DATASET
+======================================================================
+  Tổng mẫu      : 1730
+  Đạt chuẩn     : 1384  (80.0%)
+  Có lỗi        : 346   (20.0%)
+
+  Top lỗi phổ biến nhất:
+     • syntax_error                       : 272
+     • wrong_transformation               : 84
+     • duplicate_url_fetch                : 80
+     • template_literal_bug               : 32
+
+  📈 ĐIỂM CHẤT LƯỢNG ƯỚC TÍNH: 4.0/10
+  ⚠️  Nên fix lỗi trước khi fine-tune.
+
+──────────────────────────────────────────────────────────────────────
+  📋 ĐỀ XUẤT HÀNH ĐỘNG (theo thứ tự ưu tiên):
+
+  [P0 🔴] Fix Template Literal Bug
+         32 mẫu dùng single/double quote chứa ${...}
+       → Thay tất cả '...${{...}}...' bằng backtick `...${{...}}...`
+
+  [P0 🔴] Loại bỏ Duplicate URL Fetch
+         80 mẫu fetch cùng 1 URL nhiều lần — phi thực tế
+       → Regenerate với endpoint khác nhau (/profile, /orders, /messages)
+
+  [P0 🔴] Fix Lỗi Cú Pháp JS
+         272 mẫu có lỗi parse — không thể dùng để train
+       → Review và sửa từng mẫu bị lỗi cú pháp
+
+  [P1 🟡] Fix Sai Pattern Transformation
+         84 mẫu output không đúng pattern category
+       → Kiểm tra lại mapping category → pattern output
+
+  [P2 🔵] Thêm Missing Patterns
+         Các pattern quan trọng chưa có:
+       → AbortController + fetch cancellation
+       → for await...of với async iterators
+       → Promise.any (racing multiple endpoints)
+       → Mutex / Lock pattern
+
+  [P3 ⚪] Ghi chú ES Version
+         Một số mẫu dùng ES2022+ (private fields) hoặc Node.js >= 18 (Web Streams)
+       → Thêm comment '// Node.js >= 18' hoặc chuẩn hóa về ES2020
+
+
+======================================================================
+   Kết thúc báo cáo — ThreadLearn Dataset Review Tool
+======================================================================
