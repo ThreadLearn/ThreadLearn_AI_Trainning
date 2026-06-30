@@ -56,7 +56,7 @@ bash ../.claude/skills/run-ai2-server/smoke.sh
 
 Expected output (all checks pass):
 ```
-[smoke] GET /health           ✓ health OK (retriever_docs=250)
+[smoke] GET /health           ✓ health OK (retriever_docs=2050)
 [smoke] JWT generated (sub=smoke-user)
 [smoke] POST /api/v1/ai/analyze   ✓ analyze OK (issues=1)
 [smoke] GET /api/v1/ai/history/smoke-user   ✓ history OK (total=1)
@@ -118,10 +118,10 @@ curl -s "http://localhost:8001/api/v1/ai/history/test-user?page=1&limit=5" \
 
 ```bash
 cd ai2/server
-pytest ../tests/ -v
+pytest ../tests/unit/ -v
 ```
 
-70 tests pass (as of AI2 commit `39a8d1c`).
+85 pass, 5 fail (`test_race_detector.py` Python-pattern cases — `global_var_thread`, `shared_list_no_lock`, `missing_join`, `singleton_lazy_init`, `counter_no_atomic_python` — pre-existing detector gaps for the Python language path, unrelated to the JS/server code this skill drives).
 
 ---
 

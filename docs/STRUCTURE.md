@@ -4,44 +4,97 @@
 ThreadLearn-AI-Trainning/
 ├── ai1/                          # AI1 — Ân: Fine-tune & AST
 │   ├── data/
-│   │   ├── raw/                  # raw_dataset.json (500-1000 cặp JS+Python)
-│   │   └── processed/            # train.jsonl + eval.jsonl (split 90/10)
-│   ├── training/                 # QLoRA training notebooks & scripts
-│   ├── model/                    # exported SafeTensors (gitignored nếu >100MB)
-│   ├── modules/
-│   │   ├── ast_preprocessor.py   # AI1-03: parse AST, stripComments, extractFunctions
-│   │   └── output_parser.py      # AI1-08: parse LLM raw output → {code, explanation}
-│   └── tests/
-│       └── test_ast.py           # unit tests cho ast_preprocessor (20 cases)
+│   │   ├── raw/                  # bugsjs_*.jsonl, generate_bugsjs*.py, dataset_review_report.txt
+│   │   └── processed/            # ast_dataset.json
+│   ├── training/                 # ai1_03_finetune.py, ai1_04_merge_model.py (QLoRA, Kaggle/RunPod)
+│   ├── evaluation/                # evaluate_model.py, generate_test_cases.py, run_inference_local.py
+│   ├── model/                    # exported SafeTensors (gitignored, >100MB)
+│   ├── modules/                  # shared Python modules — AI2 import trực tiếp
+│   │   ├── ast_preprocessor.py   # AI2 dùng cho race_detector và rag_pipeline
+│   │   ├── output_parser.py      # AI2 dùng khi swap sang Ollama
+│   │   ├── ai1_01_dataset_collector.py
+│   │   ├── ai1_02_format_jsonl.py
+│   │   ├── ai1_02b_ast_preprocessor_unused.js  # bản JS song song, không dùng trong pipeline Python
+│   │   ├── DEPRECATED_patch_collector_onetime.py  # script vá lỗi ai1_01 một lần, đã chạy xong
+│   │   └── dataset_validator.py    # 9 check chất lượng dataset (AI1-01)
+│   ├── tests/
+│   │   └── test_ast.py           # unit tests cho ast_preprocessor
+│   ├── LESSONS_LEARNED.md
+│   └── README.md
 │
 ├── ai2/                          # AI2 — Trung: Serving, RAG & Race Condition
 │   ├── knowledge-base/
-│   │   ├── knowledge_base.json   # 250 docs concurrent JS patterns (AI2-01 DONE)
-│   │   └── KNOWLEDGE_BASE_OVERVIEW.md  # schema, category breakdown, usage guide
+│   │   ├── knowledge_base.json   # 250 docs concurrent JS patterns
+│   │   ├── knowledge_base_extended.json
+│   │   └── KNOWLEDGE_BASE_OVERVIEW.md
 │   ├── server/
-│   │   ├── main.py               # AI2-05: FastAPI app, routes, JWT middleware
-│   │   ├── bm25_module.py        # AI2-02: BM25 indexer + search (in-memory)
-│   │   ├── race_detector.py      # AI2-03: rule-based detector, 10 RC patterns
-│   │   ├── report_formatter.py   # AI2-04: format RC output → JSON {severity, fix}
-│   │   ├── rag_pipeline.py       # AI2-06: RAG flow code→AST→BM25→LLM→response
-│   │   ├── cache.py              # AI2-07: Redis cache SHA256 key, TTL 24h
-│   │   ├── db.py                 # AI2-09: MongoDB motor, ai_analysis_history
-│   │   ├── llm_client.py         # AI2-08: LLMClient ABC → OpenAIClient/OllamaClient
+│   │   ├── main.py               # FastAPI app, routes, JWT middleware
+│   │   ├── bm25_module.py        # BM25 indexer + search (in-memory)
+│   │   ├── race_detector.py      # rule-based detector, 10 RC patterns
+│   │   ├── report_formatter.py   # format RC output → JSON {severity, fix}
+│   │   ├── rag_pipeline.py       # RAG flow code→AST→BM25→LLM→response
+│   │   ├── cache.py              # Redis cache SHA256 key, TTL 24h
+│   │   ├── db.py                 # MongoDB motor, ai_analysis_history
+│   │   ├── llm_client.py         # LLMClient ABC → OpenAIClient/OllamaClient
+│   │   ├── auth.py               # JWT auth
+│   │   ├── auto_stopwords.py     # stopwords filtering cho BM25 query
+│   │   ├── schemas.py            # Pydantic models
+│   │   ├── output_parser.py      # parse LLM raw output
 │   │   ├── config.py             # env vars: API keys, URLs, LLM provider
-│   │   └── requirements.txt      # Python dependencies for ai2/server
-│   └── tests/
-│       ├── test_bm25.py          # AI2-02: 10 query relevance tests
-│       ├── test_race_detector.py # AI2-03: 15 positive + 10 negative cases
-│       └── test_rag_pipeline.py  # AI2-06: E2E 5 sample analysis
+│   │   ├── logs/                 # server_out.log, server_err.log (gitignored)
+│   │   └── requirements.txt
+│   ├── eval/                     # model evaluation (base vs merged vs RAG vs OpenAI)
+│   │   ├── scripts/               # eval_baseline.py, eval_local_base.py, eval_local_merged.py, eval_openai.py, eval_rag_merged.py, rescore_merged.py
+│   │   └── results/               # eval_*_results.json
+│   ├── tests/
+│   │   ├── unit/                 # test_bm25.py, test_race_detector.py, test_rag_pipeline.py, test_cache.py, test_db.py, test_main.py, test_report_formatter.py, test_output_parser.py, conftest.py
+│   │   ├── load/                 # locustfile.py
+│   │   └── real_world/           # 30-case real-world benchmark
+│   │       ├── cases/
+│   │       ├── notebooks/        # with_pipeline/, without_pipeline/
+│   │       ├── results/
+│   │       └── README.md
+│   ├── .claude/skills/run-ai2-server/
+│   ├── EVAL_REPORT.md
+│   └── README.md
 │
 ├── shared/
 │   └── README.md                 # cross-team import docs, delivery schedule
 │
 ├── docs/
 │   ├── STRUCTURE.md              # this file
-│   └── AI2_PROGRESS_TRACKER.md  # Trung's task tracker (10 tasks, checkpoints, risks)
+│   ├── AI1_PROGRESS_TRACKER.md   # Ân's task tracker
+│   ├── AI2_PROGRESS_TRACKER.md   # Trung's task tracker
+│   ├── AI2_TRUNG_ROADMAP.md
+│   ├── reference-papers/         # PDF papers tham khảo + giải thích (NodeCB, PCWMs, ICCIES)
+│   │   ├── explain_nodecb.md
+│   │   ├── explain_pcwms.md
+│   │   ├── *.pdf
+│   │   └── *_visual.html
+│   └── my-research/              # bài báo ICTA2026 — bản thảo, template, hình vẽ
+│       ├── ICTA_COMPLIANCE_PLAN.md
+│       ├── MIGRATION_PLAN_8pages.md
+│       ├── ThreadLearn_ICTA_WordReady.md
+│       ├── ThreadLearn_PASTE_BLOCKS.txt
+│       ├── Trung_ThreadLearn_v2.docx   # bản docx hiện hành
+│       ├── icta_word_template/         # template Springer LNCS Word (.docm)
+│       ├── figures/                    # figure_1..3, figure_base
+│       ├── paper_latex_source/         # bản LaTeX chính thức (llncs.cls)
+│       ├── outline/                    # paper_outline_en.md, paper_outline_vi.md
+│       └── paper_vietnamese/           # bản báo cáo tiếng Việt (LaTeX)
 │
+├── models/                       # LLM weights (config/tokenizer only, weights gitignored)
+│   ├── base/                     # Qwen2.5-Coder-1.5B gốc
+│   └── merged/                   # bản fine-tuned đã merge
+│
+├── mock-website/                 # demo UI — không thuộc core AI pipeline
+│   ├── backend/                  # Node.js
+│   └── frontend-react/           # React
+│
+├── .claude/skills/
 ├── .gitignore
+├── .env
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -50,16 +103,17 @@ ThreadLearn-AI-Trainning/
 ## Folder Descriptions
 
 ### `ai1/data/raw/`
-Raw dataset: cặp code đơn luồng → đa luồng thu thập từ GitHub, Kaggle, viết tay.
-Target: 500-1000 cặp JS + Python. Output: `raw_dataset.json`.
+Raw dataset: cặp code đơn luồng → đa luồng, sinh từ BugsJS + viết tay.
+Output: `bugsjs_train.jsonl`, `bugsjs_train_batch3.jsonl`, eval splits.
 
 ### `ai1/data/processed/`
-Dataset sau khi format sang JSONL chuẩn SFTTrainer.
-Output: `train.jsonl` (90%) + `eval.jsonl` (10%).
+Dataset sau khi format sang AST-augmented JSON: `ast_dataset.json`.
 
 ### `ai1/training/`
-Notebooks và scripts cho QLoRA fine-tune Qwen2.5-Coder-1.5B trên Kaggle/RunPod.
-Chứa: training config, hyperparameters, loss curve screenshots.
+Scripts QLoRA fine-tune Qwen2.5-Coder-1.5B trên Kaggle/RunPod (`ai1_03_finetune.py`) và merge adapter vào base model (`ai1_04_merge_model.py`).
+
+### `ai1/evaluation/`
+Đánh giá model fine-tune: sinh test case, chạy inference local, so kết quả.
 
 ### `ai1/model/`
 Exported model sau fine-tune. SafeTensors (~3-4GB) **gitignored** — chia sẻ qua HuggingFace Hub / Google Drive link.
@@ -67,23 +121,31 @@ Exported model sau fine-tune. SafeTensors (~3-4GB) **gitignored** — chia sẻ 
 ### `ai1/modules/`
 Shared Python modules do AI1 viết, AI2 import trực tiếp.
 - `ast_preprocessor.py` — AI2 dùng cho race_detector và rag_pipeline
-- `output_parser.py` — AI2 dùng khi swap sang Ollama (Iter 3)
+- `output_parser.py` — AI2 dùng khi swap sang Ollama
+- `ai1_01_dataset_collector.py`, `ai1_02_format_jsonl.py` — script thu thập/format dataset một lần, không phải module runtime
+- `ai1_02_ast_preprocessor.js` — bản port JavaScript song song, hiện không gọi từ pipeline Python
 
 ### `ai2/knowledge-base/`
-Nguồn dữ liệu RAG: 250 tài liệu JavaScript concurrent patterns.
+Nguồn dữ liệu RAG: tài liệu JavaScript concurrent patterns.
 BM25 index được build từ file này mỗi lần server start.
-**Không sửa trực tiếp** — thêm doc mới bằng cách append vào `knowledge_base.json` với id tiếp theo (js-251...).
+**Không sửa trực tiếp** — thêm doc mới bằng cách append vào `knowledge_base.json` với id tiếp theo.
 
 ### `ai2/server/`
-FastAPI microservice — đây là core của AI2.
+FastAPI microservice — core của AI2.
 Import chain: `main.py` → `rag_pipeline.py` → `bm25_module.py` + `llm_client.py` + `race_detector.py` → `report_formatter.py`.
+Log file chạy server nằm ở `ai2/server/logs/` (gitignored).
+
+### `ai2/eval/`
+Đánh giá model end-to-end trên benchmark thực tế: so sánh base / fine-tuned / fine-tuned+RAG / GPT-3.5-turbo.
+Kết quả lưu ở `ai2/eval/results/*.json`, dùng cho bảng ablation trong bài báo (`docs/my-research`).
 
 ### `ai2/tests/`
 Pytest test suite. Chạy từ root:
 ```bash
 cd ThreadLearn-AI-Trainning
-pytest ai2/tests/ -v
+pytest ai2/tests/unit/ -v
 ```
+`ai2/tests/real_world/` chứa 30-case benchmark thực tế dùng cho Section 5 của bài báo.
 
 ### `shared/`
 Không chứa code — chỉ chứa docs về cross-team dependencies và import pattern.
@@ -91,21 +153,33 @@ Khi AI1 deliver module, AI2 import thẳng từ `ai1/modules/`.
 
 ### `docs/`
 Tài liệu kỹ thuật dùng chung cả team.
+- `docs/reference-papers/` — paper tham khảo (PDF) + giải thích tiếng Việt, KHÔNG phải bài viết của nhóm.
+- `docs/my-research/` — bài báo ICTA2026 của nhóm, bản thảo + template + hình vẽ.
+
+### `models/`
+Config/tokenizer của base model và merged model. Trọng số thực (`.safetensors`) gitignored — tải qua HuggingFace Hub.
+
+### `mock-website/`
+Demo web UI (React + Node.js backend) minh hoạ tích hợp AI2 vào sản phẩm thật. Không bắt buộc để chạy core pipeline.
 
 ---
 
 ## Key Files Quick Reference
 
-| File | Task | Status |
-|------|------|--------|
-| `ai2/knowledge-base/knowledge_base.json` | AI2-01 | ✅ DONE |
-| `ai2/server/bm25_module.py` | AI2-02 | 🔄 In Progress |
-| `ai2/server/race_detector.py` | AI2-03 | 🚫 Blocked (AI1-03) |
-| `ai2/server/report_formatter.py` | AI2-04 | ⏳ Pending |
-| `ai2/server/main.py` | AI2-05 | ⏳ Pending |
-| `ai2/server/rag_pipeline.py` | AI2-06 | ⏳ Pending (CP3 critical) |
-| `ai2/server/cache.py` | AI2-07 | ⏳ Pending |
-| `ai2/server/llm_client.py` | AI2-08 | 🚫 Blocked (AI1-07) |
-| `ai2/server/db.py` | AI2-09 | ⏳ Pending |
-| `ai1/modules/ast_preprocessor.py` | AI1-03 | ⏳ Pending |
-| `ai1/modules/output_parser.py` | AI1-08 | ⏳ Pending |
+| File | Vai trò | Trạng thái |
+|------|---------|------------|
+| `ai2/knowledge-base/knowledge_base.json` | RAG corpus | ✅ DONE |
+| `ai2/server/bm25_module.py` | BM25 retrieval | ✅ DONE |
+| `ai2/server/race_detector.py` | Static race detector | ✅ DONE |
+| `ai2/server/report_formatter.py` | Format kết quả | ✅ DONE |
+| `ai2/server/main.py` | FastAPI app | ✅ DONE |
+| `ai2/server/rag_pipeline.py` | RAG end-to-end | ✅ DONE |
+| `ai2/server/cache.py` | Redis cache | ✅ DONE |
+| `ai2/server/llm_client.py` | LLM abstraction | 🚫 Ollama swap blocked (AI1-07) |
+| `ai2/server/db.py` | MongoDB history | ✅ DONE |
+| `ai1/modules/ast_preprocessor.py` | AST preprocessing | ✅ DONE |
+| `ai1/modules/output_parser.py` | Parse LLM output | ✅ DONE |
+| `ai1/training/ai1_03_finetune.py` | QLoRA fine-tune | ✅ DONE |
+| `ai2/eval/scripts/eval_rag_merged.py` | Ablation eval | ✅ DONE |
+
+Chi tiết task-by-task xem `docs/AI1_PROGRESS_TRACKER.md` và `docs/AI2_PROGRESS_TRACKER.md`.

@@ -1,9 +1,47 @@
-# ThreadLearn — AI Training Module
+# ThreadLearn
 
-> **Phát hiện và sửa lỗi concurrency JavaScript bằng Fine-tuned LLM + RAG Pipeline**
->
-> Dự án môn WDP301 — FPT University  
-> Tác giả: **Lê Trí Trung** · **Hà Văn Ân**
+**Phát hiện và sửa lỗi concurrency JavaScript bằng Fine-tuned LLM + RAG Pipeline**
+
+[![Python](https://img.shields.io/badge/Python-3.13%2B-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688)](https://fastapi.tiangolo.com/)
+[![Model](https://img.shields.io/badge/Model-Qwen2.5--Coder--1.5B-orange)](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B)
+[![License](https://img.shields.io/badge/License-Academic-lightgrey)](#)
+[![Pass Rate](https://img.shields.io/badge/Pass%20Rate-75%25-success)](#7-đánh-giá-mô-hình--kết-quả-thực-tế)
+
+Dự án môn **WDP301 — FPT University**
+
+---
+
+## Tóm tắt
+
+JavaScript chạy theo mô hình single-threaded event loop, nơi 93% lỗi concurrency thực tế (theo nghiên cứu NodeCB, ASE 2017) gây crash, hỏng dữ liệu, hoặc treo server. Công cụ phân tích tĩnh hiện có (ESLint, ThreadSanitizer) chỉ phát hiện chứ không sửa; LLM tổng quát (GPT-3.5/4) cần internet, tốn phí, và không chuyên biệt cho domain này.
+
+**ThreadLearn** kết hợp fine-tune **Qwen2.5-Coder-1.5B** bằng **QLoRA** trên 783 cặp code lỗi/đã sửa, với **RAG pipeline** (BM25 retrieval trên 2050 tài liệu JS concurrency) để bổ sung ngữ cảnh trước khi sinh fix. Hệ thống chạy hoàn toàn offline trên GPU 8GB, đạt **75% pass rate** trên 20 test case thực tế — vượt GPT-3.5-turbo zero-shot (30%) dù nhỏ hơn ~125 lần.
+
+## Thành viên nhóm
+
+| Tên | Vai trò | Email | ORCID |
+|---|---|---|---|
+| **Lê Trí Trung** | AI2 — RAG Pipeline, FastAPI Server, Race Detector | letritrung2605@gmail.com | [0009-0007-0790-1388](https://orcid.org/0009-0007-0790-1388) |
+| **Hà Văn Ân** | AI1 — Dataset Collection, QLoRA Fine-tuning | van.an.webdev@gmail.com | [0009-0000-8536-4396](https://orcid.org/0009-0000-8536-4396) |
+| **Nguyễn Thị Thúy Hoài** | Đánh giá mô hình & viết báo cáo nghiên cứu | hoaintt40@fe.edu.vn | [0009-0007-6328-0715](https://orcid.org/0009-0007-6328-0715) |
+
+FPT University, Da Nang, Vietnam.
+
+## Trích dẫn
+
+Nếu dùng lại ý tưởng hoặc kết quả của dự án này, vui lòng trích dẫn:
+
+```bibtex
+@unpublished{threadlearn2026,
+  title  = {ThreadLearn: A RAG-Augmented Fine-Tuned Language Model for
+            JavaScript Concurrency Bug Detection and Remediation},
+  author = {Le Tri Trung and Ha Van An and Nguyen Thi Thuy Hoai},
+  year   = {2026},
+  note   = {FPT University, WDP301 coursework project},
+  howpublished = {\url{https://github.com/}}
+}
+```
 
 ---
 
@@ -167,7 +205,7 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
 | BM25 Module | `ai2/server/bm25_module.py` | Indexing và tìm kiếm tài liệu |
 | RAG Pipeline | `ai2/server/rag_pipeline.py` | Kết nối BM25 + LLM |
 | FastAPI Server | `ai2/server/main.py` | API endpoint cho frontend |
-| Eval Script | `ai2/eval_rag_merged.py` | Đánh giá model với 20 test case |
+| Eval Script | `ai2/eval/scripts/eval_rag_merged.py` | Đánh giá model với 20 test case |
 
 ---
 
@@ -176,52 +214,58 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
 ```
 ThreadLearn-AI-Trainning/
 │
-├── ai1/                          # Module thu thập dữ liệu & fine-tuning
+├── ai1/                           # AI1 — Ân: Fine-tune & AST
+│   ├── data/raw/                  # bugsjs_*.jsonl — dataset thô
+│   ├── data/processed/            # ast_dataset.json — đã format
 │   ├── modules/
 │   │   ├── ai1_01_dataset_collector.py   # Thu thập từ GitHub + synthetic pairs
 │   │   ├── ai1_02_format_jsonl.py        # Chuyển sang JSONL cho SFTTrainer
-│   │   └── ast_preprocessor.py           # Làm sạch code, trích keyword
+│   │   ├── ast_preprocessor.py           # Làm sạch code, trích keyword (AI2 import)
+│   │   ├── output_parser.py              # Parse LLM raw output (AI2 import)
+│   │   └── dataset_validator.py          # 9-check dataset QA
 │   ├── training/
 │   │   ├── ai1_03_finetune.py            # QLoRA fine-tuning (chạy trên Kaggle)
 │   │   └── ai1_04_merge_model.py         # Merge adapter → model hoàn chỉnh
-│   ├── data/
-│   │   └── raw/                          # Dataset thô trước khi format
 │   └── evaluation/
-│       └── evaluate_model.py             # Đánh giá model sau fine-tuning
+│       ├── evaluate_model.py             # Eval qua HuggingFace API
+│       └── run_inference_local.py        # Eval local
 │
-├── ai2/                          # Module RAG pipeline & API server
+├── ai2/                           # AI2 — Trung: RAG pipeline & API server
 │   ├── server/
-│   │   ├── main.py                       # FastAPI app, endpoint /analyze
-│   │   ├── rag_pipeline.py               # Kết nối BM25 + LLM
+│   │   ├── main.py                       # FastAPI app, 3 routes, JWT
+│   │   ├── rag_pipeline.py               # Kết nối AST → BM25 → LLM
 │   │   ├── bm25_module.py                # BM25 indexing + search
-│   │   ├── llm_client.py                 # Giao tiếp với LLM (mock/ollama)
-│   │   ├── race_detector.py              # Phát hiện 5 pattern race condition
+│   │   ├── llm_client.py                 # Giao tiếp với LLM (mock/openai/ollama)
+│   │   ├── race_detector.py              # Phát hiện 10 pattern race condition
 │   │   ├── report_formatter.py           # Format kết quả trả về
 │   │   ├── cache.py                      # Redis cache
+│   │   ├── db.py                         # MongoDB lưu lịch sử
 │   │   ├── auth.py                       # JWT authentication
-│   │   └── schemas.py                    # Pydantic schemas
+│   │   └── logs/                         # server_out.log, server_err.log (gitignored)
 │   ├── knowledge-base/
 │   │   └── knowledge_base.json           # 2050 tài liệu JS concurrency
+│   ├── eval/
+│   │   ├── scripts/eval_rag_merged.py    # Eval đúng training format (RAW + RAG)
+│   │   └── results/eval_rag_results.json # Kết quả eval thực tế
 │   ├── tests/
-│   │   ├── test_main.py                  # Unit test API endpoints
-│   │   ├── test_rag_pipeline.py          # Unit test RAG pipeline
-│   │   ├── test_bm25.py                  # Unit test BM25 search
-│   │   └── locustfile.py                 # Load testing
-│   ├── eval_rag_merged.py                # Eval với đúng training format
-│   ├── eval_local_merged.py              # Eval cũ (sai format — để tham khảo)
-│   └── eval_rag_results.json             # Kết quả eval thực tế
+│   │   ├── unit/                         # pytest: test_main.py, test_bm25.py...
+│   │   ├── load/locustfile.py            # Load testing
+│   │   └── real_world/                   # 30-case real-world benchmark
+│   └── .claude/skills/run-ai2-server/    # Skill smoke test server
 │
 ├── models/
-│   └── merged/                           # Model sau khi merge (3GB)
-│       ├── model.safetensors
-│       └── config.json
+│   ├── base/                      # Qwen2.5-Coder-1.5B gốc (config + tokenizer)
+│   └── merged/                    # Model đã merge LoRA (model.safetensors ~3GB)
 │
 └── docs/
+    ├── STRUCTURE.md                # Cấu trúc đầy đủ, chi tiết hơn bảng này
+    ├── reference-papers/           # PDF tham khảo + giải thích (NodeCB, PCWMs)
     └── my-research/
-        ├── threadlearn_paper.tex          # Research paper LaTeX
-        ├── paper_outline_en.md            # Outline tiếng Anh
-        └── paper_outline_vi.md            # Outline tiếng Việt
+        ├── paper_latex_source/     # Bản LaTeX chính thức (llncs.cls)
+        └── outline/                # paper_outline_en.md, paper_outline_vi.md
 ```
+
+> Cấu trúc đầy đủ, mô tả từng file: xem [`docs/STRUCTURE.md`](docs/STRUCTURE.md).
 
 ---
 
@@ -235,7 +279,7 @@ ThreadLearn-AI-Trainning/
 
 **Nguồn 1 — GitHub Code Search API:**
 
-Script `ai1_01_dataset_collector.py` tìm kiếm các commit trên GitHub với các từ khóa:
+Script `ai1/modules/ai1_01_dataset_collector.py` tìm kiếm các commit trên GitHub với các từ khóa:
 
 ```python
 JS_GITHUB_QUERIES = [
@@ -274,6 +318,8 @@ async function getUser(id) {
 - **783 mẫu** hợp lệ (có đủ input và output)
 - Phân bố: 90% train (704 mẫu) / 10% eval (79 mẫu)
 - Shuffle với `random.seed(42)` để đảm bảo tái hiện được kết quả
+
+> **Lưu ý đường dẫn hiện tại:** Dataset thô hiện hành nằm ở `ai1/data/raw/bugsjs_*.jsonl`, sinh bởi `ai1/data/raw/generate_bugsjs.py` + `generate_bugsjs_batch3.py` (batch bổ sung category thiếu mẫu). `ai1_01_dataset_collector.py` ở trên mô tả phương pháp thu thập ban đầu (GitHub Code Search) — vẫn còn trong repo nhưng output (`raw_dataset.json`) không phải nguồn dữ liệu 783 mẫu cuối cùng.
 
 ### 5.2 Định dạng JSONL cho SFTTrainer
 
@@ -961,8 +1007,8 @@ base_model = AutoModelForCausalLM.from_pretrained(
 
 ```powershell
 Start-Process python -ArgumentList "-m", "uvicorn", "main:app", "--port", "8001" `
-    -RedirectStandardOutput "server_out.log" `
-    -RedirectStandardError "server_err.log" `
+    -RedirectStandardOutput "logs/server_out.log" `
+    -RedirectStandardError "logs/server_err.log" `
     -NoNewWindow
 ```
 
@@ -1131,9 +1177,10 @@ curl -X POST http://localhost:8001/api/v1/ai/analyze \
 ### Bước 5: Chạy unit tests
 
 ```bash
-cd ThreadLearn-AI-Trainning/ai2
-pytest tests/ -v
+cd ThreadLearn-AI-Trainning/ai2/server
+pytest ../tests/unit/ -v
 ```
+85 pass / 5 fail (race_detector pattern Python — không liên quan JS pipeline chính).
 
 ### Bước 6: Chạy evaluation (20 test cases thực tế)
 
@@ -1153,9 +1200,9 @@ huggingface-cli download anha12/threadlearn-qwen2.5-coder-1.5b-merged \
 
 Chạy evaluation:
 ```bash
-cd ThreadLearn-AI-Trainning/ai2
-python eval_rag_merged.py
-# Kết quả lưu tại: ai2/eval_rag_results.json
+cd ThreadLearn-AI-Trainning
+python ai2/eval/scripts/eval_rag_merged.py
+# Kết quả lưu tại: ai2/eval/results/eval_rag_results.json
 # Kỳ vọng: RAW ~14/20 (70%), với RAG ~15/20 (75%)
 ```
 
@@ -1172,6 +1219,13 @@ Server tự kết nối theo `REDIS_URL` và `MONGODB_URL` trong `.env`.
 
 ### Bước 8 (tùy chọn): Chạy bằng Docker
 
+**Cách 1 — docker compose (khuyến nghị, chạy cả Redis + MongoDB):**
+```bash
+cd ThreadLearn-AI-Trainning
+JWT_SECRET=your_super_secret_access_key_change_me docker compose up -d
+```
+
+**Cách 2 — build thủ công, chỉ FastAPI:**
 ```bash
 cd ThreadLearn-AI-Trainning/ai2
 docker build -t threadlearn-ai2 .
@@ -1188,12 +1242,16 @@ docker run -d \
 Chỉ cần khi muốn thêm dữ liệu training mới:
 
 ```bash
-# Thu thập dữ liệu
-cd ThreadLearn-AI-Trainning/ai1/modules
-python ai1_01_dataset_collector.py
-# Cần GITHUB_TOKEN trong .env
+# Thu thập dữ liệu (script đang dùng — sinh trực tiếp ai1/data/raw/bugsjs_*.jsonl)
+cd ThreadLearn-AI-Trainning/ai1/data/raw
+python generate_bugsjs.py
+python generate_bugsjs_batch3.py   # batch bổ sung cho category thiếu mẫu
 
-# Format sang JSONL
+# (ai1/modules/ai1_01_dataset_collector.py là bản GitHub-scraper cũ,
+#  output raw_dataset.json — không phải nguồn dataset hiện hành)
+
+# Format sang JSONL chuẩn SFTTrainer
+cd ../../modules
 python ai1_02_format_jsonl.py
 
 # Bước 3: Upload lên Kaggle, chạy notebook ai1_03_finetune.py
