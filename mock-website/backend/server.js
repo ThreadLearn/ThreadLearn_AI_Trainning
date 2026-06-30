@@ -18,7 +18,7 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const jwt = require("jsonwebtoken");
-require("dotenv").config({ path: require("path").join(__dirname, "../../ai2/server/.env") });
+require("dotenv").config({ path: require("path").join(__dirname, "../../server/server/.env") });
 
 const app = express();
 const PORT = process.env.PORT || 3001;

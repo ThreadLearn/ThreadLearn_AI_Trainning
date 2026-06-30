@@ -1,6 +1,6 @@
 # Kế hoạch Migrate Model v2 (CoT) vào Pipeline Production
 
-Bối cảnh đầy đủ: xem [`RESEARCH_LOG.md`](RESEARCH_LOG.md). Tóm tắt vấn đề: model v2 đứng một mình tốt hơn hẳn v1 (76.7% vs 63.3%), nhưng kết quả "v2 + pipeline" hiện có (63.3%) dùng một prompt format thử nghiệm trong notebook — **khác với** format production thật trong `ai2/server/rag_pipeline.py`. Trước khi kết luận pipeline không hợp với v2, phải test lại bằng đúng code production.
+Bối cảnh đầy đủ: xem [`RESEARCH_LOG.md`](RESEARCH_LOG.md). Tóm tắt vấn đề: model v2 đứng một mình tốt hơn hẳn v1 (76.7% vs 63.3%), nhưng kết quả "v2 + pipeline" hiện có (63.3%) dùng một prompt format thử nghiệm trong notebook — **khác với** format production thật trong `server/server/rag_pipeline.py`. Trước khi kết luận pipeline không hợp với v2, phải test lại bằng đúng code production.
 
 ---
 
@@ -36,9 +36,9 @@ huggingface-cli download anha12/threadlearn-qwen2.5-coder-1.5b-cot-v2 \
 
 Đây là bước quan trọng nhất — trả lời câu hỏi "pipeline production thật sự có hại v2 không, hay chỉ notebook bị sai format".
 
-- [ ] Sửa `ai2/server/config.py` / `.env`: thêm biến trỏ `MODEL_PATH` có thể chọn `models/merged` hoặc `models/merged_v2` (hiện tại model path có thể đang hardcode — cần kiểm tra `llm_client.py`).
-- [ ] Viết script eval mới `ai2/eval/scripts/eval_v2_with_real_pipeline.py`, **bắt buộc tái sử dụng `_build_prompt()` từ `rag_pipeline.py`** (import trực tiếp, không copy-paste lại như notebook đã làm) — tránh lặp lại lỗi 3-format-khác-nhau.
-- [ ] Chạy lại đúng 30-case real-world benchmark (`ai2/tests/real_world/cases/real_world_test_cases.json`) với v2 + `_build_prompt()` thật.
+- [ ] Sửa `server/server/config.py` / `.env`: thêm biến trỏ `MODEL_PATH` có thể chọn `models/merged` hoặc `models/merged_v2` (hiện tại model path có thể đang hardcode — cần kiểm tra `llm_client.py`).
+- [ ] Viết script eval mới `server/eval/scripts/eval_v2_with_real_pipeline.py`, **bắt buộc tái sử dụng `_build_prompt()` từ `rag_pipeline.py`** (import trực tiếp, không copy-paste lại như notebook đã làm) — tránh lặp lại lỗi 3-format-khác-nhau.
+- [ ] Chạy lại đúng 30-case real-world benchmark (`server/tests/real_world/cases/real_world_test_cases.json`) với v2 + `_build_prompt()` thật.
 - [ ] So sánh 3 hàng: v2 (no pipeline, 76.7% — baseline đã có) / v2 + `_build_prompt()` thật / v2 + notebook format (63.3% — đã có, để đối chiếu).
 
 **Kỳ vọng:** nếu v2 + `_build_prompt()` thật vẫn tệ tương đương 63.3%, vấn đề không phải do format "Reference" sai mà do model v2 **chưa từng thấy context lúc train** (xem Bước 0, mục 2) → chuyển Phương án B.
@@ -51,7 +51,7 @@ Nếu dùng `_build_prompt()` thật đưa v2+pipeline về gần mức v1+pipel
 
 - [ ] Chốt `_build_prompt()` hiện tại làm chuẩn duy nhất — xóa hàm `build_prompt()` trùng lặp trong các notebook (`kaggle_pipeline_merged_v2.ipynb` và tương tự), thay bằng import từ `rag_pipeline.py` hoặc copy nguyên văn có ghi rõ "sync với rag_pipeline.py ngày X".
 - [ ] Swap `MODEL_PATH` production sang `models/merged_v2`.
-- [ ] Re-run toàn bộ benchmark 30-case + 20-case để có baseline mới đầy đủ, cập nhật `ai2/tests/real_world/README.md`.
+- [ ] Re-run toàn bộ benchmark 30-case + 20-case để có baseline mới đầy đủ, cập nhật `server/tests/real_world/README.md`.
 
 ### Phương án B — v2 chưa học cách dùng context (nhiều khả năng hơn dựa trên evidence hiện tại)
 
