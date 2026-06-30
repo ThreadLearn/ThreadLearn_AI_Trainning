@@ -670,6 +670,8 @@ P95 tăng từ 8ms (1 client) lên 112ms (10 clients) là do queue contention t�
 
 ## 7. Đánh giá mô hình — Kết quả thực tế
 
+> **2 benchmark riêng biệt:** Mục này dùng **20 test case thủ công** (synthetic, viết tay). Có thêm benchmark **30-case real-world** lấy từ bug thật trên production npm packages (GitHub issues thật) — kết quả chi tiết + per-category tại [`ai2/tests/real_world/README.md`](ai2/tests/real_world/README.md), số liệu tổng hợp + research log tại [`docs/RESEARCH_LOG.md`](docs/RESEARCH_LOG.md). Tóm tắt 30-case: ThreadLearn+pipeline 73.3% (22/30), vượt GPT-3.5-turbo+pipeline 65.0%.
+
 ### Phương pháp đánh giá
 
 Chúng tôi xây dựng **20 test case thủ công** bao gồm 8 loại lỗi concurrency:
@@ -713,6 +715,8 @@ Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])
 | **ThreadLearn RAW** (fine-tune, no RAG) | **14** | **6** | **0** | **70%** |
 | **ThreadLearn + RAG** (fine-tune + BM25) | **15** | **5** | **0** | **75%** |
 
+![Ablation: contribution của fine-tuning và RAG](docs/my-research/figures/figure_base/fig_ablation.png)
+
 **Phân tích kết quả:**
 
 1. **Fine-tuning quan trọng hơn RAG** (+30pp vs +5pp): 783 mẫu training đã đủ để model học các pattern fix cụ thể của JavaScript concurrency
@@ -741,6 +745,8 @@ Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])
 | Missing Promise.all | 1/1 | 1/1 | Promise.all |
 | Buffer Leak | 0/1 | 0/1 | Stream error handler thiếu |
 | Event Loop Ordering | 1/1 | 1/1 | Promise.resolve().then() |
+
+![Per-category pass rate](docs/my-research/figures/figure_base/fig_category.png)
 
 ---
 
