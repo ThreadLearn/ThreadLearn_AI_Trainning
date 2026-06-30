@@ -715,6 +715,8 @@ Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])
 | **ThreadLearn RAW** (fine-tune, no RAG) | **14** | **6** | **0** | **70%** |
 | **ThreadLearn + RAG** (fine-tune + BM25) | **15** | **5** | **0** | **75%** |
 
+![Ablation: contribution của fine-tuning và RAG](docs/my-research/figures/figure_base/fig_ablation.png)
+
 **Phân tích kết quả:**
 
 1. **Fine-tuning quan trọng hơn RAG** (+30pp vs +5pp): 783 mẫu training đã đủ để model học các pattern fix cụ thể của JavaScript concurrency
@@ -743,6 +745,8 @@ Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])
 | Missing Promise.all | 1/1 | 1/1 | Promise.all |
 | Buffer Leak | 0/1 | 0/1 | Stream error handler thiếu |
 | Event Loop Ordering | 1/1 | 1/1 | Promise.resolve().then() |
+
+![Per-category pass rate](docs/my-research/figures/figure_base/fig_category.png)
 
 ---
 
