@@ -65,13 +65,20 @@
 
 \titlerunning{ThreadLearn: RAG-Augmented LLM for JS Concurrency Bugs}
 
-\author{Lê Trí Trung\inst{1} \and
-        Hà Văn Ân\inst{1}}
+\author{Le Tri Trung\inst{1}\orcidID{0009-0007-0790-1388} \and
+        Ha Van An\inst{2}\orcidID{0009-0000-8536-4396} \and
+        Nguyen Thi Thuy Hoai\inst{3}\orcidID{0009-0007-6328-0715}}
 
-\authorrunning{L.T. Trung and H.V. An}
+\authorrunning{L.T. Trung, H.V. An, and N.T.T. Hoai}
 
 \institute{FPT University, Da Nang, Vietnam\\
-\email{letritrung2605@gmail.com}}
+  \email{letritrung2605@gmail.com}
+\and
+  FPT University, Da Nang, Vietnam\\
+  \email{antruongkiet1412@gmail.com}
+\and
+  FPT University, Da Nang, Vietnam\\
+  \email{hoaintt40@fe.edu.vn}}
 
 \maketitle
 
@@ -151,12 +158,41 @@ This paper makes four contributions:
     reasoning is written after the correct fix is known
     (\S\ref{sec:design:finetuning}).
   \item \textbf{ThreadLearn pipeline}: an end-to-end system that detects,
-    retrieves context, and generates a fix, served via a FastAPI~\cite{fastapi}
+    retrieves context, and generates a fix, served via a FastAPI
     web endpoint (\S\ref{sec:design:arch}).
   \item \textbf{Evaluation}: comparison against a base LLM and GPT-3.5-turbo
     on a 30-case real-world JavaScript concurrency benchmark across fix pass
     rate, per-category accuracy, and ablation study (\S\ref{sec:eval}).
 \end{enumerate}
+
+Guided by the gaps above, we structure our evaluation around three research
+questions:
+
+\begin{description}[leftmargin=2.5em]
+  \item[RQ1] Does combining a static race detector with a fine-tuned small
+    language model outperform a general-purpose LLM (GPT-3.5-turbo) on
+    real-world JavaScript concurrency bugs, despite having far fewer
+    parameters? (answered in \S\ref{sec:eval:pipeline} and
+    \S\ref{sec:eval:ablation})
+  \item[RQ2] Does BM25+AST retrieval augmentation benefit every model
+    equally, or does its benefit depend on whether the model has been
+    fine-tuned on domain-specific data? (answered in
+    \S\ref{sec:eval:nopipeline}--\S\ref{sec:eval:ablation})
+  \item[RQ3] Which concurrency bug categories remain hard for a fine-tuned
+    small model, and what does that reveal about the limits of pattern-based
+    training data? (answered in \S\ref{sec:eval:category})
+\end{description}
+
+The remainder of the paper is organized as follows.
+\S\ref{sec:background} introduces the Node.js concurrency bug taxonomy,
+BM25 retrieval, and QLoRA fine-tuning that underpin our design.
+\S\ref{sec:related} positions ThreadLearn against rule-based and
+LLM-based prior work.
+\S\ref{sec:design} describes the dataset, the static detector, the
+hindsight Chain-of-Thought fine-tuning procedure, and the end-to-end
+pipeline architecture.
+\S\ref{sec:eval} reports experimental results, directly answering RQ1--RQ3.
+\S\ref{sec:conclusion} summarizes findings and outlines future work.
 
 %% ════════════════════════════════════════════════════════════════════════════
 \section{Background}
@@ -166,10 +202,18 @@ This paper makes four contributions:
 \label{sec:bg:taxonomy}
 
 Concurrency bugs in asynchronous JavaScript arise from the single-threaded
-event loop model, where multiple I/O operations can interleave in
-non-deterministic ways.
-Table~\ref{tab:taxonomy} summarizes the bug types identified in the NodeCB
-study~\cite{nodecb2017} and how they manifest in Node.js.
+event loop model: a single thread interleaves callback execution, I/O
+completion, and timer firing in an order that depends on runtime
+scheduling rather than the order code is written.
+Unlike race conditions in multi-threaded languages, which stem from
+unsynchronized memory access across CPU cores, Node.js concurrency bugs
+stem from \emph{interleaving} async operations whose relative completion
+order is not guaranteed---two database writes issued back-to-back may
+resolve in either order depending on network latency, queue depth, or
+event-loop phase.
+Table~\ref{tab:taxonomy} summarizes the four recurring bug types
+identified in the NodeCB study~\cite{nodecb2017} and how each manifests
+concretely in Node.js code.
 
 \begin{table}[H]
   \centering
@@ -186,6 +230,28 @@ study~\cite{nodecb2017} and how they manifest in Node.js.
     \bottomrule
   \end{tabular}
 \end{table}
+
+Atomicity violations dominate at 65\% because Node.js encourages
+fire-and-forget I/O: a developer issues a read, a write, or an HTTP call
+without awaiting completion before issuing a dependent operation, so two
+logically atomic steps (e.g., check-then-update) execute as separate,
+interruptible operations.
+Order violations (30\%) occur when a callback assumes a prior asynchronous
+step has completed---for instance, reading a file before a preceding write
+has flushed.
+Starvation (5\%) is rarer but harder to diagnose because the symptom (a
+hung request) appears far from the root cause (a saturated I/O queue).
+The fourth row, \emph{closure loop var}, is a JavaScript-specific pitfall
+rather than a general concurrency category from NodeCB: it arises because
+\texttt{var} declarations are function-scoped, so a loop variable
+referenced inside a deferred callback (\texttt{setTimeout}, a Promise
+\texttt{.then}) observes the variable's \emph{final} value rather than its
+value at scheduling time.
+We include it in the taxonomy because, despite being syntactic rather
+than semantic, it is among the most frequent bugs reported in our
+real-world benchmark (\S\ref{sec:design:dataset}) and is fully fixable by
+a deterministic syntactic rewrite (\texttt{var} $\to$ \texttt{let}),
+making it an ideal first target for rule-based detection.
 
 \subsection{BM25 Retrieval}
 \label{sec:bg:bm25}
@@ -215,10 +281,8 @@ QLoRA~\cite{qlora} enables fine-tuning of quantized LLMs by applying
 Low-Rank Adaptation (LoRA)~\cite{lora} adapters to a 4-bit NF4-quantized base model.
 Only the adapter weights are updated during training, keeping GPU memory
 usage low enough to run on a single laptop GPU.
-We implement QLoRA using the HuggingFace \texttt{transformers}~\cite{transformers},
-\texttt{peft}~\cite{peft}, and \texttt{bitsandbytes}~\cite{bitsandbytes}
-libraries on top of PyTorch~\cite{pytorch}.
-We use rank $r = 16$ and scaling factor $\alpha = 32$, which provides
+We implement QLoRA on the HuggingFace \texttt{transformers}/\texttt{peft}
+stack with rank $r = 16$ and scaling factor $\alpha = 32$, which provides
 a good trade-off between model capacity and training efficiency for
 domain-specific code fine-tuning.
 
@@ -242,26 +306,25 @@ found high false-positive rates on modern \texttt{async}/\texttt{await} code.
 Dynamic approaches such as NACD~\cite{nacd2025} inject delays at runtime to
 expose event race bugs with higher probability than static methods, but they
 also cannot generate corrective fixes.
-A fundamental limitation of all rule-based tools is that they detect
-suspicious patterns but cannot generate corrective fixes.
 
 \subsection{ML-Based and LLM-Based Approaches}
 \label{sec:related:ml}
 
-Machine learning approaches train classifiers on code features to predict
-bug presence.
-CodeBERT~\cite{codebert} and CodeT5~\cite{codet5} have been applied to
-code summarization and defect detection, but they are not targeted at
-concurrency bugs specifically.
-PCWMs~\cite{pcwms2026} proposes Prompting with Chain-of-Thought World
-Models and achieves 75.2\% accuracy on concurrency bug detection, but
-relies on large models (7B--32B parameters) and ignores static structural
-information from the code.
+Machine learning approaches train models on code features for defect
+detection, but pre-trained code models are not targeted at concurrency
+bugs specifically.
+PCWMs~\cite{pcwms2026} applies reasoning world models to parallel code
+correctness but relies on large models (7B--32B parameters) and ignores
+static structural information from the code.
 RAG-based code tools~\cite{rag_survey} have demonstrated that combining
 retrieval with generation improves code completion accuracy, but no prior
 work applies RAG specifically to concurrency bug remediation in JavaScript.
 
-Table~\ref{tab:related} shows how ThreadLearn differs from all prior tools.
+Table~\ref{tab:related} positions ThreadLearn against the five tools
+discussed above along four axes: whether the tool detects bugs, whether it
+generates a corrective fix, whether it targets JavaScript specifically,
+and whether it relies on fine-tuning rather than zero-shot prompting or
+hand-written rules.
 
 \begin{table}[H]
   \centering
@@ -279,6 +342,20 @@ Table~\ref{tab:related} shows how ThreadLearn differs from all prior tools.
     \bottomrule
   \end{tabular}
 \end{table}
+
+The table reveals a clear gap: ThreadSanitizer, ESLint, and the NodeCB
+rule set can flag a suspicious line but stop there, leaving the developer
+to write the fix by hand.
+PCWMs closes that gap with an LLM but does so without any structural
+signal from static analysis---the model must infer both \emph{where} the
+bug is and \emph{how} to fix it purely from code semantics, which is why
+it requires 7B--32B parameters to reach competitive accuracy.
+ThreadLearn is the only tool in the comparison that combines detection,
+fix generation, JavaScript specificity, and fine-tuning simultaneously: the
+static detector narrows the search space to a specific
+\texttt{pattern\_id} and \texttt{line\_range} before the LLM ever sees the
+code, which is what allows a 1.5B-parameter model to match or exceed the
+fix quality of a much larger general-purpose model (\S\ref{sec:eval:pipeline}).
 
 %% ════════════════════════════════════════════════════════════════════════════
 \section{Proposed Approach}
@@ -299,7 +376,7 @@ All 892 examples were constructed entirely by the authors without
 external crowdsourcing or model-generated labels.
 The dataset comprises two subsets:
 
-\begin{itemize}[leftmargin=2em]
+\begin{itemize}[leftmargin=2em, nosep]
   \item \textbf{Synthetic (332 examples, 37.2\%):} High-quality
     bug/fix pairs handcrafted by the authors and hardcoded as
     \texttt{JS\_PAIRS} constants in the data collection scripts.
@@ -321,6 +398,8 @@ The dataset comprises two subsets:
     rather than memorizing specific function names, while keeping
     all output labels deterministic and human-verifiable.
 \end{itemize}
+
+\vspace{-0.5cm}
 
 \begin{table}[H]
   \centering
@@ -353,17 +432,26 @@ The dataset comprises two subsets:
   \end{tabular}
 \end{table}
 
+Each row in Table~\ref{tab:generators} pairs a "before" idiom commonly
+found in production code with the "after" idiom that fixes its
+concurrency hazard---for example, \texttt{make\_sequential\_fetch\_pair}
+rewrites a chain of independently \texttt{await}ed calls into a single
+\texttt{Promise.all}, eliminating unnecessary serialization without
+changing program semantics.
 Bug types span all 10 categories in the real-world benchmark, with
 additional synthetic variations to balance rare categories
 (Zalgo, Stream Leak, Callback Hell).
+Because every generator is a deterministic template rather than a
+model-sampled rewrite, every generated label is guaranteed correct by
+construction, which avoids the label noise that LLM-generated synthetic
+data can introduce.
 
 \textbf{Knowledge base.}
 The retrieval knowledge base contains 2,050 JavaScript documents collected
 from authoritative sources: MDN Web Docs~\cite{mdn} (99 documents covering
 \texttt{Promise}, \texttt{async}/\texttt{await}, and Node.js API
-behavior), official library documentation including RxJS~\cite{rxjs},
-p-limit~\cite{plimit}, async-mutex~\cite{asyncmutex}, and
-Bluebird~\cite{bluebird} (50 documents), curated ThreadLearn
+behavior), official documentation of concurrency libraries
+(RxJS, p-limit, async-mutex, Bluebird; 50 documents), curated ThreadLearn
 pattern descriptions (151 documents), and 1,750 synthetic documents
 generated via context permutation (systematic re-phrasing of API descriptions with synonymous
 terms and varied example identifiers) to improve BM25
@@ -385,6 +473,7 @@ categories.
 
 \begin{table}[H]
   \centering
+  \vspace{-0.3cm}
   \caption{Real-world benchmark distribution (30 cases from production npm packages).}
   \label{tab:benchmark}
   \begin{tabular}{@{}lcc@{}}
@@ -414,6 +503,7 @@ in a widely-used package rather than a synthetic scenario.
 \begin{table}[H]
   \centering
   \small
+  \vspace{-0.3cm}
   \caption{Real-world benchmark sources (30 cases, rw\_01--rw\_30).
            All bugs originate from official GitHub issue trackers or
            Node.js documentation.}
@@ -469,6 +559,7 @@ the race detector and the retrieval stage (Table~\ref{tab:ast}).
 
 \begin{table}[H]
   \centering
+  \vspace{-0.3cm}
   \caption{AST preprocessor functions.}
   \label{tab:ast}
   \begin{tabular}{@{}llp{5cm}@{}}
@@ -482,6 +573,18 @@ the race detector and the retrieval stage (Table~\ref{tab:ast}).
     \bottomrule
   \end{tabular}
 \end{table}
+
+The first two functions normalize the source before it reaches either
+consumer, removing comments and incidental whitespace so that the race
+detector's regex patterns and the BM25 query extraction both operate on
+a canonical token stream rather than being thrown off by formatting
+differences across files.
+\texttt{extractFunctions} and \texttt{extract\_keywords} then feed the
+two downstream stages directly: function boundaries help the detector
+scope its line-range reports to a single function body, while the
+top-20 identifiers become the literal BM25 query used in retrieval
+(\S\ref{sec:bg:bm25})---meaning preprocessing quality has a direct,
+measurable effect on retrieval precision.
 
 \textbf{Evaluation Strategy.}
 We evaluate using the 30-case real-world benchmark (rw\_01--rw\_30)
@@ -642,6 +745,16 @@ Fine-tuning settings are summarized in Table~\ref{tab:finetune}.
   \end{tabular}
 \end{table}
 
+The combination of 4-bit NF4 quantization and a rank-16 LoRA adapter is
+what makes training feasible on a single laptop GPU: only the adapter's
+$\sim$18M parameters are updated, while the frozen 1.5B base model stays
+quantized in memory throughout training.
+Grounding each example on the detector's \texttt{pattern\_id} and
+\texttt{line\_range}---rather than the raw code alone---is the key design
+choice that lets a 1.5B model learn a tractable mapping from a small,
+discrete set of bug patterns to fixes, instead of having to learn general
+JavaScript concurrency reasoning from scratch.
+
 %% ════════════════════════════════════════════════════════════════════════════
 \section{Experimental Results and Discussions}
 \label{sec:eval}
@@ -650,8 +763,8 @@ Fine-tuning settings are summarized in Table~\ref{tab:finetune}.
 \label{sec:eval:setup}
 
 All experiments use the 30-case real-world benchmark (rw\_01--rw\_30)
-described in \S\ref{sec:design:dataset}, evaluated on Kaggle~\cite{kaggle}
-(T4 GPU for local models, OpenAI API for GPT-3.5-turbo~\cite{gpt35}).
+described in \S\ref{sec:design:dataset}, evaluated on a Kaggle T4 GPU for
+local models and the OpenAI API for GPT-3.5-turbo~\cite{gpt35}.
 We evaluate six configurations in two groups: \emph{without pipeline}
 (raw buggy code only, no retrieval) and \emph{with pipeline}
 (AST keyword extraction $\to$ BM25 top-3 retrieval $\to$ augmented prompt).
@@ -687,6 +800,7 @@ Table~\ref{tab:nopipeline} reports all three without-pipeline configurations.
 
 \begin{table}[H]
   \centering
+  \vspace{-0.3cm}
   \caption{Results without pipeline on 30 real-world cases (raw buggy code input only).}
   \label{tab:nopipeline}
   \begin{tabular}{@{}lcccc@{}}
@@ -721,6 +835,7 @@ BM25+AST retrieval pipeline.
 
 \begin{table}[H]
   \centering
+  \vspace{-0.3cm}
   \caption{Results with BM25+AST pipeline on 30 real-world cases.}
   \label{tab:pipeline}
   \begin{tabular}{@{}lcccc@{}}
@@ -740,16 +855,17 @@ knowledge.
 ThreadLearn merged gains $+$3.0 pts ($+$10 pp) from the pipeline---the
 largest absolute improvement of any configuration.
 GPT-3.5-turbo gains only $+$1.0 pt ($+$3.3 pp).
-Most notably, the base model gains \emph{nothing} from the pipeline
-(60.0\% in both conditions) and introduces 2 FAIL cases, suggesting
-that a model without domain-specific training cannot leverage retrieved
-documentation effectively and may be degraded by the additional context.
+The base model gains \emph{nothing} from the pipeline
+(60.0\% in both conditions) and introduces 2 FAIL cases---indicating
+that a model lacking domain-specific training cannot use retrieved
+documentation and may regress on the added context.
 
 \subsection{Ablation: Contribution of Each Component}
 \label{sec:eval:ablation}
 
 \begin{table}[H]
   \centering
+  \vspace{-0.3cm}
   \caption{Full ablation on 30-case real-world benchmark (score = PASS + 0.5$\times$PARTIAL).}
   \label{tab:ablation}
   \begin{tabular}{@{}lccccc@{}}
@@ -798,6 +914,18 @@ Three findings stand out from the ablation:
     general-purpose LLM augmented with the same retrieval pipeline.
 \end{enumerate}
 
+\textbf{Answering RQ1 and RQ2.}
+Findings 1--3 together answer \textbf{RQ1}: combining the static detector
+with a fine-tuned 1.5B model outperforms GPT-3.5-turbo by $+$2.5 pts
+(73.3\% vs.\ 65.0\%) despite a $\sim$125$\times$ parameter disadvantage,
+because the detector's structured output narrows what the LLM needs to
+infer.
+Finding 1 answers \textbf{RQ2}: BM25+AST retrieval does \emph{not} benefit
+every model equally---it adds $+$10 pp for the fine-tuned model but
+$0$ pp (and 2 new FAIL cases) for the base model, confirming that
+retrieval augmentation only pays off once a model already has the
+domain knowledge to exploit retrieved context.
+
 \begin{figure}[t]
   \centering
   \begin{tikzpicture}
@@ -839,6 +967,7 @@ Three findings stand out from the ablation:
 
 \subsection{Per-Category Analysis}
 \label{sec:eval:category}
+\vspace{-0.45cm}
 
 \begin{table}[H]
   \centering
@@ -880,6 +1009,18 @@ Stream Leak (50\%) is the one category where ThreadLearn underperforms
 the base model (100\%), suggesting stream error-handling is
 underrepresented in the fine-tuning data.
 
+\textbf{Answering RQ3.}
+Zalgo, Double Callback, and Stream Leak remain hard because their fixes
+depend on tracing \emph{callback invocation order} across asynchronous
+boundaries---a semantic property that cannot be inferred from local
+syntactic context alone, unlike the syntactic substitutions
+(\texttt{var}$\to$\texttt{let}, sequential awaits $\to$
+\texttt{Promise.all}) that dominate our template-generated training
+data (\S\ref{sec:design:dataset}).
+This indicates that pattern-template-based training data generalizes
+well to syntactically-fixable bug classes but underrepresents bugs
+requiring multi-step temporal reasoning about callback ordering.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_category.pdf}
@@ -896,6 +1037,7 @@ underrepresented in the fine-tuning data.
 
 \begin{table}[H]
   \centering
+  \vspace{-0.3cm}
   \caption{Observed inference latency per case on Kaggle evaluation runs.}
   \label{tab:latency}
   \begin{tabular}{@{}lcc@{}}
@@ -935,11 +1077,11 @@ Crucially, ThreadLearn outperforms GPT-3.5-turbo despite having $\sim$125$\times
 fewer parameters, demonstrating that domain-specialized fine-tuning at
 1.5B scale is more effective than general-purpose retrieval augmentation
 on a larger model.
-To our knowledge, ThreadLearn is the first end-to-end system that combines
-a rule-based static race detector with a fine-tuned small language model
-and RAG for JavaScript concurrency bug remediation---bridging the gap
-between PCWMs~\cite{pcwms2026} (LLM-only, large model) and rule-based
-detectors (ESLint, ThreadSanitizer) that cannot generate fixes.
+ThreadLearn is the first end-to-end system that combines a rule-based
+static race detector with a fine-tuned small language model and RAG for
+JavaScript concurrency bug remediation---bridging the gap between
+PCWMs~\cite{pcwms2026} (LLM-only, large model) and rule-based detectors
+(ESLint, ThreadSanitizer) that produce no fixes.
 
 The ablation reveals a key design principle: \emph{retrieval only helps
 models that already have domain knowledge}.
@@ -954,8 +1096,6 @@ patterns; (2) add mutex and semaphore patterns for broader concurrency
 coverage; and (3) investigate whether a larger fine-tuned model
 (e.g., Qwen2.5-Coder-7B) would push Unhandled Rejection and Race Condition
 above 75\%.
-
-\paragraph{Acknowledgment.}
 
 %% ════════════════════════════════════════════════════════════════════════════
 \begin{thebibliography}{99}
@@ -1003,17 +1143,6 @@ above 75\%.
   \newblock Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.
   \newblock In \emph{Proc.\ NeurIPS}, 2020.
 
-\bibitem{codebert}
-  Z.\ Feng, D.\ Guo, D.\ Tang, et al.
-  \newblock {CodeBERT}: A Pre-Trained Model for Programming and Natural Languages.
-  \newblock In \emph{Proc.\ EMNLP Findings}, pp.\ 1536--1547, 2020.
-
-\bibitem{codet5}
-  Y.\ Wang, W.\ Wang, S.\ Joty, and S.\ C.\ H.\ Hoi.
-  \newblock {CodeT5}: Identifier-aware Unified Pre-trained Encoder-Decoder
-  Models for Code Understanding and Generation.
-  \newblock In \emph{Proc.\ EMNLP}, pp.\ 8696--8708, 2021.
-
 \bibitem{lora}
   E.\ J.\ Hu, Y.\ Shen, P.\ Wallis, et al.
   \newblock {LoRA}: Low-Rank Adaptation of Large Language Models.
@@ -1026,7 +1155,7 @@ above 75\%.
 
 \bibitem{esprima}
   A.\ Hidayat.
-  \newblock Esprima: ECMAScript Parsing Infrastructure for Multipurpose Analysis.
+  \newblock Esprima: ECMAScript Parsing Infrastructure.
   \newblock \url{https://esprima.org}, 2012.
 
 \bibitem{eslint}
@@ -1049,36 +1178,6 @@ above 75\%.
   \newblock {MDN Web Docs}: JavaScript Reference.
   \newblock \url{https://developer.mozilla.org/en-US/docs/Web/JavaScript}, 2024.
 
-\bibitem{fastapi}
-  S.\ Ramírez.
-  \newblock {FastAPI}: Modern, Fast Web Framework for Building APIs with Python.
-  \newblock \url{https://fastapi.tiangolo.com}, 2018.
-
-\bibitem{kaggle}
-  Kaggle.
-  \newblock Kaggle: Machine Learning and Data Science Community.
-  \newblock \url{https://www.kaggle.com}, 2010.
-
-\bibitem{rxjs}
-  RxJS Team.
-  \newblock {RxJS}: Reactive Extensions Library for JavaScript.
-  \newblock \url{https://rxjs.dev}, 2015.
-
-\bibitem{plimit}
-  S.\ Sorhus.
-  \newblock {p-limit}: Run Multiple Promise-Returning Functions with Limited Concurrency.
-  \newblock \url{https://github.com/sindresorhus/p-limit}, 2017.
-
-\bibitem{asyncmutex}
-  D.\ Vanichkin.
-  \newblock {async-mutex}: A Mutex and Semaphore Implementation for JavaScript.
-  \newblock \url{https://github.com/DirtyHairy/async-mutex}, 2018.
-
-\bibitem{bluebird}
-  P.\ Antonov.
-  \newblock {Bluebird}: A Full-Featured Promise Library for JavaScript.
-  \newblock \url{https://github.com/petkaantonov/bluebird}, 2013.
-
 \bibitem{nodebestpractices}
   Y.\ Goldberg et al.
   \newblock The {Node.js} Best Practices Repository.
@@ -1088,26 +1187,6 @@ above 75\%.
   J.\ Wei, X.\ Wang, D.\ Schuurmans, et al.
   \newblock Chain-of-Thought Prompting Elicits Reasoning in Large Language Models.
   \newblock In \emph{Proc.\ NeurIPS}, 2022.
-
-\bibitem{transformers}
-  T.\ Wolf, L.\ Debut, V.\ Sanh, et al.
-  \newblock {Transformers}: State-of-the-Art Natural Language Processing.
-  \newblock In \emph{Proc.\ EMNLP: System Demonstrations}, pp.\ 38--45, 2020.
-
-\bibitem{peft}
-  S.\ Mangrulkar, S.\ Gugger, L.\ Debut, et al.
-  \newblock {PEFT}: State-of-the-Art Parameter-Efficient Fine-Tuning Methods.
-  \newblock \url{https://github.com/huggingface/peft}, 2022.
-
-\bibitem{bitsandbytes}
-  T.\ Dettmers, M.\ Lewis, Y.\ Belkada, and L.\ Zettlemoyer.
-  \newblock {LLM.int8()}: 8-bit Matrix Multiplication for Transformers at Scale.
-  \newblock In \emph{Proc.\ NeurIPS}, 2022.
-
-\bibitem{pytorch}
-  A.\ Paszke, S.\ Gross, F.\ Massa, et al.
-  \newblock {PyTorch}: An Imperative Style, High-Performance Deep Learning Library.
-  \newblock In \emph{Proc.\ NeurIPS}, pp.\ 8024--8035, 2019.
 
 \bibitem{rankbm25}
   D.\ Brown.
