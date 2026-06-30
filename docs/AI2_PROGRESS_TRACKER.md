@@ -172,10 +172,10 @@ Branch: `AI-2-Trung` → `develop` → `master`
 - Hard-coded STOPWORDS cho 250 docs; auto_stopwords.py sẵn sàng khi scale
 
 **Files:**
-- `ai2/server/bm25_module.py`
-- `ai2/server/auto_stopwords.py`
-- `ai2/docs/auto_stopwords_formula.md`
-- `ai2/tests/test_bm25.py`
+- `server/server/bm25_module.py`
+- `server/server/auto_stopwords.py`
+- `server/docs/auto_stopwords_formula.md`
+- `server/tests/test_bm25.py`
 
 ---
 
@@ -217,8 +217,8 @@ Branch: `AI-2-Trung` → `develop` → `master`
 - `detectRaceConditions()` → `format_report()` pipeline hoạt động end-to-end
 
 **Files:**
-- `ai2/server/race_detector.py`
-- `ai2/tests/test_race_detector.py`
+- `server/server/race_detector.py`
+- `server/tests/test_race_detector.py`
 
 ---
 
@@ -269,12 +269,12 @@ Branch: `AI-2-Trung` → `develop` → `master`
 - lifespan context manager cho BM25 startup load
 
 **Files:**
-- `ai2/server/main.py`
-- `ai2/server/schemas.py`
-- `ai2/server/auth.py`
-- `ai2/server/llm_client.py`
-- `ai2/server/rag_pipeline.py`
-- `ai2/tests/test_main.py`
+- `server/server/main.py`
+- `server/server/schemas.py`
+- `server/server/auth.py`
+- `server/server/llm_client.py`
+- `server/server/rag_pipeline.py`
+- `server/tests/test_main.py`
 
 ---
 
@@ -305,8 +305,8 @@ code → tokenize() first 20 tokens → BM25 search top-3 docs
 - llm_client.py dùng strategy pattern → swap LLM không đổi pipeline
 
 **Files:**
-- `ai2/server/rag_pipeline.py`
-- `ai2/server/llm_client.py`
+- `server/server/rag_pipeline.py`
+- `server/server/llm_client.py`
 
 ---
 
@@ -344,9 +344,9 @@ code → tokenize() first 20 tokens → BM25 search top-3 docs
 - test_main.py phải patch `llm_client.LLM_PROVIDER` trực tiếp (không qua os.environ) vì config.py đã bind tại import time
 
 **Files:**
-- `ai2/server/cache.py`
-- `ai2/tests/test_cache.py`
-- `ai2/tests/conftest.py`
+- `server/server/cache.py`
+- `server/tests/test_cache.py`
+- `server/tests/conftest.py`
 
 ---
 
@@ -385,7 +385,7 @@ code → tokenize() first 20 tokens → BM25 search top-3 docs
 **Subtask Checklist:**
 
 - [ ] `pip install motor` (async MongoDB driver)
-- [ ] `ai2/server/db.py` — MongoDB connection, collection ref
+- [ ] `server/server/db.py` — MongoDB connection, collection ref
 - [ ] Document schema: `{_id, user_id, input_code, language, issues, docs_used, model, cached, created_at}`
 - [ ] `save_analysis(user_id, ...) -> ObjectId`
 - [ ] Index: `(user_id, 1), (created_at, -1)` cho pagination hiệu quả

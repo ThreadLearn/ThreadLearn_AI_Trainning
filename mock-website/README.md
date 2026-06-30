@@ -22,8 +22,8 @@ Mở `frontend/index.html` thẳng trong browser. Chọn tab **Mock** → không
 
 **Bước 1:** Đảm bảo AI2 server đang chạy
 ```bash
-cd ThreadLearn-AI-Trainning/ai2
-uvicorn server.main:app --reload --port 8001
+cd ThreadLearn-AI-Trainning/server/server
+uvicorn main:app --reload --port 8001
 ```
 
 **Bước 2:** Cài và chạy Express backend
