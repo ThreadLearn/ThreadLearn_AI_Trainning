@@ -8,16 +8,16 @@ Theo dõi tiến trình nghiên cứu: model nào đã train, eval ra sao, quy�
 
 ### Giai đoạn 1 — Dataset & Detector (hoàn tất)
 
-- **AI1**: Thu thập 783 cặp code lỗi/đã sửa (`ai1/data/raw/bugsjs_*.jsonl`, sinh bởi `generate_bugsjs.py` + `generate_bugsjs_batch3.py`). Format JSONL completion-style cho SFTTrainer (`ai1_02_format_jsonl.py`).
-- **AI2**: Knowledge base 2050 tài liệu JS concurrency (`ai2/knowledge-base/knowledge_base.json`). BM25 retrieval (`bm25_module.py`) + AST keyword extraction (`ast_preprocessor.py`). Static race detector 10 pattern (`race_detector.py`).
+- **AI1**: Thu thập 783 cặp code lỗi/đã sửa (`training/data/raw/bugsjs_*.jsonl`, sinh bởi `generate_bugsjs.py` + `generate_bugsjs_batch3.py`). Format JSONL completion-style cho SFTTrainer (`ai1_02_format_jsonl.py`).
+- **AI2**: Knowledge base 2050 tài liệu JS concurrency (`server/knowledge-base/knowledge_base.json`). BM25 retrieval (`bm25_module.py`) + AST keyword extraction (`ast_preprocessor.py`). Static race detector 10 pattern (`race_detector.py`).
 - **AI2**: FastAPI server hoàn chỉnh — `/health`, `/analyze`, `/history`, JWT auth, Redis cache, MongoDB history.
 
 ### Giai đoạn 2 — Model v1 (ThreadLearn Merged, hoàn tất)
 
 - Fine-tune `Qwen2.5-Coder-1.5B` bằng QLoRA (r=16, α=32, 4-bit NF4) trên 783 mẫu, format `"Convert to concurrent JavaScript:\n\n{code}\n"` → completion.
 - Merge LoRA adapter vào base model → `anha12/threadlearn-qwen2.5-coder-1.5b-merged` (HuggingFace Hub), lưu local tại `models/merged/`.
-- **Eval 20-case** (`ai1/evaluation/`, `ai2/eval/`): RAW 70%, +RAG 75%.
-- **Eval 30-case real-world** (`ai2/tests/real_world/`, bug thật từ npm packages production):
+- **Eval 20-case** (`training/evaluation/`, `server/eval/`): RAW 70%, +RAG 75%.
+- **Eval 30-case real-world** (`server/tests/real_world/`, bug thật từ npm packages production):
 
   | Model | Pass | Score | % |
   |---|---|---|---|
@@ -34,7 +34,7 @@ Theo dõi tiến trình nghiên cứu: model nào đã train, eval ra sao, quy�
 
 Ân huấn luyện thêm một bản model mới: `anha12/threadlearn-qwen2.5-coder-1.5b-cot-v2` — chưa có trong repo (chỉ tồn tại trên Kaggle/HF của Ân), thêm reasoning/Chain-of-Thought vào quá trình train so với v1.
 
-**Eval 30-case real-world** (`ai2/tests/real_world/results/`):
+**Eval 30-case real-world** (`server/tests/real_world/results/`):
 
 | Model | Pass | Partial | Fail | Score | % |
 |---|---|---|---|---|---|
@@ -69,7 +69,7 @@ Model v2+pipeline không sinh code fix — nó **echo lại nguyên văn đoạn
 | Nguồn | Format context |
 |---|---|
 | Training v1 (`ai1_02_format_jsonl.py`) | Không có context, chỉ `"Convert to concurrent JavaScript:\n\n{code}\n"` |
-| `ai2/server/rag_pipeline.py` (production, `_build_prompt`) | `<reference_docs>` tag, label **"Tài liệu {i}"** (tiếng Việt), context **SAU** code |
+| `server/server/rag_pipeline.py` (production, `_build_prompt`) | `<reference_docs>` tag, label **"Tài liệu {i}"** (tiếng Việt), context **SAU** code |
 | Notebook eval v2+pipeline (`kaggle_pipeline_merged_v2.ipynb`, `build_prompt`) | Không tag, label **"Reference {i}"** (tiếng Anh), context **TRƯỚC** code, content cắt 500 ký tự |
 
 Notebook eval v2 không-pipeline dùng đúng format training gốc (`"Convert to concurrent JavaScript:\n\n{code}\n"`, không context) và đạt 76.7% — xác nhận **training format của v2 không đổi so với v1**. Vấn đề chỉ nằm ở cách notebook with-pipeline tự chế ra format "Reference {i}" mới, **khác cả 2** format đã biết (khác training, khác `rag_pipeline.py` production) — chưa từng được test đúng cách.
@@ -80,7 +80,7 @@ Notebook eval v2 không-pipeline dùng đúng format training gốc (`"Convert t
 
 ## Trạng thái hiện tại
 
-- Model v1 (`merged`) đang chạy production trong `ai2/server/` qua `models/merged/`.
+- Model v1 (`merged`) đang chạy production trong `server/server/` qua `models/merged/`.
 - Model v2 (CoT) **chưa migrate vào repo** — chỉ có kết quả eval từ notebook Kaggle, chưa có file model local, chưa tích hợp `rag_pipeline.py`.
 - Pipeline production (`_build_prompt` trong `rag_pipeline.py`) chưa từng được test trực tiếp với v2 — số liệu "63.3%" ở trên đến từ format khác (notebook), không phải từ code production thật.
 

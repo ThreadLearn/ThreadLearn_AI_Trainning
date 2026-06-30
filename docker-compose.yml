@@ -14,9 +14,9 @@ services:
   # ------------------------------------------------------------------
   fastapi:
     build:
-      context: ./ai2
+      context: ./server
       dockerfile: Dockerfile
-    container_name: threadlearn-ai2
+    container_name: threadlearn-server
     ports:
       - "8001:8001"
     environment:
@@ -24,7 +24,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - REDIS_URL=redis://redis:6379
       - MONGODB_URL=mongodb://mongodb:27017
-      - OLLAMA_URL=http://ollama:11434
+      # OLLAMA_URL=http://ollama:11434   # uncomment cùng lúc với service ollama bên dưới
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       redis:

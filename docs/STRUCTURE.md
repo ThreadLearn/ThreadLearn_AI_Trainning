@@ -2,7 +2,7 @@
 
 ```
 ThreadLearn-AI-Trainning/
-├── ai1/                          # AI1 — Ân: Fine-tune & AST
+├── training/                          # AI1 — Ân: Fine-tune & AST
 │   ├── data/
 │   │   ├── raw/                  # bugsjs_*.jsonl, generate_bugsjs*.py, dataset_review_report.txt
 │   │   └── processed/            # ast_dataset.json
@@ -22,7 +22,7 @@ ThreadLearn-AI-Trainning/
 │   ├── LESSONS_LEARNED.md
 │   └── README.md
 │
-├── ai2/                          # AI2 — Trung: Serving, RAG & Race Condition
+├── server/                          # AI2 — Trung: Serving, RAG & Race Condition
 │   ├── knowledge-base/
 │   │   ├── knowledge_base.json   # 250 docs concurrent JS patterns
 │   │   ├── knowledge_base_extended.json
@@ -54,7 +54,6 @@ ThreadLearn-AI-Trainning/
 │   │       ├── notebooks/        # with_pipeline/, without_pipeline/
 │   │       ├── results/
 │   │       └── README.md
-│   ├── .claude/skills/run-ai2-server/
 │   ├── EVAL_REPORT.md
 │   └── README.md
 │
@@ -102,54 +101,54 @@ ThreadLearn-AI-Trainning/
 
 ## Folder Descriptions
 
-### `ai1/data/raw/`
+### `training/data/raw/`
 Raw dataset: cặp code đơn luồng → đa luồng, sinh từ BugsJS + viết tay.
 Output: `bugsjs_train.jsonl`, `bugsjs_train_batch3.jsonl`, eval splits.
 
-### `ai1/data/processed/`
+### `training/data/processed/`
 Dataset sau khi format sang AST-augmented JSON: `ast_dataset.json`.
 
-### `ai1/training/`
+### `training/training/`
 Scripts QLoRA fine-tune Qwen2.5-Coder-1.5B trên Kaggle/RunPod (`ai1_03_finetune.py`) và merge adapter vào base model (`ai1_04_merge_model.py`).
 
-### `ai1/evaluation/`
+### `training/evaluation/`
 Đánh giá model fine-tune: sinh test case, chạy inference local, so kết quả.
 
-### `ai1/model/`
+### `training/model/`
 Exported model sau fine-tune. SafeTensors (~3-4GB) **gitignored** — chia sẻ qua HuggingFace Hub / Google Drive link.
 
-### `ai1/modules/`
+### `training/modules/`
 Shared Python modules do AI1 viết, AI2 import trực tiếp.
 - `ast_preprocessor.py` — AI2 dùng cho race_detector và rag_pipeline
 - `output_parser.py` — AI2 dùng khi swap sang Ollama
 - `ai1_01_dataset_collector.py`, `ai1_02_format_jsonl.py` — script thu thập/format dataset một lần, không phải module runtime
 - `ai1_02_ast_preprocessor.js` — bản port JavaScript song song, hiện không gọi từ pipeline Python
 
-### `ai2/knowledge-base/`
+### `server/knowledge-base/`
 Nguồn dữ liệu RAG: tài liệu JavaScript concurrent patterns.
 BM25 index được build từ file này mỗi lần server start.
 **Không sửa trực tiếp** — thêm doc mới bằng cách append vào `knowledge_base.json` với id tiếp theo.
 
-### `ai2/server/`
+### `server/server/`
 FastAPI microservice — core của AI2.
 Import chain: `main.py` → `rag_pipeline.py` → `bm25_module.py` + `llm_client.py` + `race_detector.py` → `report_formatter.py`.
-Log file chạy server nằm ở `ai2/server/logs/` (gitignored).
+Log file chạy server nằm ở `server/server/logs/` (gitignored).
 
-### `ai2/eval/`
+### `server/eval/`
 Đánh giá model end-to-end trên benchmark thực tế: so sánh base / fine-tuned / fine-tuned+RAG / GPT-3.5-turbo.
-Kết quả lưu ở `ai2/eval/results/*.json`, dùng cho bảng ablation trong bài báo (`docs/my-research`).
+Kết quả lưu ở `server/eval/results/*.json`, dùng cho bảng ablation trong bài báo (`docs/my-research`).
 
-### `ai2/tests/`
+### `server/tests/`
 Pytest test suite. Chạy từ root:
 ```bash
 cd ThreadLearn-AI-Trainning
-pytest ai2/tests/unit/ -v
+pytest server/tests/unit/ -v
 ```
-`ai2/tests/real_world/` chứa 30-case benchmark thực tế dùng cho Section 5 của bài báo.
+`server/tests/real_world/` chứa 30-case benchmark thực tế dùng cho Section 5 của bài báo.
 
 ### `shared/`
 Không chứa code — chỉ chứa docs về cross-team dependencies và import pattern.
-Khi AI1 deliver module, AI2 import thẳng từ `ai1/modules/`.
+Khi AI1 deliver module, AI2 import thẳng từ `training/modules/`.
 
 ### `docs/`
 Tài liệu kỹ thuật dùng chung cả team.
@@ -168,18 +167,18 @@ Demo web UI (React + Node.js backend) minh hoạ tích hợp AI2 vào sản ph�
 
 | File | Vai trò | Trạng thái |
 |------|---------|------------|
-| `ai2/knowledge-base/knowledge_base.json` | RAG corpus | ✅ DONE |
-| `ai2/server/bm25_module.py` | BM25 retrieval | ✅ DONE |
-| `ai2/server/race_detector.py` | Static race detector | ✅ DONE |
-| `ai2/server/report_formatter.py` | Format kết quả | ✅ DONE |
-| `ai2/server/main.py` | FastAPI app | ✅ DONE |
-| `ai2/server/rag_pipeline.py` | RAG end-to-end | ✅ DONE |
-| `ai2/server/cache.py` | Redis cache | ✅ DONE |
-| `ai2/server/llm_client.py` | LLM abstraction | 🚫 Ollama swap blocked (AI1-07) |
-| `ai2/server/db.py` | MongoDB history | ✅ DONE |
-| `ai1/modules/ast_preprocessor.py` | AST preprocessing | ✅ DONE |
-| `ai1/modules/output_parser.py` | Parse LLM output | ✅ DONE |
-| `ai1/training/ai1_03_finetune.py` | QLoRA fine-tune | ✅ DONE |
-| `ai2/eval/scripts/eval_rag_merged.py` | Ablation eval | ✅ DONE |
+| `server/knowledge-base/knowledge_base.json` | RAG corpus | ✅ DONE |
+| `server/server/bm25_module.py` | BM25 retrieval | ✅ DONE |
+| `server/server/race_detector.py` | Static race detector | ✅ DONE |
+| `server/server/report_formatter.py` | Format kết quả | ✅ DONE |
+| `server/server/main.py` | FastAPI app | ✅ DONE |
+| `server/server/rag_pipeline.py` | RAG end-to-end | ✅ DONE |
+| `server/server/cache.py` | Redis cache | ✅ DONE |
+| `server/server/llm_client.py` | LLM abstraction | 🚫 Ollama swap blocked (AI1-07) |
+| `server/server/db.py` | MongoDB history | ✅ DONE |
+| `training/modules/ast_preprocessor.py` | AST preprocessing | ✅ DONE |
+| `training/modules/output_parser.py` | Parse LLM output | ✅ DONE |
+| `training/training/ai1_03_finetune.py` | QLoRA fine-tune | ✅ DONE |
+| `server/eval/scripts/eval_rag_merged.py` | Ablation eval | ✅ DONE |
 
 Chi tiết task-by-task xem `docs/AI1_PROGRESS_TRACKER.md` và `docs/AI2_PROGRESS_TRACKER.md`.

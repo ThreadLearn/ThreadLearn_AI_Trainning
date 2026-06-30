@@ -198,14 +198,14 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
 
 | Thành phần | Vị trí | Chức năng |
 |------------|--------|-----------|
-| Dataset Collector | `ai1/modules/ai1_01_dataset_collector.py` | Thu thập dữ liệu huấn luyện |
-| JSONL Formatter | `ai1/modules/ai1_02_format_jsonl.py` | Chuẩn hóa dữ liệu cho SFTTrainer |
-| Fine-tuning Script | `ai1/training/ai1_03_finetune.py` | Huấn luyện QLoRA trên Kaggle |
-| Model Merger | `ai1/training/ai1_04_merge_model.py` | Gộp LoRA adapter vào base model |
-| BM25 Module | `ai2/server/bm25_module.py` | Indexing và tìm kiếm tài liệu |
-| RAG Pipeline | `ai2/server/rag_pipeline.py` | Kết nối BM25 + LLM |
-| FastAPI Server | `ai2/server/main.py` | API endpoint cho frontend |
-| Eval Script | `ai2/eval/scripts/eval_rag_merged.py` | Đánh giá model với 20 test case |
+| Dataset Collector | `training/modules/ai1_01_dataset_collector.py` | Thu thập dữ liệu huấn luyện |
+| JSONL Formatter | `training/modules/ai1_02_format_jsonl.py` | Chuẩn hóa dữ liệu cho SFTTrainer |
+| Fine-tuning Script | `training/training/ai1_03_finetune.py` | Huấn luyện QLoRA trên Kaggle |
+| Model Merger | `training/training/ai1_04_merge_model.py` | Gộp LoRA adapter vào base model |
+| BM25 Module | `server/server/bm25_module.py` | Indexing và tìm kiếm tài liệu |
+| RAG Pipeline | `server/server/rag_pipeline.py` | Kết nối BM25 + LLM |
+| FastAPI Server | `server/server/main.py` | API endpoint cho frontend |
+| Eval Script | `server/eval/scripts/eval_rag_merged.py` | Đánh giá model với 20 test case |
 
 ---
 
@@ -214,7 +214,7 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
 ```
 ThreadLearn-AI-Trainning/
 │
-├── ai1/                           # AI1 — Ân: Fine-tune & AST
+├── training/                           # AI1 — Ân: Fine-tune & AST
 │   ├── data/raw/                  # bugsjs_*.jsonl — dataset thô
 │   ├── data/processed/            # ast_dataset.json — đã format
 │   ├── modules/
@@ -230,7 +230,7 @@ ThreadLearn-AI-Trainning/
 │       ├── evaluate_model.py             # Eval qua HuggingFace API
 │       └── run_inference_local.py        # Eval local
 │
-├── ai2/                           # AI2 — Trung: RAG pipeline & API server
+├── server/                           # AI2 — Trung: RAG pipeline & API server
 │   ├── server/
 │   │   ├── main.py                       # FastAPI app, 3 routes, JWT
 │   │   ├── rag_pipeline.py               # Kết nối AST → BM25 → LLM
@@ -251,7 +251,7 @@ ThreadLearn-AI-Trainning/
 │   │   ├── unit/                         # pytest: test_main.py, test_bm25.py...
 │   │   ├── load/locustfile.py            # Load testing
 │   │   └── real_world/                   # 30-case real-world benchmark
-│   └── .claude/skills/run-ai2-server/    # Skill smoke test server
+│   └── .claude/skills/run-server/    # Skill smoke test server
 │
 ├── models/
 │   ├── base/                      # Qwen2.5-Coder-1.5B gốc (config + tokenizer)
@@ -279,7 +279,7 @@ ThreadLearn-AI-Trainning/
 
 **Nguồn 1 — GitHub Code Search API:**
 
-Script `ai1/modules/ai1_01_dataset_collector.py` tìm kiếm các commit trên GitHub với các từ khóa:
+Script `training/modules/ai1_01_dataset_collector.py` tìm kiếm các commit trên GitHub với các từ khóa:
 
 ```python
 JS_GITHUB_QUERIES = [
@@ -319,7 +319,7 @@ async function getUser(id) {
 - Phân bố: 90% train (704 mẫu) / 10% eval (79 mẫu)
 - Shuffle với `random.seed(42)` để đảm bảo tái hiện được kết quả
 
-> **Lưu ý đường dẫn hiện tại:** Dataset thô hiện hành nằm ở `ai1/data/raw/bugsjs_*.jsonl`, sinh bởi `ai1/data/raw/generate_bugsjs.py` + `generate_bugsjs_batch3.py` (batch bổ sung category thiếu mẫu). `ai1_01_dataset_collector.py` ở trên mô tả phương pháp thu thập ban đầu (GitHub Code Search) — vẫn còn trong repo nhưng output (`raw_dataset.json`) không phải nguồn dữ liệu 783 mẫu cuối cùng.
+> **Lưu ý đường dẫn hiện tại:** Dataset thô hiện hành nằm ở `training/data/raw/bugsjs_*.jsonl`, sinh bởi `training/data/raw/generate_bugsjs.py` + `generate_bugsjs_batch3.py` (batch bổ sung category thiếu mẫu). `ai1_01_dataset_collector.py` ở trên mô tả phương pháp thu thập ban đầu (GitHub Code Search) — vẫn còn trong repo nhưng output (`raw_dataset.json`) không phải nguồn dữ liệu 783 mẫu cuối cùng.
 
 ### 5.2 Định dạng JSONL cho SFTTrainer
 
@@ -670,7 +670,7 @@ P95 tăng từ 8ms (1 client) lên 112ms (10 clients) là do queue contention t�
 
 ## 7. Đánh giá mô hình — Kết quả thực tế
 
-> **2 benchmark riêng biệt:** Mục này dùng **20 test case thủ công** (synthetic, viết tay). Có thêm benchmark **30-case real-world** lấy từ bug thật trên production npm packages (GitHub issues thật) — kết quả chi tiết + per-category tại [`ai2/tests/real_world/README.md`](ai2/tests/real_world/README.md), số liệu tổng hợp + research log tại [`docs/RESEARCH_LOG.md`](docs/RESEARCH_LOG.md). Tóm tắt 30-case: ThreadLearn+pipeline 73.3% (22/30), vượt GPT-3.5-turbo+pipeline 65.0%.
+> **2 benchmark riêng biệt:** Mục này dùng **20 test case thủ công** (synthetic, viết tay). Có thêm benchmark **30-case real-world** lấy từ bug thật trên production npm packages (GitHub issues thật) — kết quả chi tiết + per-category tại [`server/tests/real_world/README.md`](server/tests/real_world/README.md), số liệu tổng hợp + research log tại [`docs/RESEARCH_LOG.md`](docs/RESEARCH_LOG.md). Tóm tắt 30-case: ThreadLearn+pipeline 73.3% (22/30), vượt GPT-3.5-turbo+pipeline 65.0%.
 
 ### Phương pháp đánh giá
 
@@ -934,7 +934,7 @@ def run_inference(model, tokenizer, prompt: str) -> str:
 **Nguyên nhân:** Unit tests dùng **mock LLM** (trả về response cố định, không phải inference thật), nên unit test pass không có nghĩa là model thật hoạt động tốt.
 
 ```python
-# ai2/server/llm_client.py
+# server/server/llm_client.py
 def _mock_analyze(code: str, docs: list) -> List[Issue]:
     """Default mock — luôn trả về cùng một response cố định"""
     return [Issue(type="race_condition", description="Detected race condition...")]
@@ -1021,7 +1021,7 @@ Start-Process python -ArgumentList "-m", "uvicorn", "main:app", "--port", "8001"
 Hoặc chạy trong background PowerShell job:
 ```powershell
 $job = Start-Job -ScriptBlock {
-    Set-Location "d:\FPT\WDP301\WDP-Code\ThreadLearn-AI-Trainning\ai2\server"
+    Set-Location "d:\FPT\WDP301\WDP-Code\ThreadLearn-AI-Trainning\server\server"
     python -m uvicorn main:app --port 8001
 }
 ```
@@ -1107,13 +1107,13 @@ GPU: Chỉ cần khi dùng LLM_PROVIDER=ollama với model local
 ### Bước 1: Cài dependencies cho AI2 server
 
 ```bash
-cd ThreadLearn-AI-Trainning/ai2/server
+cd ThreadLearn-AI-Trainning/server/server
 pip install -r requirements.txt
 ```
 
 ### Bước 2: Tạo file `.env`
 
-Tạo file `ai2/server/.env`:
+Tạo file `server/server/.env`:
 
 ```env
 # Chọn 1: mock | openai | ollama
@@ -1137,13 +1137,13 @@ HF_TOKEN=
 
 **Linux/Mac:**
 ```bash
-cd ThreadLearn-AI-Trainning/ai2/server
+cd ThreadLearn-AI-Trainning/server/server
 uvicorn main:app --reload --port 8001
 ```
 
 **Windows (PowerShell):**
 ```powershell
-cd ThreadLearn-AI-Trainning\ai2\server
+cd ThreadLearn-AI-Trainning\server\server
 python -m uvicorn main:app --reload --port 8001
 ```
 
@@ -1157,7 +1157,7 @@ Swagger UI: http://localhost:8001/docs
 
 ### Bước 4: Gọi API analyze (cần JWT)
 
-Tạo JWT token (chạy từ `ai2/server/`):
+Tạo JWT token (chạy từ `server/server/`):
 
 ```bash
 python -c "
@@ -1183,7 +1183,7 @@ curl -X POST http://localhost:8001/api/v1/ai/analyze \
 ### Bước 5: Chạy unit tests
 
 ```bash
-cd ThreadLearn-AI-Trainning/ai2/server
+cd ThreadLearn-AI-Trainning/server/server
 pytest ../tests/unit/ -v
 ```
 85 pass / 5 fail (race_detector pattern Python — không liên quan JS pipeline chính).
@@ -1207,8 +1207,8 @@ huggingface-cli download anha12/threadlearn-qwen2.5-coder-1.5b-merged \
 Chạy evaluation:
 ```bash
 cd ThreadLearn-AI-Trainning
-python ai2/eval/scripts/eval_rag_merged.py
-# Kết quả lưu tại: ai2/eval/results/eval_rag_results.json
+python server/eval/scripts/eval_rag_merged.py
+# Kết quả lưu tại: server/eval/results/eval_rag_results.json
 # Kỳ vọng: RAW ~14/20 (70%), với RAG ~15/20 (75%)
 ```
 
@@ -1233,14 +1233,14 @@ JWT_SECRET=your_super_secret_access_key_change_me docker compose up -d
 
 **Cách 2 — build thủ công, chỉ FastAPI:**
 ```bash
-cd ThreadLearn-AI-Trainning/ai2
-docker build -t threadlearn-ai2 .
+cd ThreadLearn-AI-Trainning/server
+docker build -t threadlearn-server .
 docker run -d \
   -p 8001:8001 \
   -e LLM_PROVIDER=mock \
   -e JWT_SECRET=your_super_secret_access_key_change_me \
-  --name ai2 \
-  threadlearn-ai2
+  --name server \
+  threadlearn-server
 ```
 
 ### Bước 9 (tùy chọn): Fine-tune lại từ đầu
@@ -1248,12 +1248,12 @@ docker run -d \
 Chỉ cần khi muốn thêm dữ liệu training mới:
 
 ```bash
-# Thu thập dữ liệu (script đang dùng — sinh trực tiếp ai1/data/raw/bugsjs_*.jsonl)
-cd ThreadLearn-AI-Trainning/ai1/data/raw
+# Thu thập dữ liệu (script đang dùng — sinh trực tiếp training/data/raw/bugsjs_*.jsonl)
+cd ThreadLearn-AI-Trainning/training/data/raw
 python generate_bugsjs.py
 python generate_bugsjs_batch3.py   # batch bổ sung cho category thiếu mẫu
 
-# (ai1/modules/ai1_01_dataset_collector.py là bản GitHub-scraper cũ,
+# (training/modules/ai1_01_dataset_collector.py là bản GitHub-scraper cũ,
 #  output raw_dataset.json — không phải nguồn dataset hiện hành)
 
 # Format sang JSONL chuẩn SFTTrainer
@@ -1264,7 +1264,7 @@ python ai1_02_format_jsonl.py
 # Chạy trên Kaggle vì cần 2×T4 GPU miễn phí
 
 # Merge adapter sau khi train xong
-cd ThreadLearn-AI-Trainning/ai1/training
+cd ThreadLearn-AI-Trainning/training/training
 python ai1_04_merge_model.py
 ```
 
