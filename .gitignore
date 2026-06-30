@@ -21,7 +21,14 @@ ai1/model/*.gguf
 # Environment
 .env
 .env.local
+.env.*.local
 *.env
+
+# Secrets / credentials
+*.pem
+*.key
+*credentials*.json
+*service-account*.json
 
 # IDE
 .vscode/
@@ -43,3 +50,11 @@ logs/
 # Large data files
 ai1/data/raw/*.json
 ai1/data/processed/*.jsonl
+
+# Node (mock-website)
+node_modules/
+dist/
+build/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

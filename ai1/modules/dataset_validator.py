@@ -1,5 +1,5 @@
 """
-checkcode.py — ThreadLearn Dataset Reviewer (AI1-01)
+dataset_validator.py — ThreadLearn Dataset Reviewer (AI1-01)
 =====================================================
 Tool kiểm tra chất lượng dataset JS concurrent cho fine-tuning Qwen2.5-Coder-1.5B.
 

@@ -15,7 +15,7 @@ from bm25_module import tokenize, BM25Retriever, load_retriever
 # ---------------------------------------------------------------------------
 
 KB_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "knowledge-base", "knowledge_base.json"
+    os.path.dirname(__file__), "..", "..", "knowledge-base", "knowledge_base.json"
 )
 
 
@@ -65,15 +65,15 @@ def test_tokenize_js_api():
 # Index build tests
 # ---------------------------------------------------------------------------
 
-def test_build_time_under_500ms(retriever):
-    """Index over 250 docs must build in <500ms."""
-    assert retriever.build_time_ms < 500, (
-        f"Build too slow: {retriever.build_time_ms:.1f}ms (limit: 500ms)"
+def test_build_time_under_2s(retriever):
+    """Index over 2050 docs must build in <2s."""
+    assert retriever.build_time_ms < 2000, (
+        f"Build too slow: {retriever.build_time_ms:.1f}ms (limit: 2000ms)"
     )
 
 
 def test_doc_count(retriever):
-    assert retriever.doc_count == 250
+    assert retriever.doc_count == 2050
 
 
 # ---------------------------------------------------------------------------
