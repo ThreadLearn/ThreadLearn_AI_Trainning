@@ -1,6 +1,6 @@
 # Kế hoạch: viết bản nghiên cứu đạt chuẩn template ICTA (Springer LNCS)
 
-**Nguồn template:** `ICTA_Word+Template/` (icta.docm, icta Word Technical Instructions.docx, Quick Start.docx)
+**Nguồn template:** `icta_word_template/` (icta.docm, icta Word Technical Instructions.docx, Quick Start.docx)
 **Bản hiện có:** `threadlearn_paper.tex` (LaTeX `llncs.cls`, 10 trang)
 **Kết luận nhanh:** ICTA = **Springer Lecture Notes in Computer Science (LNCS)**, phiên bản **Microsoft Word** (.docm có macro ribbon). Paper LaTeX hiện tại đã dùng đúng class `llncs` → **nội dung & format gốc đã đúng chuẩn LNCS**. Việc còn lại: tạo bản **đúng định dạng template yêu cầu** + rà từng yêu cầu cụ thể.
 

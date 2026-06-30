@@ -1,6 +1,6 @@
 # ThreadLearn — ICTA2026 Word-ready content
 
-> **Cách dùng:** Mở `ICTA_Word+Template/icta.docm`. Xoá nội dung mẫu. Paste từng block dưới đây theo thứ tự. Mỗi block có dòng `>> MACRO:` chỉ nút ribbon "Springer Proceedings Macros" cần bấm sau khi paste (bôi đen đoạn rồi bấm). Sau heading run-in (L3/L4) bấm **Normal Text** để reset.
+> **Cách dùng:** Mở `icta_word_template/icta.docm`. Xoá nội dung mẫu. Paste từng block dưới đây theo thứ tự. Mỗi block có dòng `>> MACRO:` chỉ nút ribbon "Springer Proceedings Macros" cần bấm sau khi paste (bôi đen đoạn rồi bấm). Sau heading run-in (L3/L4) bấm **Normal Text** để reset.
 >
 > **Ràng buộc ICTA2026:** ≤8 trang (tối đa 10, phụ thu $10/trang dư), English, Springer LNCS Word template, nộp EasyChair, deadline 30/6/2026.
 >

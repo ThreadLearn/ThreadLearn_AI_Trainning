@@ -15,9 +15,11 @@ import os, sys, json, time
 from pathlib import Path
 
 # Add server dir to path for BM25 imports
-SERVER_DIR = Path(__file__).parent / "server"
+AI2_DIR = Path(__file__).parent.parent.parent  # ai2/eval/scripts -> ai2/
+ROOT_DIR = AI2_DIR.parent                       # ai2/ -> repo root
+SERVER_DIR = AI2_DIR / "server"
 sys.path.insert(0, str(SERVER_DIR))
-KB_PATH = str(Path(__file__).parent / "knowledge-base" / "knowledge_base.json")
+KB_PATH = str(AI2_DIR / "knowledge-base" / "knowledge_base.json")
 
 try:
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -26,7 +28,7 @@ except ImportError:
     print("Run: pip install transformers torch")
     sys.exit(1)
 
-MODEL_PATH = str(Path(__file__).parent.parent / "models" / "merged")
+MODEL_PATH = str(ROOT_DIR / "models" / "merged")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE} | {torch.cuda.get_device_name(0) if DEVICE == 'cuda' else 'CPU'}")
 
@@ -262,7 +264,7 @@ def main():
         "rag": {"pass": pass_rag, "partial": partial_rag, "fail": fail_rag,
                 "pass_rate": f"{pass_rag*5}%", "results": results_rag},
     }
-    out_path = Path(__file__).parent / "eval_rag_results.json"
+    out_path = AI2_DIR / "eval" / "results" / "eval_rag_results.json"
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nSaved: {out_path}")
 
