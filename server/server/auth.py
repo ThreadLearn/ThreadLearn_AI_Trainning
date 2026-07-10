@@ -11,14 +11,15 @@ from jose import JWTError, jwt
 from config import JWT_SECRET
 
 # Scheme: đọc token từ "Authorization: Bearer <token>"
-_bearer = HTTPBearer()
+# auto_error=False để tự raise 401 khi thiếu header (mặc định HTTPBearer trả 403).
+_bearer = HTTPBearer(auto_error=False)
 
 # Algorithm khớp với Node.js backend (jsonwebtoken mặc định dùng HS256)
 ALGORITHM = "HS256"
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> str:
     """
     FastAPI dependency — verify JWT và trả về user_id.
@@ -38,6 +39,13 @@ def get_current_user(
         HTTPException 401 — token thiếu, sai, hoặc hết hạn
         HTTPException 403 — token hợp lệ nhưng không có "sub" claim
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Thiếu Authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
 
     try:
