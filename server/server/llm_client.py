@@ -62,8 +62,8 @@ def _openai_analyze(code: str, prompt: str) -> str:
             result = json.loads(response.read().decode('utf-8'))
             return result["choices"][0]["message"]["content"]
     except Exception as e:
-        print(f"Lỗi gọi OpenAI API: {e}")
-        return f"// Lỗi API: {str(e)}\n{code}"
+        print(f"Loi goi OpenAI API: {e}")
+        return f"// Loi API: {str(e)}\n{code}"
 
 
 import json
@@ -104,8 +104,8 @@ def _hf_space_analyze(code: str, prompt: str) -> str:
                 return issues[0].get("fix", code)
             return code
     except Exception as e:
-        print(f"Lỗi gọi HF Space: {e}")
-        return f"// Lỗi kết nối tới HF Space\n{code}"
+        print(f"Loi goi HF Space: {e}")
+        return f"// Loi ket noi toi HF Space\n{code}"
 
 
 # ---------------------------------------------------------------------------
