@@ -249,9 +249,11 @@ docker run -d -p 27017:27017 mongo:7
 
 ## Chạy Tests
 
+Từ thư mục gốc repo (`WDP-Code/`):
+
 ```bash
 cd ThreadLearn-AI-Trainning/server/server
-pytest ../tests/ -v
+python -m pytest ../tests/ -v
 ```
 
 ---

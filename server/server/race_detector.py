@@ -456,6 +456,143 @@ def _detect_buffer_leak(code: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Python Pattern 1: global var mutated inside threading.Thread target (global_var_thread)
+# ---------------------------------------------------------------------------
+_RE_PY_GLOBAL = re.compile(r'\bglobal\s+(\w+)')
+_RE_PY_THREAD = re.compile(r'\bthreading\.Thread\s*\(')
+_RE_PY_LOCK_WITH = re.compile(r'\bwith\s+\w*lock\w*\s*:', re.IGNORECASE)
+
+def _detect_global_var_thread(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    if not _RE_PY_THREAD.search(code):
+        return detections
+    seen_names: set[str] = set()
+    for i, line in enumerate(lines, 1):
+        m = _RE_PY_GLOBAL.search(line)
+        if not m:
+            continue
+        name = m.group(1)
+        if name in seen_names:
+            continue
+        # Bỏ qua nếu function body (20 dòng tiếp) được bảo vệ bởi `with lock:`
+        window = "\n".join(lines[i:i+20])
+        if _RE_PY_LOCK_WITH.search(window):
+            continue
+        seen_names.add(name)
+        detections.append({
+            "pattern_id": "global_var_thread",
+            "line_range": str(i),
+            "description": (
+                f"Biến global `{name}` (dòng {i}) bị mutate trong hàm chạy qua threading.Thread "
+                f"— không có lock bảo vệ, nhiều thread ghi đồng thời gây race condition."
+            ),
+        })
+    return detections
+
+
+# Python Pattern 2: shared list bị nhiều thread append không lock (shared_list_no_lock)
+_RE_PY_LIST_APPEND = re.compile(r'(\w+)\s*\.\s*append\s*\(')
+
+def _detect_shared_list_no_lock(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    if not _RE_PY_THREAD.search(code):
+        return detections
+
+    append_targets: dict[str, list[int]] = {}
+    for i, line in enumerate(lines, 1):
+        m = _RE_PY_LIST_APPEND.search(line)
+        if m:
+            append_targets.setdefault(m.group(1), []).append(i)
+
+    for name, line_nums in append_targets.items():
+        if len(line_nums) < 2:
+            continue
+        window_start = max(0, line_nums[0] - 5)
+        window = "\n".join(lines[window_start:line_nums[-1] + 5])
+        if _RE_PY_LOCK_WITH.search(window):
+            continue
+        detections.append({
+            "pattern_id": "shared_list_no_lock",
+            "line_range": _line_range(line_nums[0], line_nums[-1]),
+            "description": (
+                f"List `{name}` bị append từ code chạy trong nhiều threading.Thread "
+                f"(dòng {', '.join(str(l) for l in line_nums)}) mà không có `with lock:` bảo vệ."
+            ),
+        })
+    return detections
+
+
+# Python Pattern 3: Thread.start() không có join() tương ứng (missing_join)
+_RE_PY_THREAD_VAR = re.compile(r'(\w+)\s*=\s*threading\.Thread\s*\(')
+_RE_PY_START = re.compile(r'(\w+)\s*\.\s*start\s*\(\s*\)')
+_RE_PY_JOIN = re.compile(r'(\w+)\s*\.\s*join\s*\(\s*\)')
+
+def _detect_missing_join(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    started: dict[str, int] = {}
+    joined: set[str] = set()
+    for i, line in enumerate(lines, 1):
+        m_start = _RE_PY_START.search(line)
+        if m_start:
+            started.setdefault(m_start.group(1), i)
+        m_join = _RE_PY_JOIN.search(line)
+        if m_join:
+            joined.add(m_join.group(1))
+
+    for name, line_no in started.items():
+        if name not in joined:
+            detections.append({
+                "pattern_id": "missing_join",
+                "line_range": str(line_no),
+                "description": (
+                    f"Thread `{name}` được start() tại dòng {line_no} nhưng không có `{name}.join()` "
+                    f"— chương trình có thể kết thúc trước khi thread hoàn tất, kết quả không xác định."
+                ),
+            })
+    return detections
+
+
+# Python Pattern 4: lazy singleton init không thread-safe (singleton_lazy_init)
+_RE_PY_IF_NONE = re.compile(r'\bif\s+(\w+)\s+is\s+None\s*:')
+
+def _detect_singleton_lazy_init(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    if not _RE_PY_THREAD.search(code) and not _RE_PY_GLOBAL.search(code):
+        return detections
+    for i, line in enumerate(lines, 1):
+        m = _RE_PY_IF_NONE.search(line)
+        if not m:
+            continue
+        name = m.group(1)
+        window = "\n".join(lines[i:i+5])
+        if re.search(r'\b' + re.escape(name) + r'\s*=', window):
+            window_lock = "\n".join(lines[max(0, i-5):i+5])
+            if _RE_PY_LOCK_WITH.search(window_lock):
+                continue
+            detections.append({
+                "pattern_id": "singleton_lazy_init",
+                "line_range": _line_range(i, min(i + 5, len(lines))),
+                "description": (
+                    f"Lazy init `{name}` tại dòng {i} kiểm tra `is None` rồi gán mà không lock "
+                    f"— hai thread có thể cùng qua check và tạo instance hai lần (double-checked locking bug)."
+                ),
+            })
+    return detections
+
+
+_PY_DETECTORS = [
+    _detect_global_var_thread,
+    _detect_shared_list_no_lock,
+    _detect_missing_join,
+    _detect_singleton_lazy_init,
+]
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -493,13 +630,18 @@ def detectRaceConditions(code: str, language: str = "javascript") -> list[dict]:
         issues = format_report(detections)
     """
     lang = language.lower()
-    if lang not in ("javascript", "typescript"):
+    if lang not in ("javascript", "typescript", "python"):
         return []
 
-    clean_code = stripComments(code, "javascript")
+    if lang == "python":
+        clean_code = re.sub(r'(?m)^\s*#.*$', '', code)
+        detectors = _PY_DETECTORS
+    else:
+        clean_code = stripComments(code, "javascript")
+        detectors = _JS_DETECTORS
 
     raw: list[dict] = []
-    for detector in _JS_DETECTORS:
+    for detector in detectors:
         raw.extend(detector(clean_code))
 
     # Dedup: bỏ detection trùng pattern_id + line_range
