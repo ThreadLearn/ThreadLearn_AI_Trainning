@@ -213,7 +213,7 @@ def _local_gpu_analyze(code: str, prompt: str) -> str:
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
         outputs = model.generate(
             **inputs,
-            max_new_tokens=256,
+            max_new_tokens=512,
             temperature=0.2,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
