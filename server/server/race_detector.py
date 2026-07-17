@@ -692,3 +692,14 @@ def detectRaceConditions(code: str, language: str = "javascript") -> list[dict]:
             unique.append(d)
 
     return unique
+
+
+def count_patterns_checked(language: str = "javascript") -> int:
+    """Số lượng pattern detector chạy qua cho ngôn ngữ này — dùng để hiện
+    'quét N loại lỗi, phát hiện M vấn đề' ở FE, độc lập với số issue tìm thấy."""
+    lang = language.lower()
+    if lang == "python":
+        return len(_PY_DETECTORS)
+    if lang in ("javascript", "typescript"):
+        return len(_JS_DETECTORS)
+    return 0
