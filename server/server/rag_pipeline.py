@@ -229,10 +229,6 @@ def run_streaming(
     # ── Bước 4: Build prompt ──
     emit("step", {"stage": "prompt", "status": "running", "label": "Building RAG prompt…"})
     prompt = _build_prompt(code, raw_docs)
-    print("\n" + "="*60)
-    print(f"[PROMPT] {len(prompt)} chars")
-    print(prompt)
-    print("="*60 + "\n")
     emit("step", {"stage": "prompt", "status": "done",
                   "label": f"Prompt ready — {len(prompt)} chars",
                   "chars": len(prompt),
