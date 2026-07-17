@@ -25,6 +25,21 @@ def clean_repetition(raw_text: str) -> str:
             
     return raw_text.strip()
 
+def strip_rag_leak(raw_text: str) -> str:
+    """
+    Model đôi khi copy nguyên phần RAG context được nhồi vào prompt (đánh dấu
+    bằng thẻ <reference_docs> hoặc tiêu đề "Tài liệu tham khảo:") thay vì chỉ
+    trả code fix. Cắt bỏ mọi thứ từ điểm đó trở đi.
+    """
+    markers = ["<reference_docs>", "Tài liệu tham khảo:", "Tài liệu 1"]
+    cut_at = len(raw_text)
+    for marker in markers:
+        idx = raw_text.find(marker)
+        if idx != -1:
+            cut_at = min(cut_at, idx)
+    return raw_text[:cut_at].strip()
+
+
 def cleanOutput(raw_text: str) -> Dict[str, str]:
     """
     Trích xuất `code` và `explanation` từ raw_text bằng Regex.
@@ -33,6 +48,8 @@ def cleanOutput(raw_text: str) -> Dict[str, str]:
     2. Có nhiều block (chỉ lấy block đầu tiên)
     3. Không có block nào (assume toàn bộ text là code)
     """
+    # Cắt bỏ RAG context bị model leak vào output trước khi xử lý gì khác
+    raw_text = strip_rag_leak(raw_text)
     # Xóa lặp code trước
     cleaned_raw = clean_repetition(raw_text)
     
