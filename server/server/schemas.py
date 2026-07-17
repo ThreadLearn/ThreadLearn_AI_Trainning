@@ -37,6 +37,7 @@ class DocUsed(BaseModel):
     id: str
     title: str
     category: str
+    content: str | None = None
     bm25_score: float | None = None
 
 

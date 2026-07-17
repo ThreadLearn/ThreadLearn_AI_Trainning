@@ -109,7 +109,7 @@ def run(
             iss.fix = fixed_code
 
     docs_used = [
-        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), bm25_score=doc.get("bm25_score"))
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
     return issues, docs_used
@@ -196,7 +196,7 @@ def run_streaming(
                   "label": f"Model returned {len(issues)} issue(s)"})
 
     docs_used = [
-        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), bm25_score=doc.get("bm25_score"))
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
     return issues, docs_used
