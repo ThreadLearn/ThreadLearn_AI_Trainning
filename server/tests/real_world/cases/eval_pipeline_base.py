@@ -166,7 +166,7 @@ def main():
         t0 = time.time()
         
         # Chạy toàn bộ pipeline (AST -> BM25 -> Prompt -> LLM)
-        issues, docs_used = rag_pipeline.run(tc["code"], "javascript", retriever)
+        issues, docs_used, _patterns_checked = rag_pipeline.run(tc["code"], "javascript", retriever)
         
         # Lấy code LLM sinh ra (rag_pipeline tự động bọc code trả về trong issues[0].fix)
         response_text = issues[0].fix if issues else ""

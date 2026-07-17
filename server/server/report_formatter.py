@@ -163,11 +163,44 @@ def _normalize_line_range(line_range: Any) -> str:
     return str(line_range)
 
 
+_MAX_SNIPPET_LINES = 12
+
+
+def _extract_snippet(code: str, line_range: str) -> str | None:
+    """
+    Trích đoạn code gốc tại line_range (1-based, inclusive) để hiển thị inline
+    trong issue card mà không cần người dùng tự đếm dòng trong editor.
+
+    "12-18" -> lines[11:18], "42" -> lines[41:42], "all" -> None (không snippet cụ thể).
+    Giới hạn _MAX_SNIPPET_LINES để tránh dán nguyên cả file vào 1 issue.
+    """
+    if not code or line_range == "all":
+        return None
+
+    lines = code.splitlines()
+    try:
+        parts = line_range.split("-")
+        start = int(parts[0].strip())
+        end = int(parts[1].strip()) if len(parts) > 1 else start
+    except (ValueError, IndexError):
+        return None
+
+    start = max(1, start)
+    end = min(len(lines), end)
+    if start > end or start > len(lines):
+        return None
+
+    if end - start + 1 > _MAX_SNIPPET_LINES:
+        end = start + _MAX_SNIPPET_LINES - 1
+
+    return "\n".join(lines[start - 1:end])
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def format_report(raw_detections: list[dict]) -> list[Issue]:
+def format_report(raw_detections: list[dict], code: str = "") -> list[Issue]:
     """
     Format raw detections từ race_detector.py thành List[Issue].
 
@@ -179,6 +212,8 @@ def format_report(raw_detections: list[dict]) -> list[Issue]:
                 description — str, mô tả chi tiết từ detector
             Tùy chọn:
                 severity    — str, override mặc định từ _SEVERITY_MAP
+        code: source code gốc, dùng để trích code_snippet tại line_range.
+            Optional để giữ backward-compat với các nơi gọi cũ không cần snippet.
 
     Returns:
         List[Issue] sorted: high → medium → low, rồi theo line_range tăng dần.
@@ -219,6 +254,8 @@ def format_report(raw_detections: list[dict]) -> list[Issue]:
             severity=severity,      # type: ignore[arg-type]
             description=description,
             fix=fix,
+            pattern_id=pattern_id or "unknown",
+            code_snippet=_extract_snippet(code, line_range),
         ))
 
     # Sort: severity trước, line_range sau

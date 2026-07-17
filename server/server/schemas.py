@@ -30,6 +30,10 @@ class Issue(BaseModel):
         default="unknown",
         description="Pattern identifier, ví dụ: closure_loop_var"
     )
+    code_snippet: str | None = Field(
+        default=None,
+        description="Đoạn code gốc tại line_range, để hiển thị inline không cần cuộn tới dòng đó"
+    )
 
 
 class DocUsed(BaseModel):

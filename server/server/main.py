@@ -145,7 +145,7 @@ async def analyze_code(
     try:
         async with asyncio.timeout(LLM_TIMEOUT_SECONDS):
             async with _llm_semaphore:
-                issues, docs_used = await asyncio.to_thread(
+                issues, docs_used, patterns_checked = await asyncio.to_thread(
                     rag_pipeline.run,
                     body.code,
                     body.language,
@@ -168,6 +168,7 @@ async def analyze_code(
         issues=issues,
         docs_used=docs_used,
         cached=False,
+        patterns_checked=patterns_checked,
     )
 
     # Step 4: Lưu vào Redis (graceful — lỗi không ảnh hưởng response)
@@ -212,7 +213,7 @@ async def analyze_stream(
             try:
                 async with asyncio.timeout(LLM_TIMEOUT_SECONDS):
                     async with _llm_semaphore:
-                        issues, docs_used = await asyncio.to_thread(
+                        issues, docs_used, patterns_checked = await asyncio.to_thread(
                             rag_pipeline.run_streaming,
                             body.code,
                             body.language,
@@ -225,6 +226,7 @@ async def analyze_stream(
                     "cached": False,
                     "user_id": user_id,
                     "language": body.language,
+                    "patterns_checked": patterns_checked,
                 }
             except TimeoutError:
                 queue.put_nowait(("error", {"message": "LLM analysis timed out."}))
