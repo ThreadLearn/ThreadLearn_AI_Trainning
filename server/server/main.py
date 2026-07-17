@@ -118,7 +118,8 @@ async def analyze_code(
         4. Lưu kết quả vào Redis (TTL 86400s)
         5. Trả AnalyzeResponse, cached=False
 
-    TODO AI2-09: Lưu kết quả vào MongoDB sau khi phân tích
+    Lưu ý: MongoDB persistence (AIHistory) do Node.js backend đảm nhiệm
+    sau khi nhận response này, không phải trách nhiệm của service này.
     """
     retriever = app.state.retriever
 
@@ -225,12 +226,14 @@ async def analyze_stream(
                     "user_id": user_id,
                     "language": body.language,
                 }
-                queue.put_nowait(("result", result_data))
             except TimeoutError:
                 queue.put_nowait(("error", {"message": "LLM analysis timed out."}))
+                return
             except Exception as exc:
                 queue.put_nowait(("error", {"message": str(exc)}))
-            finally:
+                return
+            else:
+                queue.put_nowait(("result", result_data))
                 queue.put_nowait(("done", {}))
 
         task = asyncio.create_task(run_pipeline())
