@@ -117,7 +117,8 @@ def _local_with_hf_api_analyze(code: str, prompt: str) -> str:
     Gọi HF Inference API (serverless) thay vì HF Space.
     """
     MODEL_ID = "anha12/threadlearn-qwen2.5-coder-1.5b-merged"
-    API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
+    # api-inference.huggingface.co bị HF khai tử — endpoint mới là router.huggingface.co.
+    API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_ID}"
 
     if not HF_TOKEN:
         print("[hf_inference] HF_TOKEN not set — fallback to HF Space")
@@ -170,6 +171,61 @@ def _local_with_hf_api_analyze(code: str, prompt: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Local GPU — load model đã merge trực tiếp trong process, không gọi network ra HF.
+# Dùng khi HF Space/Inference API không khả dụng (sleeping/scheduling failure/
+# model không được serverless hỗ trợ) nhưng máy chạy server có GPU CUDA.
+# ---------------------------------------------------------------------------
+
+_local_model = None
+_local_tokenizer = None
+
+
+def _load_local_model():
+    global _local_model, _local_tokenizer
+    if _local_model is not None:
+        return _local_model, _local_tokenizer
+
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    model_id = "anha12/threadlearn-qwen2.5-coder-1.5b-merged"
+    print(f"[local_gpu] Loading {model_id} ...")
+    _local_tokenizer = AutoTokenizer.from_pretrained(model_id)
+    _local_model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        device_map="auto" if torch.cuda.is_available() else None,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+    )
+    print("[local_gpu] Model loaded.")
+    return _local_model, _local_tokenizer
+
+
+def _local_gpu_analyze(code: str, prompt: str) -> str:
+    """
+    Chạy model đã fine-tune trực tiếp trong process (giống cơ chế
+    training/evaluation/run_inference_local.py) thay vì gọi HF qua network.
+    """
+    import torch
+
+    try:
+        model, tokenizer = _load_local_model()
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        inputs = tokenizer(prompt, return_tensors="pt").to(device)
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=512,
+            temperature=0.2,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+        generated = outputs[0][inputs["input_ids"].shape[1]:]
+        return tokenizer.decode(generated, skip_special_tokens=True)
+    except Exception as e:
+        print(f"[local_gpu] Error: {e}")
+        return f"// Loi chay model local: {e}\n{code}"
+
+
+# ---------------------------------------------------------------------------
 # Public API — rag_pipeline.py gọi hàm này
 # ---------------------------------------------------------------------------
 
@@ -185,5 +241,7 @@ def get_llm_fix(code: str, prompt: str) -> str:
         return _local_with_hf_api_analyze(code, prompt)
     elif provider == "hf_space":
         return _hf_space_analyze(code, prompt)
+    elif provider == "local_gpu":
+        return _local_gpu_analyze(code, prompt)
     else:
         return _mock_analyze(code, prompt)

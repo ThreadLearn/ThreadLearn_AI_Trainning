@@ -110,7 +110,17 @@ def _semantic_keywords(code: str) -> str:
 def _build_prompt(code: str, docs: list) -> str:
     """
     Ghép code + context docs thành prompt gửi LLM.
-    Dùng chuẩn format của eval_rag_merged.py để tránh lỗi hallucination.
+
+    Model chỉ được fine-tune trên format thuần "Convert to concurrent
+    JavaScript:\n\n{code}\n" (ai1_02_format_jsonl.py) — không hề thấy
+    context RAG lúc train. Nhồi context bằng cú pháp lạ (vd thẻ
+    <reference_docs>) khiến input rơi ra ngoài phân phối huấn luyện và
+    model có xu hướng chỉ echo lại code gốc thay vì sinh fix.
+
+    Format dưới đây khớp build_prompt_with_context() trong
+    eval/scripts/eval_rag_merged.py: context đặt TRƯỚC, phần cuối luôn
+    kết bằng đúng câu lệnh training gốc để model nhận diện điểm bắt đầu
+    completion.
     """
     context_parts = []
     for i, doc in enumerate(docs, 1):
@@ -123,10 +133,10 @@ def _build_prompt(code: str, docs: list) -> str:
 
     if context:
         return (
-            f"Convert to concurrent JavaScript:\n\n{code}\n\n"
-            f"<reference_docs>\n"
-            f"Tài liệu tham khảo:\n\n{context}\n"
-            f"</reference_docs>\n"
+            f"Dưới đây là các tài liệu tham khảo về concurrent JavaScript:\n\n"
+            f"{context}\n\n"
+            f"---\n\n"
+            f"Convert to concurrent JavaScript:\n\n{code}\n"
         )
     else:
         return f"Convert to concurrent JavaScript:\n\n{code}\n"
@@ -168,7 +178,7 @@ def run(
             iss.fix = fixed_code
 
     docs_used = [
-        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), bm25_score=doc.get("bm25_score"))
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
     return issues, docs_used
@@ -229,10 +239,6 @@ def run_streaming(
     # ── Bước 4: Build prompt ──
     emit("step", {"stage": "prompt", "status": "running", "label": "Building RAG prompt…"})
     prompt = _build_prompt(code, raw_docs)
-    print("\n" + "="*60)
-    print(f"[PROMPT] {len(prompt)} chars")
-    print(prompt)
-    print("="*60 + "\n")
     emit("step", {"stage": "prompt", "status": "done",
                   "label": f"Prompt ready — {len(prompt)} chars",
                   "chars": len(prompt),
@@ -259,7 +265,7 @@ def run_streaming(
                   "label": f"Model returned {len(issues)} issue(s)"})
 
     docs_used = [
-        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), bm25_score=doc.get("bm25_score"))
+        DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
     return issues, docs_used
