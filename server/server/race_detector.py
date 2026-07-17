@@ -455,6 +455,43 @@ def _detect_buffer_leak(code: str) -> list[dict]:
     return detections
 
 
+# JS Pattern 14: sync I/O (readFileSync/execSync/...) inside async route/handler (sync_io_blocking)
+_RE_SYNC_IO = re.compile(r'\b(fs\.)?(readFileSync|writeFileSync|appendFileSync|existsSync|statSync|execSync|readdirSync)\s*\(')
+_RE_ASYNC_HANDLER = re.compile(r'\basync\s*(?:function\s*\w*\s*\(|\([^)]*\)\s*=>|\w+\s*=>)')
+
+def _detect_sync_io_blocking(code: str) -> list[dict]:
+    detections = []
+    lines = _lines(code)
+    in_async_depth: list[int] = []  # brace-depth stack tại điểm mở async function
+    depth = 0
+    for i, line in enumerate(lines, 1):
+        opens = line.count('{')
+        closes = line.count('}')
+
+        if _RE_ASYNC_HANDLER.search(line):
+            # Scope thân hàm bắt đầu ở depth sau khi cộng '{' của chính dòng khai báo.
+            in_async_depth.append(depth + opens)
+
+        m = _RE_SYNC_IO.search(line)
+        if m and in_async_depth:
+            fname = m.group(2)
+            detections.append({
+                "pattern_id": "sync_io_blocking",
+                "line_range": str(i),
+                "description": (
+                    f"`{fname}` (dòng {i}) là sync I/O gọi bên trong async handler "
+                    f"— block toàn bộ Node.js event loop, mọi request khác phải chờ."
+                ),
+            })
+
+        depth += opens - closes
+        # Đóng scope async khi depth tụt xuống dưới mức thân hàm đã mở.
+        while in_async_depth and depth < in_async_depth[-1]:
+            in_async_depth.pop()
+
+    return detections
+
+
 # ---------------------------------------------------------------------------
 # Python Pattern 1: global var mutated inside threading.Thread target (global_var_thread)
 # ---------------------------------------------------------------------------
@@ -610,6 +647,7 @@ _JS_DETECTORS = [
     _detect_resource_exhaustion,
     _detect_sequential_awaits,
     _detect_buffer_leak,
+    _detect_sync_io_blocking,
 ]
 
 

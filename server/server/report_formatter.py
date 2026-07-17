@@ -101,6 +101,11 @@ _FIX_TEMPLATES: dict[str, str] = {
         "readStream.on('error', err => { writeStream.destroy(); next(err); }).pipe(writeStream) "
         "Hoặc dùng pipeline() từ stream/promises để tự động cleanup khi lỗi."
     ),
+    "sync_io_blocking": (
+        "Thay hàm *Sync bằng bản Promise/callback tương ứng, dùng await: "
+        "const fs = require('fs').promises; const data = await fs.readFile(path, 'utf8') "
+        "Sync I/O block toàn bộ event loop, khiến mọi request khác phải chờ."
+    ),
 }
 
 # Severity mặc định cho mỗi pattern
@@ -123,6 +128,7 @@ _SEVERITY_MAP: dict[str, str] = {
     "resource_exhaustion": "high",
     "sequential_awaits": "medium",
     "buffer_leak": "high",
+    "sync_io_blocking": "high",
 }
 
 _SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}

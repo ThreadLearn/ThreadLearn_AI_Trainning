@@ -2,27 +2,43 @@ import re
 from typing import List, Dict
 from schemas import Issue
 
-def clean_repetition(raw_text: str) -> str:
+def clean_repetition(raw_text: str, max_consecutive: int = 3) -> str:
     """
-    Loại bỏ lỗi lặp code (repetition) của model bằng cách tách các khối code
-    và chỉ lấy khối hoàn chỉnh đầu tiên.
+    Loại bỏ lỗi lặp code (repetition) của model — cả kiểu lặp lại từ dòng
+    đầu (model quay vòng lại logic cũ) lẫn kiểu lặp một dòng liên tục
+    nhiều lần (model bị kẹt loop, ví dụ echo "</reference_docs>" hàng
+    chục lần cho tới khi chạm max_new_tokens).
     """
     lines = raw_text.strip().split('\n')
     if not lines:
         return raw_text
-        
+
+    # 1) Lặp một dòng liên tục quá `max_consecutive` lần — cắt tại lần lặp đầu tiên.
+    run_line = None
+    run_count = 0
+    for i, line in enumerate(lines):
+        line_stripped = line.strip()
+        if line_stripped and line_stripped == run_line:
+            run_count += 1
+            if run_count >= max_consecutive:
+                cut_at = i - run_count + 1
+                return "\n".join(lines[:cut_at]).strip()
+        else:
+            run_line = line_stripped
+            run_count = 1
+
+    # 2) Model quay lại lặp block logic từ dòng có nghĩa đầu tiên.
     first_meaningful_line = None
     for i, line in enumerate(lines):
         line_stripped = line.strip()
         if not line_stripped or line_stripped.startswith('//'):
             continue
-            
+
         if first_meaningful_line is None:
             first_meaningful_line = line_stripped
         elif line_stripped == first_meaningful_line and len(line_stripped) > 5:
-            # Lặp lại block logic
             return "\n".join(lines[:i]).strip()
-            
+
     return raw_text.strip()
 
 def strip_rag_leak(raw_text: str) -> str:

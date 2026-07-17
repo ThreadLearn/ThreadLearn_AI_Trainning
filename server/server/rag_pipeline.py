@@ -110,7 +110,17 @@ def _semantic_keywords(code: str) -> str:
 def _build_prompt(code: str, docs: list) -> str:
     """
     Ghép code + context docs thành prompt gửi LLM.
-    Dùng chuẩn format của eval_rag_merged.py để tránh lỗi hallucination.
+
+    Model chỉ được fine-tune trên format thuần "Convert to concurrent
+    JavaScript:\n\n{code}\n" (ai1_02_format_jsonl.py) — không hề thấy
+    context RAG lúc train. Nhồi context bằng cú pháp lạ (vd thẻ
+    <reference_docs>) khiến input rơi ra ngoài phân phối huấn luyện và
+    model có xu hướng chỉ echo lại code gốc thay vì sinh fix.
+
+    Format dưới đây khớp build_prompt_with_context() trong
+    eval/scripts/eval_rag_merged.py: context đặt TRƯỚC, phần cuối luôn
+    kết bằng đúng câu lệnh training gốc để model nhận diện điểm bắt đầu
+    completion.
     """
     context_parts = []
     for i, doc in enumerate(docs, 1):
@@ -123,10 +133,10 @@ def _build_prompt(code: str, docs: list) -> str:
 
     if context:
         return (
-            f"Convert to concurrent JavaScript:\n\n{code}\n\n"
-            f"<reference_docs>\n"
-            f"Tài liệu tham khảo:\n\n{context}\n"
-            f"</reference_docs>\n"
+            f"Dưới đây là các tài liệu tham khảo về concurrent JavaScript:\n\n"
+            f"{context}\n\n"
+            f"---\n\n"
+            f"Convert to concurrent JavaScript:\n\n{code}\n"
         )
     else:
         return f"Convert to concurrent JavaScript:\n\n{code}\n"
