@@ -30,13 +30,17 @@ class Issue(BaseModel):
         default="unknown",
         description="Pattern identifier, ví dụ: closure_loop_var"
     )
+    code_snippet: str | None = Field(
+        default=None,
+        description="Đoạn code gốc tại line_range, để hiển thị inline không cần cuộn tới dòng đó"
+    )
 
 
 class DocUsed(BaseModel):
     """Tài liệu từ knowledge base được BM25 truy xuất để làm context cho LLM."""
     id: str
     title: str
-    category: str
+    category: str = "general"
     content: str | None = None
     bm25_score: float | None = None
 
@@ -73,6 +77,10 @@ class AnalyzeResponse(BaseModel):
     cached: bool = Field(
         default=False,
         description="True nếu kết quả lấy từ Redis cache (AI2-07)"
+    )
+    patterns_checked: int = Field(
+        default=0,
+        description="Tổng số race-condition pattern đã quét qua (bao gồm cả pattern không match)"
     )
 
 

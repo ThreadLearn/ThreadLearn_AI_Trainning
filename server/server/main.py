@@ -118,7 +118,8 @@ async def analyze_code(
         4. Lưu kết quả vào Redis (TTL 86400s)
         5. Trả AnalyzeResponse, cached=False
 
-    TODO AI2-09: Lưu kết quả vào MongoDB sau khi phân tích
+    Lưu ý: MongoDB persistence (AIHistory) do Node.js backend đảm nhiệm
+    sau khi nhận response này, không phải trách nhiệm của service này.
     """
     retriever = app.state.retriever
 
@@ -144,7 +145,7 @@ async def analyze_code(
     try:
         async with asyncio.timeout(LLM_TIMEOUT_SECONDS):
             async with _llm_semaphore:
-                issues, docs_used = await asyncio.to_thread(
+                issues, docs_used, patterns_checked = await asyncio.to_thread(
                     rag_pipeline.run,
                     body.code,
                     body.language,
@@ -167,6 +168,7 @@ async def analyze_code(
         issues=issues,
         docs_used=docs_used,
         cached=False,
+        patterns_checked=patterns_checked,
     )
 
     # Step 4: Lưu vào Redis (graceful — lỗi không ảnh hưởng response)
@@ -211,7 +213,7 @@ async def analyze_stream(
             try:
                 async with asyncio.timeout(LLM_TIMEOUT_SECONDS):
                     async with _llm_semaphore:
-                        issues, docs_used = await asyncio.to_thread(
+                        issues, docs_used, patterns_checked = await asyncio.to_thread(
                             rag_pipeline.run_streaming,
                             body.code,
                             body.language,
@@ -224,13 +226,16 @@ async def analyze_stream(
                     "cached": False,
                     "user_id": user_id,
                     "language": body.language,
+                    "patterns_checked": patterns_checked,
                 }
-                queue.put_nowait(("result", result_data))
             except TimeoutError:
                 queue.put_nowait(("error", {"message": "LLM analysis timed out."}))
+                return
             except Exception as exc:
                 queue.put_nowait(("error", {"message": str(exc)}))
-            finally:
+                return
+            else:
+                queue.put_nowait(("result", result_data))
                 queue.put_nowait(("done", {}))
 
         task = asyncio.create_task(run_pipeline())
