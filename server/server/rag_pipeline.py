@@ -237,10 +237,16 @@ def _generate_fixes_per_issue(
         own_fix_count = 0
     else:
         capped = issues[:_MAX_ISSUES_WITH_OWN_FIX]
-        own_fix_count = sum(1 for iss in capped if iss.code_snippet and iss.line_range != "all")
+        widened_snippets = {
+            _widen_snippet_for_context(full_code, iss.code_snippet, iss.line_range)
+            for iss in capped
+            if iss.code_snippet and iss.line_range != "all"
+        }
+        has_valid_snippet_count = sum(1 for iss in capped if iss.code_snippet and iss.line_range != "all")
+        own_fix_count = len(widened_snippets)  # dedup — snippet trùng chỉ tính 1 LLM call
         needs_whole_file = (
             len(issues) > _MAX_ISSUES_WITH_OWN_FIX
-            or own_fix_count < len(capped)
+            or has_valid_snippet_count < len(capped)
         )
     total_llm_calls = own_fix_count + (1 if needs_whole_file else 0)
     done_count = 0
@@ -281,18 +287,32 @@ def _generate_fixes_per_issue(
         fixed_code, explanation = _get_full_file_fix()
         return fixed_code, explanation
 
+    # Cache fix theo nội dung snippet (sau khi widen) — nhiều detector khác
+    # nhau (vd closure_loop_var và shared_var_settimeout) có thể match trên
+    # cùng 1 block code, cho ra 2 issue nhưng cùng code_snippet sau khi widen.
+    # Không dedup thì user thấy 2 IssueCard hiện y hệt nhau (cùng 1 fix) —
+    # dư thừa, gây rối. Gọi LLM 1 lần cho snippet đó, share fix cho mọi issue
+    # trùng nhau thay vì tốn thêm LLM call chỉ để ra lại đúng kết quả cũ.
+    snippet_fix_cache: dict[str, str] = {}
+
     for i, iss in enumerate(issues[:_MAX_ISSUES_WITH_OWN_FIX]):
         snippet = iss.code_snippet
         if not snippet or iss.line_range == "all":
             fixed_code, _ = _get_full_file_fix()
             iss.fix = fixed_code
         else:
-            snippet = _widen_snippet_for_context(full_code, snippet, iss.line_range)
-            snippet_prompt = _build_prompt(snippet, raw_docs)
-            snippet_llm_output = llm_client.get_llm_fix(snippet, snippet_prompt)
-            snippet_parsed = cleanOutput(snippet_llm_output)
-            iss.fix = f"```javascript\n{snippet_parsed['code']}\n```"
-        _report_progress(iss.pattern_id)
+            widened = _widen_snippet_for_context(full_code, snippet, iss.line_range)
+            if widened in snippet_fix_cache:
+                # Snippet trùng issue trước đó — dùng lại fix, KHÔNG gọi thêm
+                # LLM, không tăng done_count (tổng số call thật không đổi).
+                iss.fix = snippet_fix_cache[widened]
+            else:
+                snippet_prompt = _build_prompt(widened, raw_docs)
+                snippet_llm_output = llm_client.get_llm_fix(widened, snippet_prompt)
+                snippet_parsed = cleanOutput(snippet_llm_output)
+                iss.fix = f"```javascript\n{snippet_parsed['code']}\n```"
+                snippet_fix_cache[widened] = iss.fix
+                _report_progress(iss.pattern_id)
         _report_issue_ready(iss)
 
     if len(issues) > _MAX_ISSUES_WITH_OWN_FIX:
