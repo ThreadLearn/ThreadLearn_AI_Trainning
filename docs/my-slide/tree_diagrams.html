@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThreadLearn — Tree Diagrams</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --orange: #d2991d;
+    --red: #f85149;
+    --purple: #a371f7;
+    --cyan: #39d2c0;
+    --pink: #f778ba;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, var(--green), var(--blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    font-size: 0.85rem;
+  }
+
+  /* ═══════ COMMIT STATS BAR ═══════ */
+  .commit-bar {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+  }
+  .commit-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.4rem;
+    text-align: center;
+    min-width: 130px;
+  }
+  .commit-card .num {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .commit-card .label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .commit-card .sub {
+    font-size: 0.62rem;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .c-ai1 .num { color: var(--blue); }
+  .c-ai2 .num { color: var(--green); }
+  .c-total .num { color: var(--purple); }
+
+  /* ═══════ SECTION TITLE ═══════ */
+  .section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 2.5rem 0 1rem;
+    padding-left: 0.5rem;
+    border-left: 4px solid var(--green);
+  }
+  .section-title.detector { border-left-color: var(--orange); }
+  .section-title.pipeline  { border-left-color: var(--blue); }
+
+  /* ═══════ TREE ═══════ */
+  .tree {
+    --line: var(--border);
+    --line-w: 2px;
+    --node-h: 38px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding-left: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .t-row {
+    display: flex;
+    align-items: center;
+    min-height: var(--node-h);
+    position: relative;
+    padding-left: 28px;
+    gap: 6px;
+    border-left: 2px solid var(--line);
+  }
+  .t-row:last-child { border-left-color: transparent; }
+  .t-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 12px;
+    height: 2px;
+    background: var(--line);
+  }
+  .t-row.root {
+    border-left: none;
+    padding-left: 0;
+  }
+  .t-row.root::before { display: none; }
+
+  .t-row .icon  { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; }
+  .t-row .name  { font-weight: 600; white-space: nowrap; }
+  .t-row .desc  { color: var(--muted); font-size: 0.75rem; margin-left: 4px; }
+  .t-row .tag   {
+    font-size: 0.62rem;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+  .tag-js  { background: rgba(247,223,30,0.15);  color: #f7df1e; }
+  .tag-py  { background: rgba(55,118,179,0.15);  color: #3776ab; }
+  .tag-both{ background: rgba(163,113,247,0.15); color: var(--purple); }
+  .tag-high { color: var(--red); }
+  .tag-med  { color: var(--orange); }
+
+  /* ═══════ GROUP BOX ═══════ */
+  .group {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: var(--card);
+    margin: 8px 0 8px 28px;
+    position: relative;
+  }
+  .group::before {
+    content: attr(data-label);
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    background: var(--card);
+    padding: 0 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  /* ═══════ FLOW PIPELINE ═══════ */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 6px;
+    margin: 3px 0;
+    gap: 10px;
+    transition: background 0.15s;
+  }
+  .flow-row:hover { background: rgba(88,166,255,0.06); }
+  .flow-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .flow-label { font-weight: 600; font-size: 0.84rem; }
+  .flow-desc  { color: var(--muted); font-size: 0.73rem; margin-top: 1px; }
+  .flow-owner { font-size: 0.65rem; font-weight: 600; }
+  .flow-right { margin-left: auto; flex-shrink: 0; }
+
+  /* ── Arrow connector ── */
+  .connector {
+    display: flex;
+    align-items: center;
+    padding-left: 34px;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    gap: 6px;
+  }
+  .connector svg { flex-shrink: 0; }
+
+  /* ── Fork (2 branches side by side) ── */
+  .fork {
+    display: flex;
+    gap: 0;
+    margin: 6px 0;
+  }
+  .fork-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .fork-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-weight: 600;
+    padding-left: 34px;
+    margin-bottom: 2px;
+  }
+
+  /* ── Color classes ── */
+  .c-input    { border-left: 3px solid var(--cyan); }
+  .c-cache    { background: rgba(163,113,247,0.10); } .c-cache  .flow-num { background: var(--purple); color: #fff; }
+  .c-ast      { background: rgba(57,210,192,0.08); }  .c-ast    .flow-num { background: var(--cyan); color: #0d1117; }
+  .c-bm25     { background: rgba(63,185,80,0.08); }   .c-bm25   .flow-num { background: var(--green); color: #0d1117; }
+  .c-prompt   { background: rgba(88,166,255,0.08); }   .c-prompt .flow-num { background: var(--blue); color: #fff; }
+  .c-llm      { background: rgba(210,153,29,0.10); }   .c-llm    .flow-num { background: var(--orange); color: #0d1117; }
+  .c-parser   { background: rgba(247,119,186,0.08); }   .c-parser .flow-num { background: var(--pink); color: #fff; }
+  .c-race     { background: rgba(248,81,73,0.08); }     .c-race   .flow-num { background: var(--red); color: #fff; }
+  .c-merge    { background: rgba(57,210,192,0.08); }    .c-merge  .flow-num { background: var(--cyan); color: #0d1117; }
+  .c-db       { background: rgba(139,148,158,0.08); }   .c-db     .flow-num { background: var(--muted); color: #fff; }
+  .c-redis    { background: rgba(163,113,247,0.08); }   .c-redis  .flow-num { background: var(--purple); color: #fff; }
+  .c-end      { background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.25); }
+  .c-end      .flow-num { background: var(--green); color: #0d1117; }
+
+  .ai1-owner { color: var(--blue); }
+  .ai2-owner { color: var(--green); }
+
+  /* ═══════ RESPONSIVE ═══════ */
+  @media (max-width: 768px) {
+    .t-row { flex-wrap: wrap; }
+    .t-row .desc { width: 100%; margin-left: 28px; }
+    .fork { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════ -->
+<!-- COMMIT STATS                 -->
+<!-- ════════════════════════════ -->
+<div class="commit-bar">
+  <div class="commit-card c-total">
+    <div class="num">98</div>
+    <div class="label">Total Commits</div>
+    <div class="sub">ThreadLearn repo</div>
+  </div>
+  <div class="commit-card c-ai1">
+    <div class="num">36</div>
+    <div class="label">AI1 — Ân</div>
+    <div class="sub">VanAnWebdev (32) + An (4)</div>
+    <div class="sub">Dataset + Fine-tune + AST + Output Parser</div>
+  </div>
+  <div class="commit-card c-ai2">
+    <div class="num">62</div>
+    <div class="label">AI2 — Trung</div>
+    <div class="sub">Trung Le (43) + Lê Trí Trung (19)</div>
+    <div class="sub">Server + RAG + Race Detector + Tests + Eval + Paper</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ -->
+<!-- DIAGRAM 1: RACE DETECTOR    -->
+<!-- ════════════════════════════ -->
+<h1>🛡️ Race Condition Detector</h1>
+<p class="subtitle">10 rule-based patterns — static AST analysis — 20/20 tests pass — integrated with AST Preprocessor module</p>
+
+<div class="tree">
+  <!-- ROOT -->
+  <div class="t-row root">
+    <span class="icon">⚙️</span>
+    <span class="name">detectRaceConditions(code, language) → List[RaceCondition]</span>
+    <span class="desc">server/server/race_detector.py</span>
+  </div>
+
+  <div class="t-row">
+    <span class="icon">📦</span>
+    <span class="name">Import: ast_preprocessor.py</span>
+    <span class="desc">stripComments · normalizeWhitespace · extractFunctions · extract_keywords</span>
+  </div>
+
+  <!-- JS BLOCK -->
+  <div class="group" data-label="JavaScript · 5 patterns · Babel AST">
+    <div class="t-row root">
+      <span class="icon">🟨</span>
+      <span class="name">JavaScript Detectors</span>
+      <span class="desc">TypeScript tái dùng cùng detector</span>
+      <span class="tag tag-js">JS/TS</span>
+    </div>
+
+    <div class="t-row">
+      <span class="icon">①</span>
+      <span class="name">closure_loop_var</span>
+      <span class="desc">var captured by async callback inside for-loop → stale reference</span>
+      <span class="tag tag-high">HIGH</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">②</span>
+      <span class="name">shared_var_settimeout</span>
+      <span class="desc">Shared variable modified inside setTimeout — no synchronization</span>
+      <span class="tag tag-high">HIGH</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">③</span>
+      <span class="name">promise_no_await</span>
+      <span class="desc">Async call missing await / .then — fire-and-forget, silently fails</span>
+      <span class="tag tag-med">MEDIUM</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">④</span>
+      <span class="name">concurrent_write_array</span>
+      <span class="desc">.push() from multiple async callbacks → data loss / race</span>
+      <span class="tag tag-high">HIGH</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">⑤</span>
+      <span class="name">counter_no_atomic</span>
+      <span class="desc">x++ / x-- in async context — read-modify-write not atomic</span>
+      <span class="tag tag-both">JS+PY</span>
+    </div>
+  </div>
+
+  <!-- PY BLOCK -->
+  <div class="group" data-label="Python · 5 patterns · ast module">
+    <div class="t-row root">
+      <span class="icon">🐍</span>
+      <span class="name">Python Detectors</span>
+      <span class="desc">ast.NodeVisitor traversal</span>
+      <span class="tag tag-py">Python</span>
+    </div>
+
+    <div class="t-row">
+      <span class="icon">⑥</span>
+      <span class="name">global_var_thread</span>
+      <span class="desc">global variable in threading.Thread() — no Lock protection</span>
+      <span class="tag tag-high">HIGH</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">⑦</span>
+      <span class="name">shared_list_no_lock</span>
+      <span class="desc">list.append / dict[key]=v from multiple threads without Lock</span>
+      <span class="tag tag-high">HIGH</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">⑧</span>
+      <span class="name">thread_read_write_race</span>
+      <span class="desc">Thread reads shared data while another writes → dirty read</span>
+      <span class="tag tag-med">MEDIUM</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">⑨</span>
+      <span class="name">missing_join</span>
+      <span class="desc">thread.start() without .join() — result consumed before completion</span>
+      <span class="tag tag-med">MEDIUM</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">⑩</span>
+      <span class="name">singleton_lazy_init</span>
+      <span class="desc">Lazy singleton initialization without Lock — TOCTOU race</span>
+      <span class="tag tag-both">JS+PY</span>
+    </div>
+  </div>
+
+  <!-- OUTPUT BLOCK -->
+  <div class="group" data-label="Output Pipeline">
+    <div class="t-row root">
+      <span class="icon">🔗</span>
+      <span class="name">dedup_detections(results)</span>
+      <span class="desc">Remove duplicates by pattern_id + line_range</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">🛡️</span>
+      <span class="name">fp_suppress(detections, code)</span>
+      <span class="desc">Lock found anywhere → skip shared_list + read_write + singleton</span>
+    </div>
+    <div class="t-row">
+      <span class="icon">📤</span>
+      <span class="name">→ report_formatter.py</span>
+      <span class="desc">format_report() → JSON: line_range, severity, pattern, description, fix</span>
+      <span class="tag tag-js">22 tests</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════ -->
+<!-- DIAGRAM 2: RAG PIPELINE     -->
+<!-- ════════════════════════════ -->
+<h1 style="margin-top:3rem;">⚡ FastAPI Server — RAG Pipeline (10 Steps)</h1>
+<p class="subtitle">POST /api/v1/ai/analyze · Throughput 86 req/s · P95 112ms</p>
+
+<div style="max-width: 720px; margin: 0 auto;">
+
+  <!-- STEP 1: INPUT -->
+  <div class="flow-row c-input">
+    <div class="flow-num" style="background:var(--cyan);color:#0d1117;">1</div>
+    <div>
+      <div class="flow-label">Client Request</div>
+      <div class="flow-desc">{ <b>code</b>, <b>language</b>: "javascript"|"python", <b>user_id</b> }</div>
+    </div>
+    <div class="flow-right"><span class="flow-owner" style="color:var(--muted);">→ Node.js backend</span></div>
+  </div>
+
+  <div class="connector">
+    <svg width="16" height="22"><line x1="8" y1="0" x2="8" y2="16" stroke="#30363d" stroke-width="2"/><polygon points="3,13 8,21 13,13" fill="#30363d"/></svg>
+    JWT verify (python-jose · HS256 · shared secret with Node.js)
+  </div>
+
+  <!-- STEP 2: CACHE -->
+  <div class="flow-row c-cache">
+    <div class="flow-num">2</div>
+    <div>
+      <div class="flow-label">Redis Cache Check</div>
+      <div class="flow-desc">key = SHA256(code + language) → <b>HIT</b>: return cached &lt;5ms → <b>MISS</b>: continue</div>
+    </div>
+    <div class="flow-right"><span class="tag tag-js" style="color:var(--purple);">P50 3.2ms</span></div>
+  </div>
+
+  <div class="connector">
+    <svg width="16" height="22"><line x1="8" y1="0" x2="8" y2="16" stroke="#30363d" stroke-width="2"/><polygon points="3,13 8,21 13,13" fill="#30363d"/></svg>
+    Cache MISS → run full pipeline
+  </div>
+
+  <!-- STEP 3: AST -->
+  <div class="flow-row c-ast">
+    <div class="flow-num">3</div>
+    <div>
+      <div class="flow-label">AST Preprocessor</div>
+      <div class="flow-desc">stripComments() → normalizeWhitespace() → extractFunctions() → <b>extractKeywords()</b></div>
+    </div>
+    <div class="flow-right"><span style="font-size:0.62rem;color:var(--cyan);">@babel/parser (JS) · ast (Py)</span></div>
+  </div>
+
+  <div class="connector">
+    <svg width="16" height="22"><line x1="8" y1="0" x2="8" y2="16" stroke="#30363d" stroke-width="2"/><polygon points="3,13 8,21 13,13" fill="#30363d"/></svg>
+    keywords vector
+  </div>
+
+  <!-- STEP 4: BM25 -->
+  <div class="flow-row c-bm25">
+    <div class="flow-num">4</div>
+    <div>
+      <div class="flow-label">BM25 Search</div>
+      <div class="flow-desc">CamelCase-aware tokenizer → BM25Okapi on <b>2050 docs</b> → Top-<b>3</b> relevant documents</div>
+    </div>
+    <div class="flow-right"><span style="font-size:0.62rem;color:var(--green);">load &lt;500ms</span></div>
+  </div>
+
+  <div class="connector">
+    <svg width="16" height="22"><line x1="8" y1="0" x2="8" y2="16" stroke="#30363d" stroke-width="2"/><polygon points="3,13 8,21 13,13" fill="#30363d"/></svg>
+    top-3 docs
+  </div>
+
+  <!-- STEP 5: BUILD PROMPT -->
+  <div class="flow-row c-prompt">
+    <div class="flow-num">5</div>
+    <div>
+      <div class="flow-label">Build Prompt</div>
+      <div class="flow-desc">System: "You are a concurrent programming expert." + <b>&lt;reference_docs&gt;</b>3 docs<b>&lt;/reference_docs&gt;</b> + user code</div>
+    </div>
+  </div>
+
+  <div class="connector">
+    <svg width="16" height="22"><line x1="8" y1="0" x2="8" y2="16" stroke="#30363d" stroke-width="2"/><polygon points="3,13 8,21 13,13" fill="#30363d"/></svg>
+    formatted prompt string
+  </div>
+
+  <!-- STEP 6: LLM -->
+  <div class="flow-row c-llm">
+    <div class="flow-num">6</div>
+    <div>
+      <div class="flow-label">LLM Inference</div>
+      <div class="flow-desc">LLMClient (Strategy Pattern): <b>Mock</b> → OpenAI → HuggingFace → <b>Ollama</b> (target)</div>
+    </div>
+    <div class="flow-right"><span class="tag tag-both">Semaphore(3)</span></div>
+  </div>
+
+  <!-- FORK: parallel 7a + 7b -->
+  <div class="fork">
+    <!-- LEFT: output parser -->
+    <div class="fork-col">
+      <div class="fork-label">├─ raw LLM text</div>
+      <div class="flow-row c-parser">
+        <div class="flow-num">7a</div>
+        <div>
+          <div class="flow-label">Output Parser</div>
+          <div class="flow-desc">Extract markdown code block → cleanOutput() → <b>{suggestions[], explanation}</b></div>
+        </div>
+      </div>
+    </div>
+    <!-- RIGHT: race detector -->
+    <div class="fork-col">
+      <div class="fork-label">├─ AST nodes</div>
+      <div class="flow-row c-race">
+        <div class="flow-num">7b</div>
+        <div>
+          <div class="flow-label">Race Detector</div>
+          <div class="flow-desc">10 patterns scan → dedup → fp_suppress → format_report() → <b>race_conditions[]</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector">
+    <svg width="16" height="22"><line x1="8" y1="0" x2="8" y2="16" stroke="#30363d" stroke-width="2"/><polygon points="3,13 8,21 13,13" fill="#30363d"/></svg>
+    suggestions[] + race_conditions[]
+  </div>
+
+  <!-- STEP 8: MERGE -->
+  <div class="flow-row c-merge">
+    <div class="flow-num">8</div>
+    <div>
+      <div class="flow-label">Merge &amp; Build Response</div>
+      <div class="flow-desc">AnalyzeResponse { user_id, suggestions, race_conditions, docs_used, model, tokens_used, cached }</div>
+    </div>
+  </div>
+
+  <!-- FORK: persist + return -->
+  <div class="fork">
+    <!-- LEFT: persist -->
+    <div class="fork-col">
+      <div class="fork-label">├─ async persist</div>
+      <div class="flow-row c-db">
+        <div class="flow-num">9a</div>
+        <div>
+          <div class="flow-label">Save MongoDB</div>
+          <div class="flow-desc">Motor async → collection <b>ai_analysis_history</b> · GET /history/{user_id}?page=1</div>
+        </div>
+      </div>
+      <div class="flow-row c-redis" style="margin-top:2px;">
+        <div class="flow-num">9b</div>
+        <div>
+          <div class="flow-label">Set Redis Cache</div>
+          <div class="flow-desc">key = SHA256(code+language) · TTL = <b>86400s</b> (24h)</div>
+        </div>
+      </div>
+    </div>
+    <!-- RIGHT: return -->
+    <div class="fork-col">
+      <div class="fork-label">├─ sync return</div>
+      <div class="flow-row c-end">
+        <div class="flow-num">🔚</div>
+        <div>
+          <div class="flow-label">JSON Response → Frontend</div>
+          <div class="flow-desc"><b>200 OK</b> · Content-Type: application/json · CORS allowed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════ -->
+<!-- PERFORMANCE STATS           -->
+<!-- ════════════════════════════ -->
+<div style="display:flex; gap:1rem; justify-content:center; margin-top:3.5rem; flex-wrap:wrap;">
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.7rem 1.2rem; text-align:center;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--green);">86 req/s</div>
+    <div style="font-size:0.65rem; color:var(--muted);">Throughput</div>
+  </div>
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.7rem 1.2rem; text-align:center;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--blue);">3.2 ms</div>
+    <div style="font-size:0.65rem; color:var(--muted);">P50 Latency</div>
+  </div>
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.7rem 1.2rem; text-align:center;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--orange);">112 ms</div>
+    <div style="font-size:0.65rem; color:var(--muted);">P95 Latency</div>
+  </div>
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.7rem 1.2rem; text-align:center;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--purple);">75%</div>
+    <div style="font-size:0.65rem; color:var(--muted);">Pass Rate (v1+RAG)</div>
+  </div>
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.7rem 1.2rem; text-align:center;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--pink);">10</div>
+    <div style="font-size:0.65rem; color:var(--muted);">RC Patterns</div>
+  </div>
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.7rem 1.2rem; text-align:center;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--cyan);">2050</div>
+    <div style="font-size:0.65rem; color:var(--muted);">Knowledge Docs</div>
+  </div>
+</div>
+
+<div style="text-align:center; margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.7rem;">
+  ThreadLearn · WDP301 · FPT University · 2026
+</div>
+
+</body>
+</html>
