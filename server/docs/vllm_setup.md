@@ -56,3 +56,4 @@ Trong file `llm_client.py`, hệ thống đã được cấu hình sẵn tính n
 ```
 
 Khi mô hình sinh xong phần code (dấu đóng block \`\`\`), API sẽ tự động ngắt kết nối. Điều này giúp mô hình không lãng phí tài nguyên để sinh ra các đoạn giải thích thừa thãi ở cuối, giảm thiểu độ trễ xuống mức tối đa.
+ 
