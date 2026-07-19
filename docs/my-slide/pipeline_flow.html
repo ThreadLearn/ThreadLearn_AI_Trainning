@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThreadLearn — Diagrams</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --orange: #d2991d;
+    --red: #f85149;
+    --purple: #a371f7;
+    --cyan: #39d2c0;
+    --pink: #f778ba;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 2rem 1.5rem;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* ── SECTION HEADER ── */
+  .section-title {
+    text-align: center;
+    font-size: 1.6rem;
+    margin: 3rem 0 0.3rem;
+    padding-top: 2rem;
+    border-top: 2px dashed var(--border);
+  }
+  .section-title:first-of-type { border-top: none; margin-top: 0; }
+  .section-title span { background: linear-gradient(135deg, var(--orange), var(--red)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .section-title span.blue { background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .section-sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+
+  /* ═══════════════════════════════════════════ */
+  /*  DIAGRAM 1 — RACE CONDITION DETECTOR       */
+  /* ═══════════════════════════════════════════ */
+
+  .race-diagram {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .race-col {
+    flex: 1;
+    min-width: 340px;
+    max-width: 520px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .race-col-header {
+    padding: 0.8rem 1.2rem;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .race-col-header.js  { background: rgba(88,166,255,0.1);  color: var(--blue);  border-bottom: 1px solid rgba(88,166,255,0.2); }
+  .race-col-header.py  { background: rgba(63,185,80,0.1);   color: var(--green);  border-bottom: 1px solid rgba(63,185,80,0.2);  }
+
+  .race-col-body { padding: 0.6rem 0; }
+
+  .race-pattern {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.65rem 1.2rem;
+    border-left: 3px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    cursor: default;
+  }
+  .race-pattern:hover { background: rgba(255,255,255,0.03); }
+
+  .race-pattern:nth-child(5n+1) { border-left-color: var(--red);    }
+  .race-pattern:nth-child(5n+2) { border-left-color: var(--orange); }
+  .race-pattern:nth-child(5n+3) { border-left-color: var(--purple); }
+  .race-pattern:nth-child(5n+4) { border-left-color: var(--cyan);   }
+  .race-pattern:nth-child(5n+5) { border-left-color: var(--pink);   }
+
+  .race-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+  }
+
+  .race-info { flex: 1; min-width: 0; }
+  .race-name {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.8rem; font-weight: 600;
+    color: var(--text);
+    word-break: break-all;
+  }
+  .race-desc {
+    font-size: 0.7rem; color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.35;
+  }
+
+  .race-severity {
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+  }
+  .sev-high   { background: rgba(248,81,73,0.15);  color: var(--red);    }
+  .sev-medium { background: rgba(210,153,29,0.15);  color: var(--orange); }
+  .sev-low    { background: rgba(139,148,158,0.15); color: var(--muted);  }
+
+  /* ── DETECTOR FLOW ── */
+  .detector-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0 2rem;
+  }
+  .detector-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1.2rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .detector-arrow {
+    font-size: 1.5rem;
+    color: var(--muted);
+  }
+
+  /* ═══════════════════════════════════════════ */
+  /*  DIAGRAM 2 — FASTAPI SERVER PIPELINE       */
+  /* ═══════════════════════════════════════════ */
+
+  .server-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .snode {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1.5rem;
+    position: relative;
+    text-align: center;
+    max-width: 650px;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .snode:hover { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(88,166,255,0.1); }
+
+  .snode-tag {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+  }
+  .snode-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .snode-detail {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
+  }
+
+  /* color accents */
+  .snode.entry   { border-left: 4px solid var(--cyan);   }
+  .snode.cache   { border-left: 4px solid var(--purple);  }
+  .snode.ai1     { border-left: 4px solid var(--blue);    }
+  .snode.ai2     { border-left: 4px solid var(--green);   }
+  .snode.detect  { border-left: 4px solid var(--orange);  }
+  .snode.output  { border-left: 4px solid var(--pink);    }
+  .snode.db      { border-left: 4px solid var(--muted);   }
+
+  .snode.entry   .snode-tag { color: var(--cyan);   }
+  .snode.cache   .snode-tag { color: var(--purple);  }
+  .snode.ai1     .snode-tag { color: var(--blue);    }
+  .snode.ai2     .snode-tag { color: var(--green);   }
+  .snode.detect  .snode-tag { color: var(--orange);  }
+  .snode.output  .snode-tag { color: var(--pink);    }
+  .snode.db      .snode-tag { color: var(--muted);   }
+
+  /* ── SPLIT ROW ── */
+  .split-row {
+    display: flex;
+    gap: 1.5rem;
+    max-width: 750px;
+    width: 100%;
+  }
+  .split-row .snode { flex: 1; }
+
+  /* ── ARROW ── */
+  .sarrow {
+    padding: 2px 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── BRACKET ── */
+  .sbracket {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    min-height: 28px;
+  }
+
+  /* ── BADGE ── */
+  .sbadge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .sbadge-blue  { background: rgba(88,166,255,0.15);  color: var(--blue); }
+  .sbadge-green { background: rgba(63,185,80,0.15);   color: var(--green); }
+  .sbadge-orange{ background: rgba(210,153,29,0.15);  color: var(--orange); }
+  .sbadge-red   { background: rgba(248,81,73,0.15);    color: var(--red); }
+  .sbadge-pink  { background: rgba(247,119,186,0.15);  color: var(--pink); }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2.5rem;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1.4rem;
+    text-align: center;
+    min-width: 100px;
+  }
+  .stat-val { font-size: 1.4rem; font-weight: 700; }
+  .stat-lbl { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  DIAGRAM 1 — RACE CONDITION DETECTOR           -->
+<!-- ═══════════════════════════════════════════════ -->
+<h2 class="section-title"><span>2.2. Race Condition Detector</span> — Static Analysis</h2>
+<p class="section-sub">10 patterns · Rule-based on AST nodes · No LLM needed · Integrated with ast_preprocessor.py (AI1)</p>
+
+<!-- Detector pipeline -->
+<div class="detector-flow">
+  <div class="detector-step" style="border-left:3px solid var(--blue);">
+    📥 Source Code<br><span style="font-size:0.68rem;color:var(--muted);">JS / Python / TS</span>
+  </div>
+  <div class="detector-arrow">→</div>
+  <div class="detector-step" style="border-left:3px solid var(--green);">
+    🔧 ast_preprocessor.py<br><span style="font-size:0.68rem;color:var(--muted);">stripComments · extractFunctions · extractKeywords</span>
+  </div>
+  <div class="detector-arrow">→</div>
+  <div class="detector-step" style="border-left:3px solid var(--orange);">
+    🛡️ race_detector.py<br><span style="font-size:0.68rem;color:var(--muted);">Scan AST nodes against 10 patterns</span>
+  </div>
+  <div class="detector-arrow">→</div>
+  <div class="detector-step" style="border-left:3px solid var(--purple);">
+    📋 report_formatter.py<br><span style="font-size:0.68rem;color:var(--muted);">Dedup · Severity · JSON output</span>
+  </div>
+  <div class="detector-arrow">→</div>
+  <div class="detector-step" style="border-left:3px solid var(--pink);">
+    📤 race_conditions[]<br><span style="font-size:0.68rem;color:var(--muted);">Merged into AnalyzeResponse</span>
+  </div>
+</div>
+
+<!-- Two columns: JS + Python patterns -->
+<div class="race-diagram">
+
+  <!-- JS Column -->
+  <div class="race-col">
+    <div class="race-col-header js">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#58a6ff"><rect x="2" y="2" width="20" height="20" rx="2" fill="rgba(88,166,255,0.15)"/><text x="12" y="17" text-anchor="middle" font-size="12" font-weight="bold" fill="#58a6ff">JS</text></svg>
+      JavaScript — 5 Patterns
+    </div>
+    <div class="race-col-body">
+
+      <div class="race-pattern">
+        <div class="race-num">1</div>
+        <div class="race-info">
+          <div class="race-name">closure_loop_var</div>
+          <div class="race-desc"><code>var</code> captured by async callback inside for-loop</div>
+        </div>
+        <div class="race-severity sev-high">High</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">2</div>
+        <div class="race-info">
+          <div class="race-name">shared_var_settimeout</div>
+          <div class="race-desc">Shared variable modified in setTimeout / setInterval</div>
+        </div>
+        <div class="race-severity sev-high">High</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">3</div>
+        <div class="race-info">
+          <div class="race-name">promise_no_await</div>
+          <div class="race-desc">Fire-and-forget async call — missing <code>await</code> or <code>.then()</code></div>
+        </div>
+        <div class="race-severity sev-medium">Med</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">4</div>
+        <div class="race-info">
+          <div class="race-name">concurrent_write_array</div>
+          <div class="race-desc"><code>.push()</code> into shared array from multiple callbacks</div>
+        </div>
+        <div class="race-severity sev-high">High</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">5</div>
+        <div class="race-info">
+          <div class="race-name">counter_no_atomic</div>
+          <div class="race-desc">Non-atomic increment (<code>x++</code>) in async context</div>
+        </div>
+        <div class="race-severity sev-medium">Med</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Python Column -->
+  <div class="race-col">
+    <div class="race-col-header py">
+      <svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2" fill="rgba(63,185,80,0.15)"/><text x="12" y="17" text-anchor="middle" font-size="11" font-weight="bold" fill="#3fb950">Py</text></svg>
+      Python — 5 Patterns
+    </div>
+    <div class="race-col-body">
+
+      <div class="race-pattern">
+        <div class="race-num">6</div>
+        <div class="race-info">
+          <div class="race-name">global_var_thread</div>
+          <div class="race-desc"><code>global</code> variable accessed in <code>threading.Thread</code> without Lock</div>
+        </div>
+        <div class="race-severity sev-high">High</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">7</div>
+        <div class="race-info">
+          <div class="race-name">shared_list_no_lock</div>
+          <div class="race-desc"><code>list.append()</code> from multiple threads without <code>threading.Lock</code></div>
+        </div>
+        <div class="race-severity sev-high">High</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">8</div>
+        <div class="race-info">
+          <div class="race-name">thread_read_write_race</div>
+          <div class="race-desc">One thread reads while another writes — no synchronization</div>
+        </div>
+        <div class="race-severity sev-high">High</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">9</div>
+        <div class="race-info">
+          <div class="race-name">missing_join</div>
+          <div class="race-desc">Thread result used before <code>.join()</code> — race on completion</div>
+        </div>
+        <div class="race-severity sev-medium">Med</div>
+      </div>
+
+      <div class="race-pattern">
+        <div class="race-num">10</div>
+        <div class="race-info">
+          <div class="race-name">singleton_lazy_init</div>
+          <div class="race-desc">TOCTOU race — lazy singleton init without double-checked locking</div>
+        </div>
+        <div class="race-severity sev-medium">Med</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- FP suppression note -->
+<div style="text-align:center; margin-top:1rem; font-size:0.72rem; color:var(--muted);">
+  🛡️ False-positive suppression: <code style="color:var(--green);">threading.Lock</code> present anywhere in file → patterns 7, 8, 10 suppressed · Dedup: same <code style="color:var(--orange);">pattern_id + line_range</code> merged
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  DIAGRAM 2 — FASTAPI SERVER + RAG PIPELINE     -->
+<!-- ═══════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="blue">2.3. FastAPI Server</span> + RAG Pipeline</h2>
+<p class="section-sub">POST /api/v1/ai/analyze — end-to-end request flow with infrastructure</p>
+
+<div class="server-flow">
+
+  <!-- STEP 1 -->
+  <div class="snode entry">
+    <div class="snode-tag">🔽 STEP 1 — Incoming Request</div>
+    <div class="snode-title">POST /api/v1/ai/analyze <span class="sbadge sbadge-green">JWT Auth</span></div>
+    <div class="snode-detail">Request body: <code>{ code, language, user_id }</code> · JWT verified against Node.js backend shared secret (HS256)</div>
+  </div>
+
+  <div class="sarrow"><svg width="18" height="22"><line x1="9" y1="0" x2="9" y2="18" stroke="#30363d" stroke-width="2"/><polygon points="3,15 9,22 15,15" fill="#30363d"/></svg></div>
+
+  <!-- STEP 2 -->
+  <div class="snode cache">
+    <div class="snode-tag">⚡ STEP 2 — Cache Lookup</div>
+    <div class="snode-title">Redis GET <span class="sbadge sbadge-blue">SHA256(code+language)</span></div>
+    <div class="snode-detail">
+      <strong>HIT</strong> → return cached result in &lt;5ms ·
+      <strong>MISS</strong> → continue pipeline · Graceful degradation: Redis down → skip cache, server keeps running
+    </div>
+  </div>
+
+  <div class="sarrow"><svg width="18" height="22"><line x1="9" y1="0" x2="9" y2="18" stroke="#30363d" stroke-width="2"/><polygon points="3,15 9,22 15,15" fill="#30363d"/></svg></div>
+
+  <!-- STEP 3 -->
+  <div class="snode ai1">
+    <div class="snode-tag">🔧 STEP 3 — AST Preprocessing (AI1 Module · Ân)</div>
+    <div class="snode-title">ast_preprocessor.py — Extract structure + keywords</div>
+    <div class="snode-detail"><code>stripComments()</code> → <code>normalizeWhitespace()</code> → <code>extractFunctions()</code> → <code>extractKeywords()</code><br>Backend: @babel/parser (JS) · ast module (Python)</div>
+  </div>
+
+  <!-- Split bracket -->
+  <div class="sbracket">
+    <svg width="700" height="36">
+      <path d="M350,0 L350,8 L80,8 L80,28" stroke="#30363d" stroke-width="2" fill="none"/>
+      <polygon points="74,24 80,36 86,24" fill="#30363d"/>
+      <path d="M350,0 L350,8 L620,8 L620,28" stroke="#30363d" stroke-width="2" fill="none"/>
+      <polygon points="614,24 620,36 626,24" fill="#30363d"/>
+      <text x="210" y="22" fill="#8b949e" font-size="10" text-anchor="middle">keywords → BM25 search</text>
+      <text x="490" y="22" fill="#8b949e" font-size="10" text-anchor="middle">AST nodes → Race detection</text>
+    </svg>
+  </div>
+
+  <!-- SPLIT: left = BM25+LLM, right = Race Detector -->
+  <div class="split-row">
+
+    <!-- LEFT COLUMN — BM25 + LLM -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:1;">
+      <div class="snode ai2">
+        <div class="snode-tag">🔍 STEP 4a — BM25 Retrieval (AI2 · Trung)</div>
+        <div class="snode-title">bm25_module.py · 2050-doc Index</div>
+        <div class="snode-detail">CamelCase-aware tokenizer · Top-3 relevant docs retrieved · In-memory, &lt;500ms load · auto_stopwords for scaling</div>
+      </div>
+
+      <div class="sarrow"><svg width="18" height="22"><line x1="9" y1="0" x2="9" y2="18" stroke="#30363d" stroke-width="2"/><polygon points="3,15 9,22 15,15" fill="#30363d"/></svg></div>
+
+      <div class="snode ai2">
+        <div class="snode-tag">🤖 STEP 4b — LLM Inference (AI2 · Trung)</div>
+        <div class="snode-title">rag_pipeline.py → build_prompt() → LLMClient <span class="sbadge sbadge-orange">Semaphore(3)</span></div>
+        <div class="snode-detail">Prompt = System instruction + 3 retrieved docs + user code<br>LLM Backend: Mock (dev) → OpenAI (staging) → HuggingFace/Ollama (production)</div>
+      </div>
+
+      <div class="sarrow"><svg width="18" height="22"><line x1="9" y1="0" x2="9" y2="18" stroke="#30363d" stroke-width="2"/><polygon points="3,15 9,22 15,15" fill="#30363d"/></svg></div>
+
+      <div class="snode ai1">
+        <div class="snode-tag">📦 STEP 4c — Output Parser (AI1 Module · Ân)</div>
+        <div class="snode-title">output_parser.py — Extract code blocks</div>
+        <div class="snode-detail">Parse raw LLM output → extract markdown code blocks → <code>{ suggestions[], explanation }</code><br>Handles: no blocks, multiple blocks, repetition, edge cases</div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN — Race Detector -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:1;">
+      <div class="snode detect">
+        <div class="snode-tag">🛡️ STEP 5a — Race Condition Scan (AI2 · Trung)</div>
+        <div class="snode-title">race_detector.py · 10 Patterns</div>
+        <div class="snode-detail">Rule-based on AST nodes · No LLM needed · 5 JS + 5 Python patterns<br>Graceful fallback if ast_preprocessor unavailable</div>
+      </div>
+
+      <div class="sarrow"><svg width="18" height="22"><line x1="9" y1="0" x2="9" y2="18" stroke="#30363d" stroke-width="2"/><polygon points="3,15 9,22 15,15" fill="#30363d"/></svg></div>
+
+      <div class="snode detect">
+        <div class="snode-tag">📋 STEP 5b — Report Formatter (AI2 · Trung)</div>
+        <div class="snode-title">report_formatter.py → format_report()</div>
+        <div class="snode-detail">Dedup by pattern_id + line_range · Classify severity: high / medium / low<br>FP suppression: Lock present → suppress patterns 7, 8, 10</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Merge bracket -->
+  <div class="sbracket">
+    <svg width="700" height="36">
+      <path d="M180,8 L180,22 L350,22 L350,36" stroke="#30363d" stroke-width="2" fill="none"/>
+      <path d="M530,8 L530,22 L350,22" stroke="#30363d" stroke-width="2" fill="none"/>
+      <polygon points="344,32 350,44 356,32" fill="#30363d"/>
+    </svg>
+  </div>
+
+  <!-- STEP 6 — MERGE -->
+  <div class="snode output">
+    <div class="snode-tag">🔗 STEP 6 — Merge Response</div>
+    <div class="snode-title">suggestions[] + race_conditions[] → AnalyzeResponse</div>
+    <div class="snode-detail">Combine LLM output + race detector results into unified JSON · Attach metadata: docs_used, model, tokens_used</div>
+  </div>
+
+  <!-- Split: persist + return -->
+  <div class="sbracket">
+    <svg width="700" height="36">
+      <path d="M350,0 L350,8 L80,8 L80,28" stroke="#30363d" stroke-width="2" fill="none"/>
+      <polygon points="74,24 80,36 86,24" fill="#30363d"/>
+      <path d="M350,0 L350,8 L620,8 L620,28" stroke="#30363d" stroke-width="2" fill="none"/>
+      <polygon points="614,24 620,36 626,24" fill="#30363d"/>
+      <text x="210" y="22" fill="#8b949e" font-size="10" text-anchor="middle">persist</text>
+      <text x="490" y="22" fill="#8b949e" font-size="10" text-anchor="middle">cache + return</text>
+    </svg>
+  </div>
+
+  <div class="split-row">
+    <!-- DB -->
+    <div class="snode db">
+      <div class="snode-tag">💾 STEP 7a — MongoDB History (AI2 · Trung)</div>
+      <div class="snode-title">db.py · Motor Async Driver</div>
+      <div class="snode-detail">Save to <code>ai_analysis_history</code> collection · Paginated GET <code>/history/{user_id}?page=1&limit=20</code><br>Index on <code>(user_id, created_at)</code> for efficient queries</div>
+    </div>
+    <!-- Redis SET -->
+    <div class="snode cache">
+      <div class="snode-tag">⚡ STEP 7b — Redis SET (AI2 · Trung)</div>
+      <div class="snode-title">cache.py · set_cached() TTL 24h</div>
+      <div class="snode-detail">Key = <code>ai2:analysis:SHA256(code|language)</code> · TTL = 86400s (24 hours)<br>Next identical request → cache HIT → return in &lt;5ms</div>
+    </div>
+  </div>
+
+  <div class="sarrow"><svg width="18" height="22"><line x1="9" y1="0" x2="9" y2="18" stroke="#f778ba" stroke-width="2"/><polygon points="3,15 9,22 15,15" fill="#f778ba"/></svg></div>
+
+  <!-- FINAL -->
+  <div class="snode output" style="border:2px solid var(--pink);">
+    <div class="snode-tag">✅ STEP 8 — Response to Frontend</div>
+    <div class="snode-title">JSON AnalyzeResponse → Frontend (React)</div>
+    <div class="snode-detail">
+      <code style="color:var(--blue);">{ suggestions: [...], race_conditions: [...], docs_used: [...], model, tokens_used, cached }</code>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- STATS ROW                                      -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-val" style="color:var(--green);">86 req/s</div><div class="stat-lbl">Throughput</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:var(--blue);">3.2 ms</div><div class="stat-lbl">P50 Latency</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:var(--orange);">112 ms</div><div class="stat-lbl">P95 Latency</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:var(--purple);">75%</div><div class="stat-lbl">Pass Rate (v1+RAG)</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:var(--cyan);">10</div><div class="stat-lbl">Race Patterns</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:var(--pink);">2050</div><div class="stat-lbl">KB Documents</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- LEGEND                                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cyan);"></div> Request / Entry</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple);"></div> Cache (Redis)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue);"></div> AI1 — Ân (AST / Parser)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green);"></div> AI2 — Trung (BM25 / LLM)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange);"></div> Race Detection</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--pink);"></div> Output</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--muted);"></div> Database (MongoDB)</div>
+</div>
+
+</div>
+</body>
+</html>
