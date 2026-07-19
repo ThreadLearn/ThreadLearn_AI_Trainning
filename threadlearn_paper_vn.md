@@ -116,3 +116,4 @@ Các mô hình local (Qwen, ThreadLearn) tốn khoảng 25-26 giây, chậm hơn
 ThreadLearn thu hẹp khoảng cách giữa phát hiện tĩnh và sửa chữa tự động bằng cách kết hợp trình dò tĩnh 5 mẫu với mô hình ngôn ngữ 1.5B được fine-tune bằng CoT và pipeline RAG (BM25+AST). ThreadLearn đạt điểm 73.3%, bỏ xa GPT-3.5, đóng vai trò công cụ toàn trình đầu tiên nối liền `ESLint/ThreadSanitizer` và sửa chữa thực tế. Nguyên lý cốt lõi rút ra: BM25/RAG chỉ có ích khi LLM đã có tri thức ngành (domain-knowledge fine-tuning). 
 
 Tương lai có thể mở rộng AST sang TypeScript, thêm mẫu mutex, hoặc đào tạo Qwen-7B để đưa tỷ lệ sửa lỗi Zalgo/Race Condition lên cao hơn nữa.
+ 
