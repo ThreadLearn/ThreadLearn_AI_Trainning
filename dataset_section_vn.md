@@ -31,3 +31,4 @@ Dưới đây là tóm tắt sự phân bổ qua 10 danh mục lỗi (30 trườ
 
 Tất cả các bug này đều bắt nguồn từ các trang theo dõi lỗi (issue tracker) chính thức trên GitHub hoặc tài liệu của Node.js, chứ không phải là các kịch bản do chúng tôi tự bịa ra (synthetic).
 Thiết kế bộ đánh giá này giúp loại bỏ rủi ro tạo ra các bài kiểm tra có lợi cho mô hình (model-favorable test cases), điều thường xảy ra khi cùng một hệ thống vừa tạo dữ liệu huấn luyện lại vừa tự tạo ra dữ liệu để đánh giá chính nó.
+ 
