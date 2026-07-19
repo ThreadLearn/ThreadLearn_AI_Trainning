@@ -7,7 +7,10 @@ from dotenv import load_dotenv
 # Load .env from same directory as this file
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "dummy_key")
+OPENAI_BASE_URL: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_MODEL_NAME: str = os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo")
+
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
