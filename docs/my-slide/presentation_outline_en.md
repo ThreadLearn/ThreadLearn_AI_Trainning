@@ -218,3 +218,4 @@ Base model Qwen2.5-Coder-1.5B (3GB float16)
 | 11 | Ân | Lessons Learned — 7 errors + fixes |
 | 12 | Ân | Results: Pass Rate table + Real-world benchmark |
 | 13 | Both | Real-world applications + Conclusion |
+ 
