@@ -8,7 +8,7 @@ Strategy pattern: rag_pipeline chỉ gọi analyze_code(), không biết LLM là
 
 from typing import List, Dict, Any
 
-from config import LLM_PROVIDER
+from config import LLM_PROVIDER, OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_NAME, HF_TOKEN
 from schemas import Issue
 
 
@@ -31,10 +31,10 @@ def _openai_analyze(code: str, prompt: str) -> str:
     """
     [AI2-08] Gọi OpenAI GPT-3.5-turbo API.
     """
-    if not OPENAI_API_KEY:
+    if not OPENAI_API_KEY and "api.openai.com" in OPENAI_BASE_URL:
         return "Lỗi: Chưa cấu hình OPENAI_API_KEY trong file .env"
         
-    url = "https://api.openai.com/v1/chat/completions"
+    url = f"{OPENAI_BASE_URL.rstrip('/')}/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
@@ -47,12 +47,16 @@ def _openai_analyze(code: str, prompt: str) -> str:
     )
     
     payload = {
-        "model": "gpt-3.5-turbo",
+        "model": OPENAI_MODEL_NAME,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.2
+        "temperature": 0.2,
+        # Stop generation after the code block closes to save TTFT/decoding time.
+        # Since vLLM is fast, we can safely just stop at standard CoT endings or just rely on its speed.
+        # Adding a fallback stop token just in case:
+        "stop": ["</thought>", "```\n\n"] 
     }
     
     try:
@@ -70,7 +74,6 @@ import json
 import os
 import urllib.request
 import urllib.error
-from config import OPENAI_API_KEY, HF_TOKEN
 from output_parser import parse_model_output
 
 # ---------------------------------------------------------------------------

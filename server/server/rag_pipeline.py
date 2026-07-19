@@ -91,22 +91,18 @@ def run(
     raw_detections = detectRaceConditions(code, language)
     issues = format_report(raw_detections)
     
+    # PONYTAIL: Short-circuit nếu không có lỗi, khỏi gọi LLM
+    if not issues:
+        return [], []
+    
     # 3. LLM Fix
     llm_output = llm_client.get_llm_fix(code, prompt)
     parsed = cleanOutput(llm_output)
     fixed_code = f"```javascript\n{parsed['code']}\n```"
     
     # 4. Merge Fix vào Issues
-    if not issues:
-        issues = [Issue(
-            line_range="all",
-            severity="medium",
-            description=parsed.get("explanation", "Phát hiện mã nguồn chưa tối ưu. Hệ thống AI đã cung cấp mã song song hóa an toàn thay thế."),
-            fix=fixed_code
-        )]
-    else:
-        for iss in issues:
-            iss.fix = fixed_code
+    for iss in issues:
+        iss.fix = fixed_code
 
     docs_used = [
         DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
@@ -135,6 +131,11 @@ def run_streaming(
     emit("step", {"stage": "race_detector", "status": "done",
                   "label": f"Race detector: {len(issues)} pattern(s) found",
                   "found": [i.pattern_id for i in issues if hasattr(i, "pattern_id")]})
+
+    # PONYTAIL: Short-circuit nếu không có lỗi
+    if not issues:
+        emit("step", {"stage": "llm", "status": "done", "label": "Code an toàn, bỏ qua gọi AI để tối ưu tốc độ."})
+        return [], []
 
     # ── Bước 2: AST keyword extraction ──
     emit("step", {"stage": "ast", "status": "running", "label": "Extracting AST keywords…"})
@@ -181,16 +182,8 @@ def run_streaming(
     parsed = cleanOutput(llm_output)
     fixed_code = f"```javascript\n{parsed['code']}\n```"
     
-    if not issues:
-        issues = [Issue(
-            line_range="all",
-            severity="medium",
-            description=parsed.get("explanation", "Phát hiện mã nguồn chưa tối ưu. Hệ thống AI đã cung cấp mã song song hóa an toàn thay thế."),
-            fix=fixed_code
-        )]
-    else:
-        for iss in issues:
-            iss.fix = fixed_code
+    for iss in issues:
+        iss.fix = fixed_code
             
     emit("step", {"stage": "llm", "status": "done",
                   "label": f"Model returned {len(issues)} issue(s)"})
