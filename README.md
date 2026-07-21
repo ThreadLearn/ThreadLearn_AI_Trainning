@@ -703,6 +703,8 @@ Xem chi tiết per-category, per-case tại [`server/tests/real_world/README.md`
 
 > Benchmark này dùng trong giai đoạn phát triển sớm, **không phải kết quả cuối cùng dùng trong paper** (xem 7.1). Giữ lại để đối chiếu lịch sử phát triển và bài học prompt-format-mismatch (mục 8, Lỗi #4).
 
+### Phương pháp đánh giá
+
 Chúng tôi xây dựng **20 test case thủ công** bao gồm 8 loại lỗi concurrency:
 
 | Category | Số lượng | Ví dụ lỗi |

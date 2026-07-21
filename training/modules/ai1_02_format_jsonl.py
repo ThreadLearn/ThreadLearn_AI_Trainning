@@ -11,7 +11,7 @@ import os
 def main():
     parser = argparse.ArgumentParser(description="Format dataset sang JSONL cho Qwen2.5-Coder")
     parser.add_argument("--input", default="raw_dataset.json", help="File JSON đầu vào")
-    parser.add_argument("--output", default="threadlearn_train.jsonl", help="File JSONL đầu ra")
+    parser.add_argument("--output", default="threadlearn_train_v2.jsonl", help="File JSONL đầu ra")
     parser.add_argument("--prompt-prefix", default="Convert to concurrent JavaScript:\n\n", help="Câu lệnh prompt trước input code")
     args = parser.parse_args()
 
@@ -31,10 +31,25 @@ def main():
     if len(valid_data) != len(data):
         print(f"⚠️ Đã loại bỏ {len(data) - len(valid_data)} mẫu không có input/output hợp lệ")
 
-    # Shuffle dataset (Xáo trộn) để model học không bị bias theo thứ tự category
-    random.seed(42) # Cố định seed để dễ tái hiện
+    # ------------------ DOWNSAMPLING VÀ INJECT DATA ------------------
+    # 1. Downsample data cũ xuống 200 mẫu
+    random.seed(42) # Cố định seed
     random.shuffle(valid_data)
-    print("🔀 Đã xáo trộn ngẫu nhiên dữ liệu")
+    valid_data = valid_data[:200]
+    print(f"✂️ Đã downsample giữ lại {len(valid_data)} mẫu cơ bản (giảm overfitting).")
+    
+    # 2. Load edge cases (Zalgo, Double CB, v.v)
+    edge_cases_file = "edge_cases.json"
+    if os.path.exists(edge_cases_file):
+        with open(edge_cases_file, "r", encoding="utf-8") as f:
+            edge_cases = json.load(f)
+        print(f"💉 Đã load {len(edge_cases)} mẫu đặc trị từ {edge_cases_file}")
+        valid_data.extend(edge_cases)
+    
+    # Xáo trộn lại một lần nữa
+    random.shuffle(valid_data)
+    print("🔀 Đã xáo trộn ngẫu nhiên dữ liệu tổng hợp")
+    # ------------------------------------------------------------------
 
     # Format sang JSONL
     out_lines = []
@@ -45,7 +60,7 @@ def main():
         # Định dạng chuẩn SFTTrainer
         jsonl_obj = {
             "prompt": f"{args.prompt_prefix}{inp_code}\n",
-            "completion": f"{out_code}\n"
+            "completion": f"{out_code}\n<|endoftext|>"
         }
         # Hoặc dùng định dạng ChatML (dành cho Qwen Chat, nhưng theo doc yêu cầu prompt-completion):
         # jsonl_obj = {
@@ -83,7 +98,7 @@ def main():
     print(f"[COMPLETION]:\n{first_sample['completion'][:150]}...")
     print("━"*50)
     print("\n🚀 BƯỚC TIẾP THEO: ")
-    print("Bạn có thể đưa file threadlearn_train.jsonl này vào thư mục training của thư viện TRL / SFTTrainer để fine-tune Qwen2.5-Coder.")
+    print("Bạn có thể đưa file threadlearn_train_v2.jsonl này vào thư mục training của thư viện TRL / SFTTrainer để fine-tune Qwen2.5-Coder.")
 
 if __name__ == "__main__":
     main()

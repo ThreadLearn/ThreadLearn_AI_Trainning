@@ -1,0 +1,219 @@
+{
+  "model": "anha12/threadlearn-qwen2.5-coder-1.5b-cot-v2",
+  "pass": 22,
+  "partial": 7,
+  "fail": 1,
+  "score": "25.5/30",
+  "results": [
+    {
+      "id": "rw_01",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "latency_s": 27.86,
+      "response_preview": "fs.exists(filePath, exists => {\n  if (exists) {\n    fs.readFile(filePath, 'utf8', callback);\n  }\n});\nfs.exists(filePath, exists => {\n  if (exists) {\n    fs.readFile(filePath, 'utf8', callback);\n  } else {\n    callback(null, false);\n  }\n});\nfs.exists(filePath, exists => {\n  if (!exists) return callback(null, false);\n  fs.readFile(filePath, 'utf8', callback);\n});\nfunction existsAndReadFile(filePath,"
+    },
+    {
+      "id": "rw_02",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 26.56,
+      "response_preview": "function query(sql, cb) {\n  connection.connect(function(err) {\n    if (err) return cb(err);\n    connection.query(sql, function(err, results) {\n      cb(err, results);\n    });\n  });\n}\nfunction query(sql, cb) {\n  connection.connect(function(err) {\n    if (err) return cb(err);\n    connection.query(sql, function(err, results) {\n      cb(err, results);\n    });\n  });\n}\nasync function query(sql) {\n  try "
+    },
+    {
+      "id": "rw_03",
+      "category": "Zalgo",
+      "verdict": "pass",
+      "latency_s": 26.7,
+      "response_preview": "function getData(key) {\n  return new Promise((resolve, reject) => {\n    if (cache[key]) {\n      resolve(cache[key]);\n    } else {\n      fetchFromDB(key, (err, data) => {\n        if (err) {\n          reject(err);\n        } else {\n          cache[key] = data;\n          resolve(data);\n        }\n      });\n    })\n  });\n}\nasync function getData(key) {\n  if (cache[key]) {\n    return cache[key];\n  }\n  ret"
+    },
+    {
+      "id": "rw_04",
+      "category": "Event Loop Blocking",
+      "verdict": "pass",
+      "latency_s": 26.44,
+      "response_preview": "app.use(function(req, res, next) {\n  Promise.all(req.body.items.map(heavyTransform)).then(res.json.bind(res));\n});\napp.use(function(req, res, next) {\n  heavyTransformAll(req.body.items).then(res.json.bind(res));\n});\nfunction heavyTransform(item) {\n  return new Promise((resolve, reject) => {\n    setTimeout(() => resolve(item * 2), 100);\n  });\n}\nasync function heavyTransformAll(items) {\n  return Pro"
+    },
+    {
+      "id": "rw_05",
+      "category": "Context Loss",
+      "verdict": "pass",
+      "latency_s": 26.76,
+      "response_preview": "class UserController {\n  constructor(db) { this.db = db; }\n  async getUser(req, res) {\n    const user = await this.db.find(req.params.id);\n    res.json(user);\n  }\n}\nconst ctrl = new UserController(new Database());\napp.get('/user/:id', ctrl.getUser);\nclass UserController {\n  constructor(db) { this.db = db; }\n  async getUser(req, res) {\n    const user = await this.db.find(req.params.id);\n    res.jso"
+    },
+    {
+      "id": "rw_06",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 27.07,
+      "response_preview": "const pool = new Pool();\npool.connect(async (err, client, done) => {\n  await client.query('BEGIN');\n  try {\n    const result = await client.query(sql);\n    await client.query('COMMIT');\n    return result;\n  } catch (err) {\n    await client.query('ROLLBACK');\n    throw err;\n  }\n});\nconst pool = new Pool();\nasync function runQuery() {\n  return new Promise((resolve, reject) => {\n    pool.connect((err"
+    },
+    {
+      "id": "rw_07",
+      "category": "Stream Leak",
+      "verdict": "pass",
+      "latency_s": 26.51,
+      "response_preview": "function serveFile(req, res) {\n  const file = req.params.file;\n  fs.createReadStream(file).pipe(zlib.createGzip()).pipe(res);\n}\nfunction serveFile(req, res) {\n  const file = req.params.file;\n  fs.createReadStream(file).pipe(zlib.createGzip()).pipe(res);\n}\nfunction serveFile(req, res) {\n  const file = req.params.file;\n  fs.createReadStream(file).pipe(zlib.createGzip()).pipe(res);\n}\nfunction serveFi"
+    },
+    {
+      "id": "rw_08",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "latency_s": 26.8,
+      "response_preview": "app.post('/login', passport.authenticate('local'), function(req, res) {\n  res.redirect('/');\n});\napp.get('/logout', function(req, res) {\n  req.logout();\n  res.redirect('/');\n});\nfunction createRouter(passport) {\n  const router = express.Router();\n  router.post('/login', passport.authenticate('local'));\n  router.get('/logout', passport.authenticate('local', { failureRedirect: '/login' }), function("
+    },
+    {
+      "id": "rw_09",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 26.86,
+      "response_preview": "co(function*() {\n  const conn = yield db.connect();\n  const result = yield conn.query(sql);\n  return result;\n}).then(res.json.bind(res));\nco(function*() {\n  const conn = yield db.connect();\n  const result = yield conn.query(sql);\n  return result;\n}).then(res.json.bind(res));\nasync function main() {\n  try {\n    const conn = await db.connect();\n    const result = await conn.query(sql);\n    res.json("
+    },
+    {
+      "id": "rw_10",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 26.57,
+      "response_preview": "const readStream = fs.createReadStream('huge-file.csv');\nlet buffer = '';\nreadStream.on('data', function(chunk) {\n  buffer += chunk;\n  while (buffer.length >= 1024) {\n    const line = buffer.slice(0, 1024).toString();\n    buffer = buffer.slice(1024);\n    try {\n      const parsed = parseCSVLine(line);\n      writableDB.write(parsed);\n    } catch (err) {\n      console.error(err);\n    }\n  }\n});\nconst "
+    },
+    {
+      "id": "rw_11",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 26.72,
+      "response_preview": "function getWithTimeout(key, timeout, cb) {\n  const timer = setTimeout(function() {\n    cb(new Error('timeout'));\n  }, timeout);\n  client.get(key, function(err, data) {\n    clearTimeout(timer);\n    cb(err, data);\n  });\n}\nfunction getWithTimeout(key, timeout, cb) {\n  const timer = setTimeout(function() {\n    cb(new Error('timeout'));\n  }, timeout);\n  client.get(key, function(err, data) {\n    if (er"
+    },
+    {
+      "id": "rw_12",
+      "category": "Sequential Awaits",
+      "verdict": "partial",
+      "latency_s": 26.48,
+      "response_preview": "async function getDashboard(userId) {\n  const [user, orders, notifications] = await Promise.all([db.users.findById(userId), db.orders.findByUser(userId), db.notifications.findByUser(userId)]);\n  return { user, orders, notifications };\n}\nasync function getDashboard(userId) {\n  const [user, orders, notifications] = await Promise.all([db.users.findById(userId), db.orders.findByUser(userId), db.notifi"
+    },
+    {
+      "id": "rw_13",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "latency_s": 26.81,
+      "response_preview": "queue.process(function(job, done) {\n  if (job.data.status === 'pending') {\n    job.data.status = 'processing';\n    queue.defer(processJob.bind(null, job.data), done);\n  } else {\n    done();\n  }\n});\nfunction processJob(data, done) {\n  // Perform the job\n  setTimeout(function() {\n    data.result = true;\n    done(null, data);\n  }, 1000);\n}\nqueue.process(function(job, done) {\n  if (job.data.status ==="
+    },
+    {
+      "id": "rw_14",
+      "category": "Callback Hell",
+      "verdict": "pass",
+      "latency_s": 26.54,
+      "response_preview": "fs.readFile(configPath, function(err, config) {\n  if (err) return callback(err);\n  db.connect(JSON.parse(config), function(err, conn) {\n    if (err) return callback(err);\n    conn.query(sql, function(err, rows) {\n      if (err) return callback(err);\n      rows.forEach(function(row) {\n        transform(row, function(err, result) {\n          results.push(result);\n        });\n      });\n      callback"
+    },
+    {
+      "id": "rw_15",
+      "category": "Resource Exhaustion",
+      "verdict": "partial",
+      "latency_s": 26.97,
+      "response_preview": "async function notifyAllUsers(users) {\n  return Promise.all(users.map(user => axios.post('/notify', { userId: user.id })));\n}\nasync function notifyAllUsers(users) {\n  return Promise.all(users.map(user => axios.post('/notify', { userId: user.id })));\n}\nasync function notifyAllUsers(users) {\n  return Promise.all(users.map(user => axios.post('/notify', { userId: user.id })));\n}\nasync function notifyA"
+    },
+    {
+      "id": "rw_16",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 26.78,
+      "response_preview": "app.post('/register', function(req, res) {\n  const hash = crypto.pbkdf2Sync(\n    req.body.password,\n    req.body.username,\n    100000, 64, 'sha512'\n  );\n  db.users.create({ hash }, function(err) {\n    if (err) return next(err);\n    res.json({ ok: true });\n  });\n});\napp.post('/register', function*() {\n  const hash = crypto.pbkdf2Sync(\n    this.request.body.password,\n    this.request.body.username,\n"
+    },
+    {
+      "id": "rw_17",
+      "category": "Zalgo",
+      "verdict": "partial",
+      "latency_s": 26.6,
+      "response_preview": "function processItems(items, callback) {\n  if (items.length === 0) { return callback(null, []); }\n  const item = items[0];\n  if (computedCache[item]) {\n    processItems(items.slice(1), function(err, rest) {\n      callback(null, [computedCache[item]].concat(rest));\n    });\n  } else {\n    asyncCompute(item, function(err, result) {\n      computedCache[item] = result;\n      processItems(items.slice(1)"
+    },
+    {
+      "id": "rw_18",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 26.74,
+      "response_preview": "app.get('/user/:id', async function(req, res) {\n  try {\n    const user = await db.findUser(req.params.id);\n    res.json(user);\n  } catch (err) {\n    next(err);\n  }\n});\napp.get('/user/:id', async function(req, res, next) {\n  try {\n    const user = await db.findUser(req.params.id);\n    res.json(user);\n  } catch (err) {\n    next(err);\n  }\n});\nfunction errorHandler(err, req, res, next) {\n  console.err"
+    },
+    {
+      "id": "rw_19",
+      "category": "Race Condition",
+      "verdict": "fail",
+      "latency_s": 27.0,
+      "response_preview": "function createFileIfNotExists(filePath, content, callback) {\n  fs.access(filePath, fs.constants.F_OK, function(err) {\n    if (err) {\n      fs.writeFile(filePath, content, err => {\n        if (!err) {\n          callback(null);\n        } else {\n          console.error('Error creating file:', err);\n          callback(err);\n        }\n      });\n    } else {\n      callback(null);\n    }\n  });\n}\nfunction"
+    },
+    {
+      "id": "rw_20",
+      "category": "Context Loss",
+      "verdict": "partial",
+      "latency_s": 26.83,
+      "response_preview": "class DataPoller {\n  constructor(interval) {\n    this.data = [];\n    this.interval = interval;\n  }\n  start() {\n    setTimeout(() => {\n      this.data.push(Date.now());\n      this.start();\n    }, this.interval);\n  }\n}\nclass DataPoller {\n  constructor(interval) {\n    this.data = [];\n    this.interval = interval;\n  }\n  start() {\n    setTimeout(() => {\n      this.data.push(Date.now());\n      this.star"
+    },
+    {
+      "id": "rw_21",
+      "category": "Sequential Awaits",
+      "verdict": "pass",
+      "latency_s": 26.5,
+      "response_preview": "app.post('/logout', (req, res) => {\n  req.logout((err) => {\n    if (err) return next(err);\n    req.session.save(() => {\n      res.redirect('/');\n    });\n  });\n});\napp.post('/logout', (req, res) => {\n  req.logout((err) => {\n    if (err) return next(err);\n    req.session.save(() => {\n      res.redirect('/');\n    });\n  });\n});\napp.post('/logout', (req, res) => {\n  req.logout((err) => {\n    if (err) r"
+    },
+    {
+      "id": "rw_22",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 26.54,
+      "response_preview": "async.parallel([\n  function(callback) {\n    db.query('SELECT 1', function(err, results) {\n      if (err) return callback(err);\n      callback(null, results[0].value);\n    });\n  },\n  function(callback) {\n    callback(null, 'done');\n  }\n], callback);\nasync.series([\n  function(next) {\n    db.query('SELECT 1', function(err, result) {\n      if (err) return next(err);\n      next(null, result[0].value);\n"
+    },
+    {
+      "id": "rw_23",
+      "category": "Resource Exhaustion",
+      "verdict": "pass",
+      "latency_s": 26.5,
+      "response_preview": "const txns = Array(50).fill(null).map(() => {\n  return sequelize.transaction(async t => {\n    return await User.create({\n      name: 'test'\n    }, {\n      transaction: t\n    });\n  });\n});\nawait Promise.all(txns);\nconst txns = Array(50).fill(null).map(() => {\n  return sequelize.transaction(async t => {\n    return await User.create({\n      name: 'test'\n    }, {\n      transaction: t\n    });\n  });\n});"
+    },
+    {
+      "id": "rw_24",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 26.47,
+      "response_preview": "const conn = mongoose.createConnection('mongodb://localhost:27017/db');\nconn.on('error', function(err) {\n  if (err.code === 'ETIMEDOUT') {\n    console.error('connection error:', err);\n  }\n});\nconst conn = mongoose.createConnection('mongodb://localhost:27017/db');\nconn.on('error', function(err) {\n  if (err.name === 'MongoError' && err.code === 36) {\n    console.error('connection error:', err);\n  }\n"
+    },
+    {
+      "id": "rw_25",
+      "category": "Race Condition",
+      "verdict": "pass",
+      "latency_s": 26.35,
+      "response_preview": "const subscriptions = ['ch1', 'ch2', 'ch3'];\nPromise.all(subscriptions.map(ch => client.sUnsubscribe(ch)));\nconst subscriptions = ['ch1', 'ch2', 'ch3'];\nPromise.all(subscriptions.map(ch => client.sUnsubscribe(ch))).then(() => {\n  console.log('done');\n});\nconst subscriptions = ['ch1', 'ch2', 'ch3'];\nPromise.all(subscriptions.map(ch => client.sUnsubscribe(ch))).then(() => {\n  console.log('done');\n})"
+    },
+    {
+      "id": "rw_26",
+      "category": "Event Loop Blocking",
+      "verdict": "partial",
+      "latency_s": 26.57,
+      "response_preview": "async function main() {\n  const [user1, user2, user3] = await Promise.all([knex.transaction(t => t('users').forUpdate().select()), knex.transaction(t => t('users').forUpdate().select()), knex.transaction(t => t('users').forUpdate().select())]);\n}\nmain();\nawait Promise.all([knex.transaction(t => t('users').forUpdate().select()), knex.transaction(t => t('users').forUpdate().select()), knex.transacti"
+    },
+    {
+      "id": "rw_27",
+      "category": "Sequential Awaits",
+      "verdict": "pass",
+      "latency_s": 26.58,
+      "response_preview": "app.use(function(req, res, next) {\n  if (!req.session.userId) {\n    return res.redirect('/login');\n  }\n  next();\n});\napp.get('/', function(req, res) {\n  res.send('Hello World!');\n});\napp.listen(3000);\nfunction createApp() {\n  const app = express();\n  app.use(session({\n    secret: 'keyboard cat',\n    resave: false,\n    saveUninitialized: true\n  }));\n  app.use(function(req, res, next) {\n    if (!req"
+    },
+    {
+      "id": "rw_28",
+      "category": "Unhandled Rejection",
+      "verdict": "partial",
+      "latency_s": 26.5,
+      "response_preview": "const User = new Schema({\n  name: String\n});\nconst UserModel = mongoose.model('User', User);\nUserModel.insertMany([{ name: 'Alice' }, { name: '' }], function(err, docs) {\n  if (err) return console.log(err);\n  console.log(docs);\n});\nUser.insertMany([\n  { name: 'Alice' },\n  { name: '' }\n], function(err, docs) {\n  if (err) return console.log(err);\n  console.log(docs);\n});\nconst User = new Schema({\n  "
+    },
+    {
+      "id": "rw_29",
+      "category": "Double Callback",
+      "verdict": "pass",
+      "latency_s": 26.3,
+      "response_preview": "async function transfer(from, to, amount) {\n  return Promise.all([client.decrby(from, amount), client.incrby(to, amount)]);\n}\nasync function transfer(from, to, amount) {\n  return Promise.all([client.decrby(from, amount), client.incrby(to, amount)]);\n}\nasync function transfer(from, to, amount) {\n  return Promise.all([client.decrby(from, amount), client.incrby(to, amount)]);\n}\nasync function transfe"
+    },
+    {
+      "id": "rw_30",
+      "category": "Unhandled Rejection",
+      "verdict": "pass",
+      "latency_s": 26.78,
+      "response_preview": "app.get('/data/:id', async function(req, res, next) {\n  try {\n    const data = await fetchData(req.params.id);\n    req.data = data;\n    next();\n  } catch (err) {\n    next(err);\n  }\n});\n\napp.post('/data', async function(req, res, next) {\n  try {\n    const result = await processData(req.data);\n    res.json(result);\n  } catch (err) {\n    next(err);\n  }\n});\napp.use(async function(req, res, next) {\n  i"
+    }
+  ]
+}
