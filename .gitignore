@@ -17,6 +17,10 @@ ai1/model/*.gguf
 *.safetensors
 *.bin
 *.gguf
+models/
+*/tokenizer.json
+*/merges.txt
+*/vocab.json
 
 # Environment
 .env
