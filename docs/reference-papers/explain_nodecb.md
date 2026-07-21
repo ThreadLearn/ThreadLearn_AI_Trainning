@@ -1039,9 +1039,13 @@ Trung bình >> Median → nhiều bug cực kỳ khó sửa, kéo trung bình l�
 
 ## 9. Kết Nối Với race_detector.py Của ThreadLearn
 
+> Con số cập nhật (verified against `server/server/race_detector.py`): **14 JS pattern + 4 Python pattern = 18 pattern tổng** trong production code. Paper (ICTA 2026 submission) trình bày **5 pattern chính** làm trọng tâm — closure_loop_var, shared_var_settimeout, promise_no_await, concurrent_write_array, counter_no_atomic — vì đây là 5 pattern có mapping trực tiếp và rõ ràng nhất với benchmark categories (xem Table 2 trong paper). 9 JS pattern còn lại hỗ trợ các category khác ở mức Partial/Indirect.
+
 ```
 NodeCB Findings          →    race_detector.py Implementation
 ─────────────────────────────────────────────────────────────
+Paper's 5 core patterns (Direct detector support, Table 2):
+
 closure_loop_var          ←   Bug: var i trong loop + setTimeout
                               Fix: dùng let thay var
 
@@ -1057,24 +1061,29 @@ counter_no_atomic         ←   Bug: counter++ sau await
 concurrent_write_array    ←   Bug: push vào array trong async callbacks
                               Fix: dùng array local hoặc Promise.all + merge
 
-global_var_thread         ←   Bug: Python global var trong Thread
+Additional JS patterns in production (9 more — Partial/heuristic support):
+
+unhandled_rejection, double_callback, zalgo, context_loss_this,
+callback_hell, resource_exhaustion, sequential_awaits, buffer_leak,
+sync_io_blocking
+
+Python patterns (4 — separate detector path, not used in JS benchmark):
+
+global_var_thread          ←   Bug: Python global var trong Thread
                               Fix: dùng threading.Lock()
 
-shared_list_no_lock       ←   Bug: Python list.append trong thread
+shared_list_no_lock        ←   Bug: Python list.append trong thread
                               Fix: với Lock hoặc queue.Queue
 
-thread_read_write_race    ←   Bug: read+write shared var trong thread
-                              Fix: với Lock
-
-missing_join              ←   Bug: Python thread không có join()
+missing_join                ←   Bug: Python thread không có join()
                               Fix: thêm thread.join() trước dùng result
 
-singleton_lazy_init       ←   Bug: singleton pattern không thread-safe
+singleton_lazy_init         ←   Bug: singleton pattern không thread-safe
                               Fix: double-check locking
 ```
 
 **Gaps hiện tại của race_detector.py** (theo NodeCB):
-1. **Order violation** còn thiếu — chỉ có `promise_no_await`, chưa cover case gọi async function không await rồi dùng kết quả
+1. **Order violation** — `promise_no_await` cover một phần, nhưng chưa cover đầy đủ case gọi async function không await rồi dùng kết quả
 2. **Database race** — không detect pattern read-then-write với DB (findOne → save)
 3. **API misuse** — không detect khi developer dùng async API nhưng không handle correctly
 

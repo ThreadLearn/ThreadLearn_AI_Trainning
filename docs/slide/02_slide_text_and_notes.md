@@ -56,7 +56,7 @@ NodeCB — Wang et al., ASE 2017
 ```
 
 **Nói (VN):**
-Đây là nghiên cứu thực nghiệm đầu tiên và toàn diện nhất về lỗi concurrency trong Node.js, thu thập 57 lỗi thật từ 53 dự án mã nguồn mở trên GitHub. Kết quả cho thấy 3 loại lỗi chính: vi phạm tính nguyên tử chiếm 65% — tức là chuỗi đọc-sửa-ghi bị một callback khác chen vào giữa; vi phạm thứ tự chiếm 30% — code giả định việc A xong trước việc B nhưng không có gì đảm bảo điều đó; và starvation chỉ chiếm 5%. Đáng chú ý là không hề có deadlock, khác hẳn với hệ đa luồng truyền thống. Về nguyên nhân, gần một nửa số lỗi — 49% — đến từ việc lập trình viên hiểu sai cách hoạt động của API, tưởng nó đồng bộ nhưng thực ra là bất đồng bộ. 93% số lỗi gây hậu quả nghiêm trọng như crash, sai dữ liệu. Và điều quan trọng nhất cho hướng đi của nhóm: 77% số lỗi này KHÔNG thể sửa bằng cách thêm khóa đồng bộ như trong Java hay C++, mà phải sửa bằng cách thay đổi logic. Ngoài ra 40% lỗi race xảy ra trên database và file, không chỉ trên biến trong bộ nhớ — điều mà các công cụ phát hiện hiện tại thường bỏ sót. Đây chính là cơ sở để nhóm xây dựng 10 pattern phát hiện lỗi trong race_detector.py.
+Đây là nghiên cứu thực nghiệm đầu tiên và toàn diện nhất về lỗi concurrency trong Node.js, thu thập 57 lỗi thật từ 53 dự án mã nguồn mở trên GitHub. Kết quả cho thấy 3 loại lỗi chính: vi phạm tính nguyên tử chiếm 65% — tức là chuỗi đọc-sửa-ghi bị một callback khác chen vào giữa; vi phạm thứ tự chiếm 30% — code giả định việc A xong trước việc B nhưng không có gì đảm bảo điều đó; và starvation chỉ chiếm 5%. Đáng chú ý là không hề có deadlock, khác hẳn với hệ đa luồng truyền thống. Về nguyên nhân, gần một nửa số lỗi — 49% — đến từ việc lập trình viên hiểu sai cách hoạt động của API, tưởng nó đồng bộ nhưng thực ra là bất đồng bộ. 93% số lỗi gây hậu quả nghiêm trọng như crash, sai dữ liệu. Và điều quan trọng nhất cho hướng đi của nhóm: 77% số lỗi này KHÔNG thể sửa bằng cách thêm khóa đồng bộ như trong Java hay C++, mà phải sửa bằng cách thay đổi logic. Ngoài ra 40% lỗi race xảy ra trên database và file, không chỉ trên biến trong bộ nhớ — điều mà các công cụ phát hiện hiện tại thường bỏ sót. Đây chính là cơ sở để nhóm xây dựng bộ pattern phát hiện lỗi trong race_detector.py (14 JS pattern trong production; paper trình bày 5 pattern chính).
 
 ---
 
@@ -108,7 +108,7 @@ So sánh hai hướng nghiên cứu nền tảng cho thấy khoảng trống rõ
 ```
 ThreadLearn Contributions
 
-- 10-pattern static race detector for JavaScript, built from NodeCB taxonomy
+- Static race detector for JavaScript (5 core patterns highlighted in the paper; 14 patterns in production code), built from NodeCB taxonomy
 - Fine-tuned Qwen2.5-Coder-1.5B (QLoRA) — deployable on a single consumer GPU
 - RAG pipeline: BM25 + 2,050-document JS concurrency knowledge base
 - Per-issue LLM fixing — accurate even when multiple bugs exist in one file
@@ -116,7 +116,7 @@ ThreadLearn Contributions
 ```
 
 **Nói (VN):**
-Đóng góp của nhóm gồm 5 điểm chính. Thứ nhất, bộ 10 pattern phát hiện lỗi race condition tĩnh cho JavaScript, được xây dựng trực tiếp từ phân loại lỗi trong nghiên cứu NodeCB. Thứ hai, model Qwen2.5-Coder 1.5B được fine-tune bằng kỹ thuật QLoRA, có thể triển khai trên một GPU phổ thông thay vì cần cụm GPU lớn. Thứ ba, pipeline RAG kết hợp BM25 tìm kiếm trong kho tri thức 2050 tài liệu về các pattern concurrency trong JavaScript. Thứ tư, cơ chế sửa lỗi theo từng issue riêng biệt — giải quyết vấn đề model nhỏ không đủ khả năng sửa chính xác nhiều lỗi cùng lúc trong một file. Cuối cùng, hệ thống đã được đánh giá trên 30 lỗi thực tế lấy từ các package npm production, không chỉ là benchmark tổng hợp.
+Đóng góp của nhóm gồm 5 điểm chính. Thứ nhất, bộ pattern phát hiện lỗi race condition tĩnh cho JavaScript (paper trình bày 5 pattern chính; production code có 14 pattern), được xây dựng trực tiếp từ phân loại lỗi trong nghiên cứu NodeCB. Thứ hai, model Qwen2.5-Coder 1.5B được fine-tune bằng kỹ thuật QLoRA, có thể triển khai trên một GPU phổ thông thay vì cần cụm GPU lớn. Thứ ba, pipeline RAG kết hợp BM25 tìm kiếm trong kho tri thức 2050 tài liệu về các pattern concurrency trong JavaScript. Thứ tư, cơ chế sửa lỗi theo từng issue riêng biệt — giải quyết vấn đề model nhỏ không đủ khả năng sửa chính xác nhiều lỗi cùng lúc trong một file. Cuối cùng, hệ thống đã được đánh giá trên 30 lỗi thực tế lấy từ các package npm production, không chỉ là benchmark tổng hợp.
 
 ---
 
@@ -144,7 +144,7 @@ Output: Issue list (severity, line, explanation, fixed code) + references
 ```
 
 **Nói (VN):**
-Đây là toàn bộ pipeline xử lý một lần phân tích, từ đầu vào đến đầu ra. Đầu vào là một đoạn code JavaScript người dùng dán vào. Bước một, Race Detector quét code bằng 10 pattern regex tĩnh — không cần biên dịch hay chạy code, hoạt động được cả với code chưa hoàn chỉnh. Bước hai, hệ thống trích xuất từ khóa mô tả lỗi theo thứ tự ưu tiên: ưu tiên các pattern ngữ nghĩa có sẵn trước, nếu không khớp thì dùng AST làm dự phòng, cuối cùng mới dùng tokenize thông thường. Bước ba, dùng BM25 tìm kiếm trong kho tri thức 2050 tài liệu để lấy ra các đoạn giải thích và ví dụ sửa lỗi liên quan nhất. Bước bốn, ghép code lỗi, issue phát hiện được, và tài liệu tìm được thành một prompt hoàn chỉnh — đây chính là kỹ thuật RAG. Bước năm, model Qwen2.5-Coder đã fine-tune sẽ sinh fix cho từng issue riêng biệt, không gộp chung một lần cho cả file, để đảm bảo độ chính xác. Bước sáu, kết quả được trả về dần theo từng issue qua streaming, người dùng không phải chờ toàn bộ quá trình xong mới thấy kết quả. Đầu ra cuối cùng là danh sách các issue kèm mức độ nghiêm trọng, vị trí dòng code, giải thích, code đã sửa, và tài liệu tham khảo.
+Đây là toàn bộ pipeline xử lý một lần phân tích, từ đầu vào đến đầu ra. Đầu vào là một đoạn code JavaScript người dùng dán vào. Bước một, Race Detector quét code bằng bộ pattern regex tĩnh — không cần biên dịch hay chạy code, hoạt động được cả với code chưa hoàn chỉnh. Bước hai, hệ thống trích xuất từ khóa mô tả lỗi theo thứ tự ưu tiên: ưu tiên các pattern ngữ nghĩa có sẵn trước, nếu không khớp thì dùng AST làm dự phòng, cuối cùng mới dùng tokenize thông thường. Bước ba, dùng BM25 tìm kiếm trong kho tri thức 2050 tài liệu để lấy ra các đoạn giải thích và ví dụ sửa lỗi liên quan nhất. Bước bốn, ghép code lỗi, issue phát hiện được, và tài liệu tìm được thành một prompt hoàn chỉnh — đây chính là kỹ thuật RAG. Bước năm, model Qwen2.5-Coder đã fine-tune sẽ sinh fix cho từng issue riêng biệt, không gộp chung một lần cho cả file, để đảm bảo độ chính xác. Bước sáu, kết quả được trả về dần theo từng issue qua streaming, người dùng không phải chờ toàn bộ quá trình xong mới thấy kết quả. Đầu ra cuối cùng là danh sách các issue kèm mức độ nghiêm trọng, vị trí dòng code, giải thích, code đã sửa, và tài liệu tham khảo.
 
 ---
 

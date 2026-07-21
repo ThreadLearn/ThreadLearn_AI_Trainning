@@ -1,5 +1,7 @@
 # AI2 Progress Tracker — Trung (AI Engineer 2)
 
+> ⚠️ **SNAPSHOT LỊCH SỬ — số liệu tại thời điểm 2026-06-08, đã lỗi thời.** Knowledge base đã scale từ 250 → 2,050 docs (`server/knowledge-base/augment_dataset.py`), race detector rút gọn từ 10 pattern (5 JS + 5 Python) xuống còn **5 pattern JS-only** trong hệ thống cuối cùng. Số liệu hiện hành: [`docs/RESEARCH_LOG.md`](RESEARCH_LOG.md), [`server/knowledge-base/KNOWLEDGE_BASE_OVERVIEW.md`](../server/knowledge-base/KNOWLEDGE_BASE_OVERVIEW.md).
+
 **Last updated:** 2026-06-08
 **Engineer:** Trung (letritrung2605@gmail.com)
 **Role:** AI Engineer 2 — Knowledge Base, BM25 Retrieval, Race Condition Detection, FastAPI Server, RAG Pipeline

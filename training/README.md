@@ -4,7 +4,7 @@ Thư mục này chứa toàn bộ pipeline thu thập dữ liệu, tiền xử l
 
 ## 1. Mục tiêu
 - Tạo ra một mô hình nhỏ gọn (1.5B) nhưng có khả năng phân tích ngữ cảnh của JavaScript/Node.js tương đương với GPT-3.5 trong khía cạnh bất đồng bộ.
-- Nhận diện và sửa các lỗi: Race Condition, Event Loop Blocking, Callback Hell, Promise Floating, Memory Leak.
+- Nhận diện và sửa các lỗi concurrency JS qua 5 pattern detector (`race_detector.py`): `closure_loop_var`, `shared_var_settimeout`, `promise_no_await`, `concurrent_write_array`, `counter_no_atomic`. Benchmark cuối cùng bao phủ 10 category bug thực tế (Race Condition, Unhandled Rejection, Double Callback, Resource Exhaustion, Event Loop Blocking, Sequential Awaits, Zalgo, Context Loss, Stream Leak, Callback Hell).
 
 ## 2. Kiến trúc & Cấu hình Huấn luyện
 
@@ -25,22 +25,27 @@ Thư mục này chứa toàn bộ pipeline thu thập dữ liệu, tiền xử l
 
 ## 3. Quản lý Dữ liệu (Dataset)
 - **Nguồn:** BugsJS và các bài test tổng hợp (Synthetic).
-- **Quy mô:** ~700-1000 cặp `(input_code, target_code)`.
+- **Quy mô:** 892 cặp `(code, detector_output, reasoning_trace, fix)` — 332 mẫu synthetic viết tay (37.2%) + 560 mẫu generated qua template engine (62.8%, 18 hàm generator × 40 domain slot).
 - **Pipeline Xử lý:**
   - Thu thập code thô từ Git/Issues.
-  - Chạy qua AST Parser (sử dụng `@babel/parser`) để loại bỏ comment, chuẩn hóa format (xoá bỏ các yếu tố gây nhiễu).
+  - Chạy qua AST Parser (esprima, JS) để loại bỏ comment, chuẩn hóa format (xoá bỏ các yếu tố gây nhiễu).
   - Biên dịch thành định dạng JSONL chuyên dụng cho chuẩn SFTTrainer.
 
+> Số liệu chi tiết + nguồn gốc dataset: xem [`docs/RESEARCH_LOG.md`](../docs/RESEARCH_LOG.md) và [`docs/my-research/ThreadLearn_ICTA_WordReady.md`](../docs/my-research/ThreadLearn_ICTA_WordReady.md).
+
 ## 4. Kết quả Đánh giá
-Mô hình đã được thử nghiệm trên 20 test cases khét tiếng nhất của JS. 
-- **Tỉ lệ Pass:** 80-90% (18/20).
-- **Thành tựu:**
+
+> ⚠️ **Con số "80-90% (18/20)" trong các bản báo cáo cũ KHÔNG có cơ sở thực tế** — nó bị suy ra sai từ unit test dùng mock LLM (`LLM_PROVIDER=mock`), không phải inference thật. Chi tiết lỗi này ở [`README.md`](../README.md#lỗi-5-con-số-1820-90-là-không-có-cơ-sở-thực-tế) mục 8, Lỗi #5.
+
+Kết quả thật, đo bằng inference thật trên model đã merge:
+
+- **Benchmark chính thức — 30-case real-world** (bug thật từ production npm packages): ThreadLearn + pipeline đạt **73.3% (22.0/30)**, vượt GPT-3.5-turbo + cùng pipeline (65.0%). Chi tiết: [`server/tests/real_world/README.md`](../server/tests/real_world/README.md).
+- **Benchmark 20-case synthetic** (giai đoạn phát triển sớm hơn): ThreadLearn RAW 70% (14/20), + RAG 75% (15/20).
+- **Thành tựu quan sát được:**
   - Biết dùng `Promise.all` để tăng tốc I/O.
   - Biết dùng "Batching/Chunking" để chống nghẽn mạng và rò rỉ RAM khi tải hàng vạn URLs.
   - Chống Context Loss bằng Arrow Functions.
   - Tự thêm `.catch(next)` trong môi trường Express.js.
-
-*(Chi tiết xem thêm tại `docs/EVALUATION_REPORT.md`)*
 
 ## 5. Tích hợp Backend
 Bộ não của AI1 đã được "ráp" thành công vào Backend thông qua Hugging Face Inference API. 

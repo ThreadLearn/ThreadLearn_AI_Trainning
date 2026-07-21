@@ -1,9 +1,11 @@
 # ThreadLearn: Research Paper Outline (English)
 
-**One-sentence contribution:**
+> ⚠️ **SUPERSEDED — early draft, kept for history only.** This outline predates the final system: it describes a JS+Python 10-pattern detector, a 20-case benchmark, and targets ASPLOS/ICLR at 11–12 pages. The actual submitted paper is JS-only (5-pattern detector), evaluated on the 30-case real-world benchmark (73.3% score), submitted to **ICTA 2026 at 8 pages**. For current, accurate content see [`docs/my-research/ThreadLearn_ICTA_WordReady.md`](../ThreadLearn_ICTA_WordReady.md) and [`docs/RESEARCH_LOG.md`](../../RESEARCH_LOG.md).
+
+**One-sentence contribution (ORIGINAL DRAFT — see note above):**
 > ThreadLearn combines a 5-pattern static race detector with a Hindsight CoT fine-tuned Qwen2.5-Coder-1.5B model and BM25 RAG pipeline to fix JavaScript concurrency bugs, achieving 75% pass rate (15/20) on a 20-case benchmark — +35 pp over the untuned base model (40%) and +45 pp over GPT-3.5-turbo zero-shot (30%).
 
-**Target venue:** ASPLOS 2027 or ICLR 2026 — 11–12 pages
+**Target venue (ORIGINAL DRAFT):** ASPLOS 2027 or ICLR 2026 — 11–12 pages
 
 ---
 
