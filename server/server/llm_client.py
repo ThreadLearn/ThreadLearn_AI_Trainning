@@ -183,6 +183,25 @@ _local_model = None
 _local_tokenizer = None
 
 
+def _resolve_local_model_source() -> str:
+    """
+    Prefer local weights under models/merged if present; else HF Hub id.
+    Repo layout: server/server/llm_client.py -> ../../models/merged
+    """
+    local_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "models", "merged")
+    )
+    weight_names = (
+        "model.safetensors",
+        "pytorch_model.bin",
+        "model.safetensors.index.json",
+        "pytorch_model.bin.index.json",
+    )
+    if any(os.path.isfile(os.path.join(local_dir, name)) for name in weight_names):
+        return local_dir
+    return "anha12/threadlearn-qwen2.5-coder-1.5b-merged"
+
+
 def _load_local_model():
     global _local_model, _local_tokenizer
     if _local_model is not None:
@@ -191,14 +210,19 @@ def _load_local_model():
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    model_id = "anha12/threadlearn-qwen2.5-coder-1.5b-merged"
+    model_id = _resolve_local_model_source()
+    token = HF_TOKEN or None
     print(f"[local_gpu] Loading {model_id} ...")
-    _local_tokenizer = AutoTokenizer.from_pretrained(model_id)
+    print(f"[local_gpu] CUDA available={torch.cuda.is_available()}")
+    _local_tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
     _local_model = AutoModelForCausalLM.from_pretrained(
         model_id,
+        token=token,
         device_map="auto" if torch.cuda.is_available() else None,
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
     )
+    if not torch.cuda.is_available():
+        _local_model = _local_model.to("cpu")
     print("[local_gpu] Model loaded.")
     return _local_model, _local_tokenizer
 
