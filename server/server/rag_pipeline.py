@@ -11,7 +11,7 @@ from typing import List, TYPE_CHECKING
 from bm25_module import tokenize
 from schemas import Issue, DocUsed
 import llm_client
-from race_detector import detectRaceConditions
+from race_detector import detectRaceConditions, count_patterns_checked
 from report_formatter import format_report
 from output_parser import cleanOutput
 
@@ -81,7 +81,9 @@ def run(
     code: str,
     language: str,
     retriever: "BM25Retriever",
-) -> tuple[List[Issue], List[DocUsed]]:
+) -> tuple[List[Issue], List[DocUsed], int]:
+    patterns_checked = count_patterns_checked(language)
+
     # 1. RAG
     query = _extract_keywords(code)
     raw_docs = retriever.search(query, top_k=3) if query else []
@@ -93,7 +95,7 @@ def run(
     
     # PONYTAIL: Short-circuit nếu không có lỗi, khỏi gọi LLM
     if not issues:
-        return [], []
+        return [], [], patterns_checked
     
     # 3. LLM Fix
     llm_output = llm_client.get_llm_fix(code, prompt)
@@ -108,7 +110,7 @@ def run(
         DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
-    return issues, docs_used
+    return issues, docs_used, patterns_checked
 
 
 from typing import Callable, Generator  # noqa: E402
@@ -118,12 +120,14 @@ def run_streaming(
     language: str,
     retriever: "BM25Retriever",
     emit: Callable[[str, dict], None],
-) -> tuple[List[Issue], List[DocUsed]]:
+) -> tuple[List[Issue], List[DocUsed], int]:
     """
     Giống run() nhưng gọi emit(stage, data) sau mỗi bước để stream tiến trình.
     emit("step", {"stage": ..., "status": "running"|"done", ...})
     emit("result", {"issues": [...], "docs_used": [...]})
     """
+    patterns_checked = count_patterns_checked(language)
+
     # ── Bước 1: Race pattern detector (regex nhanh trước LLM) ──
     emit("step", {"stage": "race_detector", "status": "running", "label": "Scanning race condition patterns…"})
     raw_detections = detectRaceConditions(code, language)
@@ -134,8 +138,8 @@ def run_streaming(
 
     # PONYTAIL: Short-circuit nếu không có lỗi
     if not issues:
-        emit("step", {"stage": "llm", "status": "done", "label": "Code an toàn, bỏ qua gọi AI để tối ưu tốc độ."})
-        return [], []
+        emit("step", {"stage": "llm", "status": "done", "label": "Code an toan, bo qua goi AI de toi uu toc do."})
+        return [], [], patterns_checked
 
     # ── Bước 2: AST keyword extraction ──
     emit("step", {"stage": "ast", "status": "running", "label": "Extracting AST keywords…"})
@@ -177,7 +181,7 @@ def run_streaming(
                   "full_prompt": prompt})
 
     # ── Bước 5: LLM inference ──
-    emit("step", {"stage": "llm", "status": "running", "label": "Sending to ThreadLearn model (HF Space)…"})
+    emit("step", {"stage": "llm", "status": "running", "label": "Sending to ThreadLearn model (mock/LLM)…"})
     llm_output = llm_client.get_llm_fix(code, prompt)
     parsed = cleanOutput(llm_output)
     fixed_code = f"```javascript\n{parsed['code']}\n```"
@@ -192,7 +196,7 @@ def run_streaming(
         DocUsed(id=doc.get("id", ""), title=doc.get("title", ""), category=doc.get("category", ""), content=doc.get("content"), bm25_score=doc.get("bm25_score"))
         for doc in raw_docs
     ]
-    return issues, docs_used
+    return issues, docs_used, patterns_checked
 
 
 _RACE_PATTERNS = [
