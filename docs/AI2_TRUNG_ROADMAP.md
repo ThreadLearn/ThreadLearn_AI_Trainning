@@ -1,5 +1,7 @@
 # AI2 — Trung: Roadmap & Định hướng thực hiện
 
+> ⚠️ **SNAPSHOT LỊCH SỬ — roadmap giai đoạn đầu, một số số liệu đã lỗi thời** (ví dụ knowledge base 250 docs, detector 10-pattern JS+Python). Hệ thống cuối cùng: knowledge base 2,050 docs, detector 5-pattern JS-only. Số liệu hiện hành: [`docs/RESEARCH_LOG.md`](RESEARCH_LOG.md).
+
 ## 1. Tổng quan vai trò
 
 Mình là **AI Engineer 2** — phụ trách phần **Serving, RAG & Race Condition**.

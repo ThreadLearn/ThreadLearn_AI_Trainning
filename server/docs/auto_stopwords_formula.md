@@ -6,8 +6,7 @@ khi knowledge base scale lên lớn (khuyến nghị: 5k+ docs).
 **File implementation:** `server/server/auto_stopwords.py`
 — chứa code sẵn sàng dùng, không cần viết lại.
 
-Hiện tại `bm25_module.py` dùng hard-coded STOPWORDS — xem comment trong file đó
-để biết khi nào nên chuyển sang cách này.
+**Trạng thái hiện tại:** `bm25_module.py` vẫn dùng hard-coded STOPWORDS. Knowledge base hiện có **2,050 docs** (đã scale từ 250 → 2,050 qua `augment_dataset.py`) — theo bảng threshold dưới, corpus đã bước vào tier "1k docs" nhưng chưa chạm ngưỡng chuyển đổi 5k mà code comment trong `bm25_module.py` đặt ra. Vẫn dùng hard-coded ổn, nhưng nếu corpus tiếp tục scale qua 5k, cân nhắc chuyển sang `rebuild_retriever_auto()` như hướng dẫn dưới đây.
 
 ---
 

@@ -35,7 +35,7 @@ Trình bày (dùng số liệu thật từ bài):
 - **77% bug KHÔNG sửa được bằng cách thêm synchronization/lock** (khác Java/C++) — cần sửa logic (bypass flag, atomic API, đổi thứ tự).
 - **40% race xảy ra trên Database/File**, không chỉ shared memory trong RAM → công cụ detect hiện tại (chỉ check memory access) bỏ sót phần lớn.
 
-→ Đây là **cơ sở thiết kế 10 pattern detect** trong `race_detector.py` của ThreadLearn (map trực tiếp từ finding của NodeCB).
+→ Đây là **cơ sở thiết kế bộ pattern detect (paper trình bày 5 pattern chính, production code có 14 JS + 4 Python pattern)** trong `race_detector.py` của ThreadLearn (map trực tiếp từ finding của NodeCB).
 
 ---
 
@@ -73,7 +73,7 @@ Kết luận gap: chưa có công cụ nào **kết hợp** static detection (ru
 
 ## Slide 6 — Đóng góp của ThreadLearn (Contribution)
 
-- Bộ 10 pattern race-condition detector cho JavaScript, xây từ taxonomy NodeCB (regex-based, không cần compile — hoạt động cả với code chưa hoàn chỉnh).
+- Bộ race-condition detector cho JavaScript (14 pattern trong production code; paper trình bày 5 pattern chính — closure_loop_var, shared_var_settimeout, promise_no_await, concurrent_write_array, counter_no_atomic), xây từ taxonomy NodeCB (regex-based, không cần compile — hoạt động cả với code chưa hoàn chỉnh).
 - Model fine-tune nhỏ (Qwen2.5-Coder-1.5B + QLoRA) học theo nguyên lý Hindsight CoT — triển khai local, không cần GPU cluster.
 - Pipeline RAG (BM25 + knowledge base 2050 tài liệu JS concurrency pattern) tăng độ chính xác fix code.
 - Kiến trúc fix **per-issue** (mỗi lỗi 1 lần gọi LLM riêng, có dedup + mở rộng ngữ cảnh) — giải quyết hạn chế model nhỏ không sửa tốt nhiều lỗi cùng lúc.
@@ -88,7 +88,7 @@ Sơ đồ flow (dùng ảnh vẽ bằng Gemini hoặc `docs/slide/workflow_promp
 **Input**: đoạn code JavaScript người dùng dán vào.
 
 **Các bước xử lý tuần tự**:
-1. **Race Detector** (`race_detector.py`) — quét code bằng 10 pattern regex tĩnh (closure loop var, shared var trong setTimeout, promise không await, counter không atomic...). Không cần chạy code, không cần compile.
+1. **Race Detector** (`race_detector.py`) — quét code bằng bộ pattern regex tĩnh (closure loop var, shared var trong setTimeout, promise không await, counter không atomic, v.v. — paper highlight 5 pattern chính, production có 14 JS pattern). Không cần chạy code, không cần compile.
 2. **Keyword Extraction** — rút từ khóa mô tả lỗi để tìm tài liệu liên quan, theo thứ tự ưu tiên: pattern semantic có sẵn → AST (dự phòng) → tokenize thường (dự phòng cuối).
 3. **BM25 Retrieval** — tìm kiếm trong knowledge base 2050 tài liệu concurrency, lấy ra các đoạn giải thích + ví dụ fix liên quan nhất.
 4. **Prompt Builder (RAG)** — ghép: code lỗi + issue detect được + tài liệu retrieved → 1 prompt hoàn chỉnh cho LLM.
@@ -101,7 +101,7 @@ Sơ đồ flow (dùng ảnh vẽ bằng Gemini hoặc `docs/slide/workflow_promp
 
 ## Slide 8 — Vì sao chọn từng kỹ thuật (tóm tắt, chi tiết xem `server/README.md`)
 
-- **Regex-based detector thay vì AST-based**: nhanh, không cần parse cây cú pháp đầy đủ, đủ để bắt 10 pattern phổ biến theo NodeCB. AST chỉ dùng dự phòng.
+- **Regex-based detector thay vì AST-based**: nhanh, không cần parse cây cú pháp đầy đủ, đủ để bắt các pattern phổ biến theo NodeCB (14 JS pattern trong production). AST chỉ dùng dự phòng.
 - **BM25 thay vì vector embedding**: nhẹ, không cần GPU, đủ tốt cho tài liệu ngắn có từ khóa kỹ thuật rõ ràng.
 - **QLoRA thay vì full fine-tune**: giới hạn phần cứng (Kaggle T4 16GB) — so với PCWMs cần GPU cluster.
 - **Per-issue LLM call thay vì 1 call/file**: model 1.5B nhỏ, không đủ khả năng sửa chính xác nhiều lỗi cùng lúc trong 1 lần sinh.

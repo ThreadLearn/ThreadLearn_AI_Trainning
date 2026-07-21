@@ -6,7 +6,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688)](https://fastapi.tiangolo.com/)
 [![Model](https://img.shields.io/badge/Model-Qwen2.5--Coder--1.5B-orange)](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B)
 [![License](https://img.shields.io/badge/License-Academic-lightgrey)](#)
-[![Pass Rate](https://img.shields.io/badge/Pass%20Rate-75%25-success)](#7-đánh-giá-mô-hình--kết-quả-thực-tế)
+[![Pass Rate](https://img.shields.io/badge/Score-73.3%25-success)](#7-đánh-giá-mô-hình--kết-quả-thực-tế)
 
 Dự án môn **WDP301 — FPT University**
 
@@ -16,7 +16,7 @@ Dự án môn **WDP301 — FPT University**
 
 JavaScript chạy theo mô hình single-threaded event loop, nơi 93% lỗi concurrency thực tế (theo nghiên cứu NodeCB, ASE 2017) gây crash, hỏng dữ liệu, hoặc treo server. Công cụ phân tích tĩnh hiện có (ESLint, ThreadSanitizer) chỉ phát hiện chứ không sửa; LLM tổng quát (GPT-3.5/4) cần internet, tốn phí, và không chuyên biệt cho domain này.
 
-**ThreadLearn** kết hợp fine-tune **Qwen2.5-Coder-1.5B** bằng **QLoRA** trên 783 cặp code lỗi/đã sửa, với **RAG pipeline** (BM25 retrieval trên 2050 tài liệu JS concurrency) để bổ sung ngữ cảnh trước khi sinh fix. Hệ thống chạy hoàn toàn offline trên GPU 8GB, đạt **75% pass rate** trên 20 test case thực tế — vượt GPT-3.5-turbo zero-shot (30%) dù nhỏ hơn ~125 lần.
+**ThreadLearn** kết hợp fine-tune **Qwen2.5-Coder-1.5B** bằng **QLoRA** trên 892 cặp code lỗi/đã sửa (hindsight Chain-of-Thought), với **RAG pipeline** (BM25 retrieval trên 2050 tài liệu JS concurrency) để bổ sung ngữ cảnh trước khi sinh fix. Hệ thống chạy hoàn toàn offline trên GPU 8GB, đạt **73.3% (22.0/30)** trên benchmark 30-case real-world (bug thật từ production npm packages) — vượt GPT-3.5-turbo + cùng pipeline (65.0%) dù dùng model open-weight nhỏ hơn nhiều.
 
 ## Thành viên nhóm
 
@@ -152,7 +152,7 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
 2. "Nhét" những tài liệu đó vào đầu prompt như một "cuốn sách mở" cho model tham khảo
 3. Model không cần nhớ mọi thứ — chỉ cần biết cách đọc tài liệu và áp dụng
 
-**Kết quả thực tế:** RAG tăng pass rate từ 70% lên 75% trên benchmark 20 test case.
+**Kết quả thực tế:** Trên benchmark 30-case real-world, pipeline (BM25+AST) đưa model đã fine-tune từ 63.3% lên 73.3% (+10pp) — nhưng không cải thiện base model chưa fine-tune (giữ nguyên 60.0%), cho thấy retrieval chỉ khuếch đại domain knowledge sẵn có chứ không tự tạo ra kiến thức mới. Chi tiết: [`docs/RESEARCH_LOG.md`](docs/RESEARCH_LOG.md).
 
 ---
 
@@ -184,7 +184,7 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
          │
          ▼
 ┌───────────────────┐
-│  Fine-tuned LLM   │  ← Qwen2.5-Coder-1.5B + LoRA (783 samples)
+│  Fine-tuned LLM   │  ← Qwen2.5-Coder-1.5B + LoRA (892 samples)
 │  (AI1-03/04)      │
 └────────┬──────────┘
          │
@@ -205,7 +205,7 @@ Mô hình 1.5B tham số dù đã fine-tune vẫn có giới hạn kiến thức
 | BM25 Module | `server/server/bm25_module.py` | Indexing và tìm kiếm tài liệu |
 | RAG Pipeline | `server/server/rag_pipeline.py` | Kết nối BM25 + LLM |
 | FastAPI Server | `server/server/main.py` | API endpoint cho frontend |
-| Eval Script | `server/eval/scripts/eval_rag_merged.py` | Đánh giá model với 20 test case |
+| Eval Script | `server/eval/scripts/eval_rag_merged.py` | Đánh giá model (20-case synthetic + 30-case real-world) |
 
 ---
 
@@ -236,7 +236,7 @@ ThreadLearn-AI-Trainning/
 │   │   ├── rag_pipeline.py               # Kết nối AST → BM25 → LLM
 │   │   ├── bm25_module.py                # BM25 indexing + search
 │   │   ├── llm_client.py                 # Giao tiếp với LLM (mock/openai/ollama)
-│   │   ├── race_detector.py              # Phát hiện 10 pattern race condition
+│   │   ├── race_detector.py              # Phát hiện 5 pattern race condition (JS)
 │   │   ├── report_formatter.py           # Format kết quả trả về
 │   │   ├── cache.py                      # Redis cache
 │   │   ├── db.py                         # MongoDB lưu lịch sử
@@ -315,11 +315,12 @@ async function getUser(id) {
 ```
 
 **Kết quả dataset cuối cùng:**
-- **783 mẫu** hợp lệ (có đủ input và output)
-- Phân bố: 90% train (704 mẫu) / 10% eval (79 mẫu)
-- Shuffle với `random.seed(42)` để đảm bảo tái hiện được kết quả
+- **892 mẫu** hợp lệ, dạng `(code, detector_output, reasoning_trace, fix)` với hindsight Chain-of-Thought
+- 332 mẫu synthetic (37.2%) — viết tay, xác minh thủ công
+- 560 mẫu generated (62.8%) — sinh bởi `generate_pairs()`, mở rộng các mẫu viết tay qua 40 domain slot (User, Order,...) × 18 hàm generator (mỗi hàm là 1 phép biến đổi concurrency riêng biệt: sequential await→Promise.all, callback→async, v.v.)
+- Nhãn fix xác minh bởi con người; reasoning trace sinh với hỗ trợ teacher-model, sau đó review thủ công
 
-> **Lưu ý đường dẫn hiện tại:** Dataset thô hiện hành nằm ở `training/data/raw/bugsjs_*.jsonl`, sinh bởi `training/data/raw/generate_bugsjs.py` + `generate_bugsjs_batch3.py` (batch bổ sung category thiếu mẫu). `ai1_01_dataset_collector.py` ở trên mô tả phương pháp thu thập ban đầu (GitHub Code Search) — vẫn còn trong repo nhưng output (`raw_dataset.json`) không phải nguồn dữ liệu 783 mẫu cuối cùng.
+> **Lưu ý đường dẫn hiện tại:** Dataset thô hiện hành nằm ở `training/data/raw/bugsjs_*.jsonl`, sinh bởi `training/data/raw/generate_bugsjs.py` + `generate_bugsjs_batch3.py` (batch bổ sung category thiếu mẫu). `ai1_01_dataset_collector.py` ở trên mô tả phương pháp thu thập ban đầu (GitHub Code Search) — vẫn còn trong repo nhưng output (`raw_dataset.json`) không phải nguồn dữ liệu 892 mẫu cuối cùng.
 
 ### 5.2 Định dạng JSONL cho SFTTrainer
 
@@ -670,9 +671,37 @@ P95 tăng từ 8ms (1 client) lên 112ms (10 clients) là do queue contention t�
 
 ## 7. Đánh giá mô hình — Kết quả thực tế
 
-> **2 benchmark riêng biệt:** Mục này dùng **20 test case thủ công** (synthetic, viết tay). Có thêm benchmark **30-case real-world** lấy từ bug thật trên production npm packages (GitHub issues thật) — kết quả chi tiết + per-category tại [`server/tests/real_world/README.md`](server/tests/real_world/README.md), số liệu tổng hợp + research log tại [`docs/RESEARCH_LOG.md`](docs/RESEARCH_LOG.md). Tóm tắt 30-case: ThreadLearn+pipeline 73.3% (22/30), vượt GPT-3.5-turbo+pipeline 65.0%.
+> **2 benchmark riêng biệt:** Kết quả chính thức (dùng trong paper) là benchmark **30-case real-world**, lấy từ bug thật trên production npm packages (GitHub issues thật) — 10 category, per-case detail tại [`server/tests/real_world/README.md`](server/tests/real_world/README.md), research log đầy đủ tại [`docs/RESEARCH_LOG.md`](docs/RESEARCH_LOG.md). Mục này trình bày kết quả 30-case trước, sau đó là benchmark 20-case cũ hơn (synthetic, viết tay) dùng trong giai đoạn phát triển ban đầu — giữ lại để tham khảo lịch sử.
 
-### Phương pháp đánh giá
+### 7.1 Benchmark chính thức — 30-case real-world (production npm packages)
+
+30 bug JavaScript concurrency lấy từ package production thật, trải trên 10 category: Race Condition (5), Unhandled Rejection (5), Double Callback (4), Resource Exhaustion (4), Event Loop Blocking (3), Sequential Awaits (3), Zalgo (2), Context Loss (2), Stream Leak (1), Callback Hell (1). Mỗi case truy được về đúng GitHub issue gốc — không có case synthetic.
+
+**Cách tính điểm:** PASS (1.0) — output chứa đúng fix pattern kỳ vọng và code hợp lệ cú pháp; PARTIAL (0.5) — code hợp lệ nhưng thiếu fix pattern; FAIL (0) — không sinh được code.
+
+| Cấu hình | Pass | Partial | Fail | Score | % |
+|---|---|---|---|---|---|
+| Base (chưa fine-tune, không pipeline) | 6 | 24 | 0 | 18.0/30 | 60.0% |
+| GPT-3.5-turbo (không pipeline) | 7 | 23 | 0 | 18.5/30 | 61.7% |
+| Fine-tuned only (không pipeline) | 8 | 22 | 0 | 19.0/30 | 63.3% |
+| Base + pipeline | 8 | 20 | 2 | 18.0/30 | 60.0% |
+| GPT-3.5-turbo + pipeline | 9 | 21 | 0 | 19.5/30 | 65.0% |
+| **ThreadLearn + pipeline** | **14** | **16** | **0** | **22.0/30** | **73.3%** |
+
+**Phát hiện chính:**
+
+1. **Pipeline chỉ giúp model đã fine-tune** — +10pp cho ThreadLearn (63.3%→73.3%), nhưng 0pp cho base model (giữ nguyên 60.0% cả hai cấu hình) và chỉ +3.3pp cho GPT-3.5-turbo. Kết luận: retrieval khuếch đại domain knowledge sẵn có, không tự tạo ra domain knowledge.
+2. **ThreadLearn vượt GPT-3.5-turbo** dù model nhỏ hơn nhiều: 73.3% so với 65.0% (cùng pipeline) — minh chứng fine-tuning chuyên biệt hiệu quả hơn model tổng quát lớn cho domain-specific task.
+3. **Zero FAIL** ở cấu hình ThreadLearn+pipeline — model luôn sinh code có thể đọc được.
+4. Điểm yếu còn lại: category Indirect (Zalgo, Context Loss, Stream Leak, Callback Hell) — không có detector pattern trực tiếp, phụ thuộc hoàn toàn vào RAG context.
+
+Xem chi tiết per-category, per-case tại [`server/tests/real_world/README.md`](server/tests/real_world/README.md).
+
+---
+
+### 7.2 Benchmark cũ — 20 test case synthetic (giai đoạn phát triển ban đầu)
+
+> Benchmark này dùng trong giai đoạn phát triển sớm, **không phải kết quả cuối cùng dùng trong paper** (xem 7.1). Giữ lại để đối chiếu lịch sử phát triển và bài học prompt-format-mismatch (mục 8, Lỗi #4).
 
 Chúng tôi xây dựng **20 test case thủ công** bao gồm 8 loại lỗi concurrency:
 
@@ -706,7 +735,7 @@ FIX_PATTERNS = {
 
 Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])` hay `await Promise.all(tasks)` đều được tính PASS, miễn là đã dùng đúng API.
 
-### Kết quả thực tế (ngày 11/06/2026)
+### Kết quả 20-case (ngày 11/06/2026 — benchmark cũ, không phải số liệu chính thức)
 
 | Phương pháp | Pass | Partial | Fail | Pass Rate |
 |-------------|------|---------|------|-----------|
@@ -717,9 +746,9 @@ Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])
 
 ![Ablation: contribution của fine-tuning và RAG](docs/my-research/figures/figure_base/fig_ablation.png)
 
-**Phân tích kết quả:**
+**Phân tích kết quả (20-case):**
 
-1. **Fine-tuning quan trọng hơn RAG** (+30pp vs +5pp): 783 mẫu training đã đủ để model học các pattern fix cụ thể của JavaScript concurrency
+1. **Fine-tuning quan trọng hơn RAG trên benchmark này** (+30pp vs +5pp): dataset training đã đủ để model học các pattern fix cụ thể của JavaScript concurrency
 
 2. **Zero FAIL**: Model luôn sinh ra code có thể đọc được, không bao giờ trả về output rỗng hay crash
 
@@ -727,7 +756,9 @@ Phương pháp này khách quan hơn: model có thể viết `Promise.all([...])
 
 4. **Còn 3 điểm yếu**: Zalgo, Double Callback, Buffer Leak — các pattern rất đặc thù, ít xuất hiện trong training data
 
-5. **Fine-tune tốt hơn GPT-3.5** dù model nhỏ hơn nhiều: 75% vs 30% — chứng minh domain-specific fine-tuning hiệu quả hơn general-purpose LLM lớn
+5. **Fine-tune tốt hơn GPT-3.5** dù model nhỏ hơn nhiều: 75% vs 30% trên benchmark 20-case này (kết quả chính thức 30-case real-world: 73.3% vs 65.0%, xem mục 7.1)
+
+> **Lưu ý:** benchmark 20-case này dùng ít case hơn per category (nhiều category chỉ có 1 case) nên tỷ lệ % dao động mạnh hơn so với benchmark 30-case chính thức. Số liệu dùng trong paper/báo cáo cuối cùng luôn là bảng 30-case ở mục 7.1.
 
 ### Per-category chi tiết
 
@@ -1032,15 +1063,15 @@ $job = Start-Job -ScriptBlock {
 
 ### So sánh với các phương pháp khác
 
-| Khả năng | ESLint | ThreadSanitizer | GPT-3.5 zero-shot | **ThreadLearn** |
+| Khả năng | ESLint | ThreadSanitizer | GPT-3.5-turbo + pipeline | **ThreadLearn + pipeline** |
 |----------|--------|-----------------|-------------------|-----------------|
 | Phát hiện lỗi | Tốt | Tốt | Trung bình | Tốt |
 | Sinh code fix | Không | Không | Có | **Có** |
 | Chạy offline | Có | Có | Không (cần API) | **Có** |
 | Chi phí mỗi request | Miễn phí | Miễn phí | ~$0.002 | **Miễn phí** |
 | Hiểu async/await | Hạn chế | Không | Có | **Có** |
-| Pass rate benchmark | N/A | N/A | 30% | **75%** |
-| Model size | N/A | N/A | 175B params | **1.5B params** |
+| Score benchmark 30-case | N/A | N/A | 65.0% | **73.3%** |
+| Model size | N/A | N/A | Đóng, chưa công bố | **1.5B params (open-weight)** |
 
 ### Ưu điểm nổi bật
 
@@ -1048,13 +1079,13 @@ $job = Start-Job -ScriptBlock {
 
 Model chỉ cần 8GB VRAM (RTX 4060, RTX 3070) để chạy inference. Không cần internet, không cần subscription. Có thể nhúng vào IDE extension hoặc CI/CD pipeline của doanh nghiệp có firewall nghiêm ngặt.
 
-**2. Tốt hơn GPT-3.5 dù nhỏ hơn 100 lần**
+**2. Vượt GPT-3.5-turbo dù dùng model nhỏ hơn nhiều**
 
-75% so với 30% — chứng minh **fine-tuning chuyên biệt** hiệu quả hơn **model lớn tổng quát** cho bài toán domain-specific. Đây là điểm mấu chốt: một model nhỏ được train đúng mục đích thường outperform model lớn dùng zero-shot.
+73.3% so với 65.0% trên benchmark 30-case real-world (cùng pipeline) — cho thấy **fine-tuning chuyên biệt** hiệu quả hơn **model tổng quát lớn hơn** cho bài toán domain-specific. Lưu ý: đây là kết quả sơ bộ trên benchmark nhỏ (30 case), khác biệt 2-3 case chưa đạt ý nghĩa thống kê chính thức (xem Threats to Validity trong paper).
 
 **3. Zero failure rate**
 
-Trong toàn bộ 20 test case, model **không bao giờ** sinh output rỗng hay code không hợp lệ. Luôn trả về đoạn code có thể đọc được, dù đôi khi chưa hoàn toàn đúng.
+Ở cấu hình ThreadLearn+pipeline, model **không bao giờ** sinh output rỗng hay code không hợp lệ trên cả 30 case. Luôn trả về đoạn code có thể đọc được, dù đôi khi chưa hoàn toàn đúng.
 
 **4. RAG tăng chất lượng mà không cần retrain**
 
