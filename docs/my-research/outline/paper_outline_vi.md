@@ -1,9 +1,11 @@
 # ThreadLearn: Outline Bài Báo Nghiên Cứu (Tiếng Việt)
 
-**Đóng góp một câu:**
+> ⚠️ **ĐÃ LỖI THỜI — bản draft ban đầu, giữ lại làm lịch sử.** Outline này ra đời trước hệ thống cuối cùng: mô tả detector 10-pattern JS+Python, benchmark 20-case, nhắm venue ASPLOS/ICLR 11-12 trang. Bài báo thực nộp chỉ JS-only (detector 5-pattern), đánh giá trên benchmark 30-case real-world (score 73.3%), nộp cho **ICTA 2026, 8 trang**. Nội dung chuẩn hiện hành xem tại [`docs/my-research/ThreadLearn_ICTA_WordReady.md`](../ThreadLearn_ICTA_WordReady.md) và [`docs/RESEARCH_LOG.md`](../../RESEARCH_LOG.md).
+
+**Đóng góp một câu (BẢN DRAFT GỐC — xem ghi chú trên):**
 > ThreadLearn kết hợp bộ phát hiện race tĩnh 5 pattern với mô hình Qwen2.5-Coder-1.5B fine-tune bằng Hindsight CoT và RAG pipeline BM25 để sửa lỗi concurrency JavaScript, đạt 75% pass rate (15/20) trên benchmark 20 case — +35 pp so với base model chưa fine-tune (40%) và +45 pp so với GPT-3.5-turbo zero-shot (30%).
 
-**Venue mục tiêu:** ASPLOS 2027 hoặc ICLR 2026 — 11–12 trang
+**Venue mục tiêu (BẢN DRAFT GỐC):** ASPLOS 2027 hoặc ICLR 2026 — 11–12 trang
 
 ---
 

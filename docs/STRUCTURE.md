@@ -24,13 +24,13 @@ ThreadLearn-AI-Trainning/
 │
 ├── server/                          # AI2 — Trung: Serving, RAG & Race Condition
 │   ├── knowledge-base/
-│   │   ├── knowledge_base.json   # 250 docs concurrent JS patterns
+│   │   ├── knowledge_base.json   # 2,050 docs concurrent JS patterns (1,418 patterns, 352 race-conditions, 280 anti-patterns)
 │   │   ├── knowledge_base_extended.json
 │   │   └── KNOWLEDGE_BASE_OVERVIEW.md
 │   ├── server/
 │   │   ├── main.py               # FastAPI app, routes, JWT middleware
 │   │   ├── bm25_module.py        # BM25 indexer + search (in-memory)
-│   │   ├── race_detector.py      # rule-based detector, 10 RC patterns
+│   │   ├── race_detector.py      # rule-based detector, 14 JS + 4 Python patterns (paper highlights 5 core JS patterns)
 │   │   ├── report_formatter.py   # format RC output → JSON {severity, fix}
 │   │   ├── rag_pipeline.py       # RAG flow code→AST→BM25→LLM→response
 │   │   ├── cache.py              # Redis cache SHA256 key, TTL 24h

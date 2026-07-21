@@ -1,5 +1,7 @@
 # THÔNG TIN TASK (AI1 PROGRESS TRACKER)
 
+> ⚠️ **SNAPSHOT LỊCH SỬ — task planning giai đoạn đầu.** Scope JS+Python ban đầu đã thu hẹp về JS-only trong hệ thống/paper cuối cùng; dataset cuối cùng là 892 mẫu (không phải 500-1000 JS+Python như kế hoạch gốc). Số liệu hiện hành: [`docs/RESEARCH_LOG.md`](RESEARCH_LOG.md).
+
 | UC ID | Task | Mô tả | Subtasks (Quy trình) | Iter | Tuần | Phụ thuộc | Output / Deliverable | Status | Priority | Est(d) |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **AI1-01** | Thu thập Dataset | Tìm và download các cặp code đơn luồng → đa luồng (JS & Python) từ GitHub, Kaggle, tự viết tay | 1. Search GitHub: 'async refactor javascript concurrent'<br>2. Search Kaggle code datasets (Python concurrent)<br>3. Tự viết 50-100 cặp mẫu chất lượng cao<br>4. Lọc trùng lặp, loại code >200 lines<br>5. Kiểm tra encoding UTF-8 toàn bộ<br>6. Mục tiêu: 500-1000 cặp input/output<br>7. Lưu thành `raw_dataset.json` | Iter 1 | 1-2 | — | `raw_dataset.json` — ít nhất 500 cặp JS+Python | ✅ Done | 🔴 High | 5 |
