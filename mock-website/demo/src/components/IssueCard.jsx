@@ -1,16 +1,23 @@
-export default function IssueCard({ issue }) {
-  const patternId = issue.pattern_id || issue.pattern || 'unknown';
-  const isRewrite = typeof issue.fix === 'string' && issue.fix.includes('```');
-  const fixLabel = isRewrite ? 'Suggested Rewrite' : 'Fix';
+import { useState } from 'react';
+import { AlertTriangle, Check, CheckCheck } from 'lucide-react';
+import DiffView from './DiffView';
 
-  // Extract code from markdown code block if present
-  let fixContent;
-  if (isRewrite) {
-    const match = issue.fix.match(/```(?:javascript|js)?\n?([\s\S]*?)```/);
-    const code = match ? match[1].trim() : issue.fix.replace(/```(?:javascript|js)?/g, '').trim();
-    fixContent = <pre className="issue-fix-code"><code>{code}</code></pre>;
-  } else {
-    fixContent = <div className="issue-fix">{issue.fix}</div>;
+function extractFixCode(fix) {
+  const match = fix.match(/```(?:javascript|js)?\n?([\s\S]*?)```/);
+  if (match) return { code: match[1].trim(), isCodeBlock: true };
+  return { code: fix, isCodeBlock: false };
+}
+
+export default function IssueCard({ issue, index, originalCode, onResolve }) {
+  const patternId = issue.pattern_id || issue.pattern || 'unknown';
+  const { code, isCodeBlock } = extractFixCode(issue.fix || '');
+  const [resolved, setResolved] = useState(false);
+  const canDiff = isCodeBlock && !!originalCode;
+  const isUnchanged = canDiff && originalCode.trim() === code.trim();
+
+  function handleResolve() {
+    onResolve?.(code);
+    setResolved(true);
   }
 
   return (
@@ -19,10 +26,32 @@ export default function IssueCard({ issue }) {
         <span className={`sev-pill ${issue.severity}`}>{issue.severity}</span>
         <span className="issue-pattern-id">{patternId}</span>
         <span className="issue-line">line {issue.line_range}</span>
+        {typeof index === 'number' && <span className="issue-index">#{index + 1}</span>}
       </div>
-      <div className="issue-desc">{issue.description}</div>
-      <div className="issue-fix-label">{fixLabel}</div>
-      {fixContent}
+
+      <div className="issue-desc-row">
+        <AlertTriangle size={13} className="issue-warn-icon" />
+        <span className="issue-desc">{issue.description}</span>
+      </div>
+
+      <div className="issue-fix-header">
+        <span className="issue-fix-label">{isCodeBlock ? 'Suggested rewrite' : 'Fix'}</span>
+        {isUnchanged && <span className="issue-badge-muted">no changes suggested</span>}
+        {isCodeBlock && onResolve && !isUnchanged && (
+          <button type="button" className={`resolve-btn ${resolved ? 'applied' : ''}`} disabled={resolved} onClick={handleResolve}>
+            {resolved ? <CheckCheck size={12} /> : <Check size={12} />}
+            {resolved ? 'Applied' : 'Resolve'}
+          </button>
+        )}
+      </div>
+
+      {canDiff ? (
+        <DiffView oldCode={originalCode} newCode={code} />
+      ) : isCodeBlock ? (
+        <pre className="issue-fix-code"><code>{code}</code></pre>
+      ) : (
+        <div className="issue-fix">{code}</div>
+      )}
     </div>
   );
 }
