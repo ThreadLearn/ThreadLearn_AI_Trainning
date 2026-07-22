@@ -35,6 +35,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nfor (let i = 0; i < 3; i++) {\n  setTimeout(function() {\n    console.log(i); // prints 0, 1, 2\n  }, 100);\n}\n```",
     }],
     docsUsed: [{ id: "js-014", title: "Closure Loop Variable [patterns]", category: "patterns" }],
+    patternsChecked: 18,
   },
 
   // 1 — basic: async without try/catch
@@ -57,6 +58,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nasync function loadUser(id) {\n  try {\n    const user = await db.findUser(id);\n    return user;\n  } catch (err) {\n    console.error('loadUser failed:', err);\n    throw err;\n  }\n}\n```",
     }],
     docsUsed: [{ id: "js-088", title: "Unhandled Promise Rejection [anti-patterns]", category: "anti-patterns" }],
+    patternsChecked: 18,
   },
 
   // 2 — basic: callback missing return
@@ -79,6 +81,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nfunction getUser(id, callback) {\n  db.find(id, function(err, user) {\n    if (err) return callback(err); // return added\n    callback(null, user);\n  });\n}\n```",
     }],
     docsUsed: [{ id: "js-041", title: "Double Callback Invocation [anti-patterns]", category: "anti-patterns" }],
+    patternsChecked: 18,
   },
 
   // 3 — basic: 3 sequential independent awaits
@@ -101,6 +104,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nasync function getProfile(userId) {\n  const [user, orders, reviews] = await Promise.all([\n    db.users.findById(userId),\n    db.orders.find(userId),\n    db.reviews.find(userId),\n  ]);\n  return { user, orders, reviews };\n}\n```",
     }],
     docsUsed: [{ id: "js-002", title: "Promise.all Pattern — Parallel Execution [patterns]", category: "patterns" }],
+    patternsChecked: 18,
   },
 
   // 4 — race_condition: db stock decrement
@@ -123,6 +127,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nasync function purchaseItem(productId, userId) {\n  // Atomic conditional decrement — fails if stock would go negative\n  const result = await db.decrementStockIfPositive(productId);\n  if (!result.success) throw new Error('Out of stock');\n\n  await db.createOrder({ productId, userId });\n}\n```",
     }],
     docsUsed: [{ id: "js-race-019", title: "Atomic Database Operations [patterns]", category: "patterns" }],
+    patternsChecked: 18,
   },
 
   // 5 — event_loop_blocking: readFileSync in loop
@@ -145,6 +150,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nconst fs = require('fs').promises;\n\napp.get('/config', async (req, res) => {\n  const files = ['db.json', 'cache.json', 'auth.json'];\n  const entries = await Promise.all(\n    files.map(async f => [f, JSON.parse(await fs.readFile(`/config/${f}`))])\n  );\n  res.json(Object.fromEntries(entries));\n});\n```",
     }],
     docsUsed: [{ id: "js-092", title: "Event Loop Blocking — Sync I/O [anti-patterns]", category: "anti-patterns" }],
+    patternsChecked: 18,
   },
 
   // 6 — zalgo: sync/async mixed callback
@@ -167,6 +173,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nfunction getUserData(userId, callback) {\n  if (cache.has(userId)) {\n    // Force async boundary so behavior is always consistent\n    return process.nextTick(() => callback(null, cache.get(userId)));\n  }\n  db.findUser(userId, function(err, user) {\n    if (err) return callback(err);\n    cache.set(userId, user);\n    callback(null, user);\n  });\n}\n```",
     }],
     docsUsed: [{ id: "js-anti-057", title: "Zalgo — Inconsistent Async Callback Timing [anti-patterns]", category: "anti-patterns" }],
+    patternsChecked: 18,
   },
 
   // 7 — resource_exhaustion: Promise.all unlimited
@@ -189,6 +196,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nimport pLimit from 'p-limit';\nconst limit = pLimit(20); // max 20 concurrent operations\n\nasync function sendBulkEmails(userIds) {\n  const users = await Promise.all(\n    userIds.map(id => limit(() => db.users.findById(id)))\n  );\n  await Promise.all(\n    users.map(user => limit(() => emailService.send(user.email, 'Hello!')))\n  );\n}\n```",
     }],
     docsUsed: [{ id: "js-patt-103", title: "Concurrency Limiting with p-limit [patterns]", category: "patterns" }],
+    patternsChecked: 18,
   },
 
   // 8 — callback_hell: nested 4 levels
@@ -211,6 +219,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nasync function processOrder(orderId) {\n  const order = await db.getOrder(orderId);\n  const user = await db.getUser(order.userId);\n  const charge = await payment.charge(user.card, order.total);\n  await email.send(user.email, 'Order confirmed');\n  return { order, charge };\n}\n```",
     }],
     docsUsed: [{ id: "js-anti-076", title: "Callback Hell — Flatten with async/await [anti-patterns]", category: "anti-patterns" }],
+    patternsChecked: 18,
   },
 
   // 9 — missing_error_handler: stream pipe
@@ -233,6 +242,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\napp.get('/download/:file', (req, res) => {\n  const readStream = fs.createReadStream(`/data/${req.params.file}`);\n  const gzip = zlib.createGzip();\n\n  readStream.on('error', err => res.status(404).end());\n  gzip.on('error', err => res.destroy(err));\n\n  readStream.pipe(gzip).pipe(res);\n});\n```",
     }],
     docsUsed: [{ id: "js-patt-061", title: "Stream Error Handling [patterns]", category: "patterns" }],
+    patternsChecked: 18,
   },
 
   // 10 — singleton_race: lazy init shared state
@@ -255,6 +265,7 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nlet connectionPromise = null;\n\nfunction getConnection() {\n  // Cache the PROMISE, not the resolved value — concurrent\n  // callers all await the same in-flight connect() call.\n  if (!connectionPromise) {\n    connectionPromise = db.connect();\n  }\n  return connectionPromise;\n}\n```",
     }],
     docsUsed: [{ id: "js-race-032", title: "Singleton Lazy Initialization Race [race-conditions]", category: "race-conditions" }],
+    patternsChecked: 18,
   },
 
   // 11 — event_loop_ordering: nextTick vs setTimeout
@@ -277,5 +288,6 @@ export const MOCK_RESULTS = [
       fix: "```javascript\nclass DataLoader {\n  constructor() {\n    this.data = null;\n    this.ready = this.load();\n  }\n\n  async load() {\n    this.data = await new Promise(resolve =>\n      setTimeout(() => resolve({ users: [1, 2, 3] }), 0)\n    );\n  }\n\n  async getData(callback) {\n    await this.ready; // wait for load() to actually finish\n    callback(this.data);\n  }\n}\n```",
     }],
     docsUsed: [{ id: "js-patt-118", title: "Event Loop Ordering — nextTick vs setTimeout [patterns]", category: "patterns" }],
+    patternsChecked: 18,
   },
 ];

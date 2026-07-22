@@ -1,88 +1,80 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Toaster, toast } from 'sonner';
+import { Send, Terminal, Brain, Cpu, Target, BookOpen, Sparkles, Code2, Undo2, Redo2, Play } from 'lucide-react';
+
 import { LIVE_SAMPLES } from './mockCases';
 import { MOCK_RESULTS } from './mockAnalysisResults';
+import { MOCK_HISTORY } from './mockHistory';
 import './App.css';
 
-import LiveEditor, { buildHlMap } from './components/LiveEditor';
+import CodeEditor from './components/CodeEditor';
 import IssueCard from './components/IssueCard';
 import { PipelineSummary } from './components/PipelineProgress';
+import AnalysisResult from './components/AnalysisResult';
+import HistoryList from './components/HistoryList';
+import HistoryTrendChart from './components/HistoryTrendChart';
+import RunOutput from './components/RunOutput';
+import ResearchSection from './components/ResearchSection';
+import { useRunCode } from './hooks/useRunCode';
+import { useCodeHistory } from './hooks/useCodeHistory';
 
 // Delay (ms) between each pipeline stage reveal — mimics real inference latency
-// so the demo *feels* like a live model call, not an instant lookup.
 const STAGE_DELAYS = [350, 550, 700, 300, 1400];
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 export default function App() {
-  const [liveCode, setLiveCode] = useState(LIVE_SAMPLES[0]?.code || '');
-  const [liveSampleIdx, setLiveSampleIdx] = useState(0);
+  const { code, setCode, undo, redo, resetCode, canUndo, canRedo } = useCodeHistory(LIVE_SAMPLES[0]?.code || '');
+  const [sampleIdx, setSampleIdx] = useState(0);
 
   const [issues, setIssues] = useState(null);
   const [docsUsed, setDocsUsed] = useState([]);
   const [explanation, setExplanation] = useState('');
-  const [hlMap, setHlMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pipelineSteps, setPipelineSteps] = useState([]);
   const [promptInlineOpen, setPromptInlineOpen] = useState(false);
   const [analyzeTime, setAnalyzeTime] = useState(null);
+  const [patternsChecked, setPatternsChecked] = useState(null);
   const analyzeStart = useRef(null);
   const runToken = useRef(0);
 
+  const { logs: runLogs, isRunning, runError, hasRun, run: runCode, reset: resetRun } = useRunCode();
+  const hasRunOutput = isRunning || hasRun || runLogs.length > 0 || !!runError;
+
   const liveSamples = LIVE_SAMPLES;
-
-  // ── Resizable split ──
-  const [issuesPaneWidth, setIssuesPaneWidth] = useState(440);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startW = useRef(440);
-
-  const onDragStart = useCallback((e) => {
-    dragging.current = true;
-    startX.current = e.clientX;
-    startW.current = issuesPaneWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [issuesPaneWidth]);
-
-  useEffect(() => {
-    function onMove(e) {
-      if (!dragging.current) return;
-      const delta = startX.current - e.clientX;
-      const next = Math.min(Math.max(startW.current + delta, 280), 1400);
-      setIssuesPaneWidth(next);
-    }
-    function onUp() {
-      if (!dragging.current) return;
-      dragging.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, []);
 
   function reset() {
     setIssues(null);
     setDocsUsed([]);
     setExplanation('');
-    setHlMap({});
     setError('');
     setPipelineSteps([]);
     setPromptInlineOpen(false);
     setAnalyzeTime(null);
+    setPatternsChecked(null);
   }
 
-  function handleLiveSampleChange(idx) {
-    setLiveSampleIdx(idx);
-    if (idx >= 0) setLiveCode(liveSamples[idx]?.code || '');
+  function handleSampleChange(idx) {
+    setSampleIdx(idx);
+    if (idx >= 0) resetCode(liveSamples[idx]?.code || '');
     reset();
+    resetRun();
+  }
+
+  function handleCodeChange(value) {
+    setCode(value);
+    if (issues !== null) reset();
+    resetRun();
+  }
+
+  function handleResolve(fixedCode) {
+    setCode(fixedCode);
+    toast.success('Fix applied to editor');
+  }
+
+  function handleRun() {
+    runCode(code);
   }
 
   async function runAnalysis() {
@@ -90,32 +82,28 @@ export default function App() {
     setLoading(true);
     setError('');
     setIssues(null);
-    setHlMap({});
     setPipelineSteps([]);
 
-    const code = liveCode.trim();
-    if (!code) {
+    const trimmed = code.trim();
+    if (!trimmed) {
       setError('Code is empty. Paste some JavaScript to analyze.');
       setLoading(false);
       return;
     }
 
-    // Demo mode only replays pre-computed results for the built-in samples —
-    // this mirrors the real AI2 pipeline's output exactly, without needing a
-    // live GPU-backed model server. Select a sample above to see it in action.
-    if (liveSampleIdx < 0 || !MOCK_RESULTS[liveSampleIdx]) {
+    if (sampleIdx < 0 || !MOCK_RESULTS[sampleIdx]) {
       setError('Demo mode only supports the built-in samples above.\nSelect one from "Sample code" to see ThreadLearn analyze it.');
       setLoading(false);
       return;
     }
 
-    const mock = MOCK_RESULTS[liveSampleIdx];
+    const mock = MOCK_RESULTS[sampleIdx];
     analyzeStart.current = Date.now();
 
     const steps = [];
     for (let i = 0; i < mock.pipeline.length; i++) {
       await sleep(STAGE_DELAYS[i] ?? 400);
-      if (runToken.current !== myToken) return; // user switched sample mid-run
+      if (runToken.current !== myToken) return;
       steps.push({ ...mock.pipeline[i], _startTime: Date.now() - 50, _endTime: Date.now() });
       setPipelineSteps([...steps]);
     }
@@ -124,8 +112,8 @@ export default function App() {
 
     const issueList = mock.issues;
     setIssues(issueList);
-    setHlMap(buildHlMap(issueList));
     setDocsUsed(mock.docsUsed || []);
+    setPatternsChecked(mock.patternsChecked ?? null);
     setAnalyzeTime(Date.now() - analyzeStart.current);
     const docs = mock.docsUsed || [];
     setExplanation(
@@ -135,153 +123,135 @@ export default function App() {
     );
 
     setLoading(false);
+    toast.success('Code analyzed!');
   }
 
-  const currentCode = liveCode;
-
   return (
-    <div className="app">
+    <div className="app-page">
+      <Toaster position="top-right" richColors />
 
-      <header className="topbar">
-        <div className="logo">
-          <div className="logo-dot" />
-          ThreadLearn
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="hero">
+        <div className="hero-inner">
+          <span className="hero-pill">AI Coach</span>
+          <h1 className="hero-title">Analyze concurrency bugs before they ship.</h1>
+          <p className="hero-sub">
+            Fine-tuned Qwen2.5-Coder-1.5B + BM25 retrieval pipeline, detecting real JavaScript race conditions.
+            This is a standalone demo replaying pre-computed results — see the <a href="https://github.com/ThreadLearn/ThreadLearn_AI_Trainning" target="_blank" rel="noreferrer">research repo</a> for the live system.
+          </p>
         </div>
-        <div className="sep" />
+      </motion.header>
 
-        <div className="mode-tabs">
-          <button className="mode-tab active">Demo</button>
-        </div>
-        <div className="sep" />
-
-        <>
-          <span className="case-label">Sample code:</span>
-          <select className="case-select" value={liveSampleIdx} onChange={e => handleLiveSampleChange(Number(e.target.value))}>
-            {liveSamples.map((c, i) => <option key={i} value={i}>{c.title}</option>)}
-          </select>
-        </>
-
-        <div className="topbar-right">
-          <div className="ai2-indicator">
-            <div className="ai2-dot online" />
-            <span>Demo mode · pre-computed AI results</span>
-          </div>
-          <div className="sep" />
-          <button className="btn-analyze" disabled={loading} onClick={runAnalysis}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M2 2l8 4-8 4V2z" fill="currentColor" />
-            </svg>
-            Analyze
-          </button>
-        </div>
-      </header>
-
-      <div className="main" style={{ gridTemplateColumns: `1fr 5px ${issuesPaneWidth}px` }}>
-        <div className="editor-pane">
-          <div className="pane-header">
-            <span className="pane-title">Editor</span>
-            <span className="lang-badge">JavaScript</span>
-          </div>
-          <div className="editor-scroll" style={{ position: 'relative' }}>
-            <LiveEditor code={liveCode} onChange={setLiveCode} hlMap={hlMap} />
-          </div>
-        </div>
-
-        <div className="resize-handle" onMouseDown={onDragStart} />
-        <div className="issues-pane">
-          <div className="pane-header">
-            <span className="pane-title">Analysis Report</span>
-            <span className={`count-badge ${issues && issues.length > 0 ? 'has' : 'none'}`}>
-              {issues ? issues.length : 0}
-            </span>
-            <span className="rag-tag" style={{ marginLeft: 'auto' }}>RAG</span>
-            <span className="mode-tag live">DEMO</span>
-          </div>
-          {error && <div className="error-banner visible" style={{ whiteSpace: 'pre-line' }}>{error}</div>}
-          <div className="issues-scroll">
-            {issues === null && pipelineSteps.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">⏳</div>
-                <div className="empty-text">Click <strong>Analyze</strong> to detect<br />concurrency bugs.</div>
+      <div className="page-body">
+        <div className="ai-grid">
+          {/* ── LEFT: editor + run + analyze ─────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05 }} className="panel-white editor-panel">
+            <div className="editor-controls">
+              <label className="sample-label">
+                <span className="sample-label-text">Sample code</span>
+                <select className="case-select" value={sampleIdx} onChange={(e) => handleSampleChange(Number(e.target.value))}>
+                  {liveSamples.map((c, i) => <option key={i} value={i}>{c.title}</option>)}
+                </select>
+              </label>
+              <div className="editor-buttons">
+                <button type="button" className="btn-outline" disabled={!code.trim() || isRunning} onClick={handleRun}>
+                  <Terminal size={15} /> Run
+                </button>
+                <button type="button" className="btn-primary" disabled={!code.trim() || loading} onClick={runAnalysis}>
+                  <Send size={15} /> {loading ? 'Analyzing…' : 'Analyze code'}
+                </button>
               </div>
-            ) : (
-              <>
-                {issues !== null && (() => {
-                  const lines = currentCode.trim().split('\n');
-                  const chars = currentCode.length;
-                  const high = (issues || []).filter(x => x.severity === 'high').length;
-                  const med = (issues || []).filter(x => x.severity === 'medium').length;
-                  const low = (issues || []).filter(x => x.severity === 'low').length;
-                  return (
-                    <div className="report-section">
-                      <div className="report-section-title">Code Stats</div>
-                      <div className="report-stats-row">
-                        <div className="report-stat"><span className="report-stat-val">{lines.length}</span><span className="report-stat-lbl">lines</span></div>
-                        <div className="report-stat"><span className="report-stat-val">{chars}</span><span className="report-stat-lbl">chars</span></div>
-                        <div className="report-stat"><span className="report-stat-val">{(issues || []).length}</span><span className="report-stat-lbl">issues</span></div>
-                        {analyzeTime && <div className="report-stat"><span className="report-stat-val">{(analyzeTime / 1000).toFixed(1)}s</span><span className="report-stat-lbl">total time</span></div>}
-                      </div>
-                      {(issues || []).length > 0 && (
-                        <div className="report-sev-bar">
-                          {high > 0 && <span className="sev-chip high">{high} HIGH</span>}
-                          {med > 0 && <span className="sev-chip medium">{med} MED</span>}
-                          {low > 0 && <span className="sev-chip low">{low} LOW</span>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+            </div>
 
-                {pipelineSteps.length > 0 && (
+            <div className={`code-block ${hasRunOutput ? '' : 'grow'}`}>
+              <div className="code-block-header">
+                <div className="code-block-title">
+                  <Code2 size={16} className="lime-icon" />
+                  <div>
+                    <p className="code-block-kicker">ThreadLearn analyzer</p>
+                    <p className="code-block-filename">javascript.snippet</p>
+                  </div>
+                </div>
+                <div className="code-block-actions">
+                  <button type="button" className="icon-btn" disabled={!canUndo} title="Undo" onClick={undo}><Undo2 size={14} /></button>
+                  <button type="button" className="icon-btn" disabled={!canRedo} title="Redo" onClick={redo}><Redo2 size={14} /></button>
+                  <span className="live-api-pill"><Play size={13} /> Demo mode</span>
+                </div>
+              </div>
+              <CodeEditor value={code} onChange={handleCodeChange} placeholder="Paste your code here..." className={hasRunOutput ? 'h-fixed' : 'h-grow'} />
+            </div>
+
+            <RunOutput logs={runLogs} isRunning={isRunning} runError={runError} hasRun={hasRun} />
+          </motion.section>
+
+          {/* ── RIGHT: About + Result ─────────────────────────── */}
+          <aside className="ai-sidebar">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1 }} className="about-card">
+              <Brain size={24} />
+              <h2>About this AI</h2>
+              <div className="about-list">
+                <div className="about-item">
+                  <Cpu size={15} />
+                  <p><strong>Model:</strong> Qwen2.5-Coder-1.5B, fine-tuned with QLoRA (r=16, α=32) on race-condition patterns.</p>
+                </div>
+                <div className="about-item">
+                  <Target size={15} />
+                  <p><strong>Training data:</strong> 892 labeled (buggy → fixed) pairs — 332 handcrafted + 560 template-generated. 73.3% score on a 30-case real-world benchmark.</p>
+                </div>
+                <div className="about-item">
+                  <BookOpen size={15} />
+                  <p><strong>Knowledge base:</strong> 2,050 reference docs retrieved via BM25 (RAG) to ground every fix in real concurrency patterns.</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.15 }} className="result-card">
+              <div className="result-card-header">
+                <Sparkles size={18} />
+                <h2>{loading ? 'Analyzing…' : 'Latest result'}</h2>
+              </div>
+
+              {error && <div className="error-banner visible">{error}</div>}
+
+              {loading || pipelineSteps.length > 0 ? (
+                <div className="result-streaming">
                   <PipelineSummary pipelineSteps={pipelineSteps} promptInlineOpen={promptInlineOpen} setPromptInlineOpen={setPromptInlineOpen} />
-                )}
-
-                {issues !== null && (issues.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">✓</div>
-                    <div className="empty-text">No concurrency issues detected.</div>
-                  </div>
-                ) : (
-                  <div className="report-section">
-                    <div className="report-section-title">
-                      {issues.length} Issue{issues.length > 1 ? 's' : ''} Found
-                    </div>
-                    {issues.map((issue, i) => <IssueCard key={i} issue={issue} />)}
-                  </div>
-                ))}
-
-                {issues !== null && explanation && (
-                  <div className="report-section">
-                    <div className="report-section-title">AI Explanation</div>
-                    <div className="explain-text" dangerouslySetInnerHTML={{ __html: explanation }} />
-                  </div>
-                )}
-
-                {docsUsed.length > 0 && (
-                  <div className="report-section">
-                    <div className="report-section-title">Knowledge Base References</div>
-                    <div className="report-docs">
-                      {docsUsed.map((d, i) => {
-                        const ctxMatch = d.title?.match(/\[([^\]]+)\]\s*$/);
-                        const ctx = ctxMatch ? ctxMatch[1] : null;
-                        const title = d.title?.replace(/\s*\[.*?\]\s*$/, '').trim() || d.id;
-                        return (
-                          <div key={i} className="report-doc-row">
-                            <span className="report-doc-cat">{d.category || 'ref'}</span>
-                            <span className="report-doc-title">{title}</span>
-                            {ctx && <span className="report-doc-ctx-badge">{ctx}</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                  {issues !== null && (
+                    <AnalysisResult
+                      view={{ issues, docsUsed, explanation, analyzeTimeMs: analyzeTime, patternsChecked, code }}
+                      onResolve={handleResolve}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="result-placeholder">
+                  <p className="result-placeholder-kicker">Mock AI review</p>
+                  <p className="result-placeholder-text">Select a sample above and click <strong>Analyze code</strong> to see ThreadLearn detect and fix a real JavaScript concurrency bug.</p>
+                </div>
+              )}
+            </motion.div>
+          </aside>
         </div>
-      </div>
 
+        {MOCK_HISTORY.length > 1 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.2 }}>
+            <HistoryTrendChart history={MOCK_HISTORY} />
+          </motion.div>
+        )}
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.25 }} className="panel-white history-panel">
+          <div className="history-panel-header">
+            <div>
+              <p className="history-panel-kicker">History</p>
+              <h2 className="history-panel-title">Analysis history</h2>
+            </div>
+            <span className="history-count-pill">{MOCK_HISTORY.length} records</span>
+          </div>
+          <HistoryList history={MOCK_HISTORY} />
+        </motion.div>
+
+        <ResearchSection />
+      </div>
     </div>
   );
 }
