@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { ChevronDown, Clock } from 'lucide-react';
 import AnalysisResult, { severityCounts } from './AnalysisResult';
+import { useI18n } from '../i18n.jsx';
 
 function HistoryRow({ log, defaultOpen }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
   const { high, medium, low } = severityCounts(log.issues || []);
 
@@ -19,7 +21,7 @@ function HistoryRow({ log, defaultOpen }) {
             {high > 0 && <span className="sev-chip high">{high} HIGH</span>}
             {medium > 0 && <span className="sev-chip medium">{medium} MED</span>}
             {low > 0 && <span className="sev-chip low">{low} LOW</span>}
-            {(log.issues?.length || 0) === 0 && <span className="history-no-issues">No issues</span>}
+            {(log.issues?.length || 0) === 0 && <span className="history-no-issues">{t.noIssues}</span>}
           </div>
         </div>
       </button>
