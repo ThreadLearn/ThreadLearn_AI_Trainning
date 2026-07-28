@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, CheckCheck } from 'lucide-react';
 import DiffView from './DiffView';
+import { useI18n } from '../i18n.jsx';
 
 function extractFixCode(fix) {
   const match = fix.match(/```(?:javascript|js)?\n?([\s\S]*?)```/);
@@ -9,6 +10,7 @@ function extractFixCode(fix) {
 }
 
 export default function IssueCard({ issue, index, originalCode, onResolve }) {
+  const { t } = useI18n();
   const patternId = issue.pattern_id || issue.pattern || 'unknown';
   const { code, isCodeBlock } = extractFixCode(issue.fix || '');
   const [resolved, setResolved] = useState(false);
@@ -35,12 +37,12 @@ export default function IssueCard({ issue, index, originalCode, onResolve }) {
       </div>
 
       <div className="issue-fix-header">
-        <span className="issue-fix-label">{isCodeBlock ? 'Suggested rewrite' : 'Fix'}</span>
-        {isUnchanged && <span className="issue-badge-muted">no changes suggested</span>}
+        <span className="issue-fix-label">{isCodeBlock ? t.suggestedRewrite : t.fix}</span>
+        {isUnchanged && <span className="issue-badge-muted">{t.noChangesSuggested}</span>}
         {isCodeBlock && onResolve && !isUnchanged && (
           <button type="button" className={`resolve-btn ${resolved ? 'applied' : ''}`} disabled={resolved} onClick={handleResolve}>
             {resolved ? <CheckCheck size={12} /> : <Check size={12} />}
-            {resolved ? 'Applied' : 'Resolve'}
+            {resolved ? t.applied : t.resolve}
           </button>
         )}
       </div>

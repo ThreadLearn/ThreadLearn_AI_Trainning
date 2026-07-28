@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster, toast } from 'sonner';
-import { Send, Terminal, Brain, Cpu, Target, BookOpen, Sparkles, Code2, Undo2, Redo2, Play } from 'lucide-react';
+import { Send, Terminal, Brain, Cpu, Target, BookOpen, Sparkles, Code2, Undo2, Redo2, Play, Languages, Sun, Moon, HelpCircle } from 'lucide-react';
 
 import { LIVE_SAMPLES } from './mockCases';
 import { MOCK_RESULTS } from './mockAnalysisResults';
 import { MOCK_HISTORY } from './mockHistory';
+import { useI18n } from './i18n.jsx';
+import { useTheme } from './theme.jsx';
 import './App.css';
 
 import CodeEditor from './components/CodeEditor';
@@ -16,6 +18,7 @@ import HistoryList from './components/HistoryList';
 import HistoryTrendChart from './components/HistoryTrendChart';
 import RunOutput from './components/RunOutput';
 import ResearchSection from './components/ResearchSection';
+import SpotlightTour from './components/SpotlightTour';
 import { useRunCode } from './hooks/useRunCode';
 import { useCodeHistory } from './hooks/useCodeHistory';
 
@@ -23,7 +26,12 @@ import { useCodeHistory } from './hooks/useCodeHistory';
 const STAGE_DELAYS = [350, 550, 700, 300, 1400];
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
+const TOUR_STEPS = ['sample', 'run', 'analyze', 'editor', 'about', 'result', 'trend', 'history', 'research'];
+const TOUR_SEEN_KEY = 'threadlearn-tour-seen';
+
 export default function App() {
+  const { lang, t, toggleLang } = useI18n();
+  const { theme, toggleTheme } = useTheme();
   const { code, setCode, undo, redo, resetCode, canUndo, canRedo } = useCodeHistory(LIVE_SAMPLES[0]?.code || '');
   const [sampleIdx, setSampleIdx] = useState(0);
 
@@ -43,6 +51,19 @@ export default function App() {
   const hasRunOutput = isRunning || hasRun || runLogs.length > 0 || !!runError;
 
   const liveSamples = LIVE_SAMPLES;
+
+  const [tourActive, setTourActive] = useState(false);
+  useEffect(() => {
+    const seen = window.localStorage.getItem(TOUR_SEEN_KEY);
+    if (!seen) {
+      const id = setTimeout(() => setTourActive(true), 600);
+      return () => clearTimeout(id);
+    }
+  }, []);
+  function closeTour() {
+    setTourActive(false);
+    window.localStorage.setItem(TOUR_SEEN_KEY, '1');
+  }
 
   function reset() {
     setIssues(null);
@@ -70,7 +91,7 @@ export default function App() {
 
   function handleResolve(fixedCode) {
     setCode(fixedCode);
-    toast.success('Fix applied to editor');
+    toast.success(t.toastResolved);
   }
 
   function handleRun() {
@@ -86,13 +107,13 @@ export default function App() {
 
     const trimmed = code.trim();
     if (!trimmed) {
-      setError('Code is empty. Paste some JavaScript to analyze.');
+      setError(t.codeEmpty);
       setLoading(false);
       return;
     }
 
     if (sampleIdx < 0 || !MOCK_RESULTS[sampleIdx]) {
-      setError('Demo mode only supports the built-in samples above.\nSelect one from "Sample code" to see ThreadLearn analyze it.');
+      setError(t.demoOnlySamples);
       setLoading(false);
       return;
     }
@@ -118,12 +139,12 @@ export default function App() {
     const docs = mock.docsUsed || [];
     setExplanation(
       issueList.length > 0
-        ? `ThreadLearn detected <strong>${issueList.length} issue${issueList.length > 1 ? 's' : ''}</strong> using RAG retrieval from ${docs.length} knowledge-base document${docs.length !== 1 ? 's' : ''}. Review each issue card for details and fixes.`
-        : 'No concurrency issues detected in this code.'
+        ? t.explanationFound(issueList.length, docs.length)
+        : t.explanationClean
     );
 
     setLoading(false);
-    toast.success('Code analyzed!');
+    toast.success(t.toastAnalyzed);
   }
 
   return (
@@ -133,11 +154,23 @@ export default function App() {
       {/* ── HERO ─────────────────────────────────────────────── */}
       <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="hero">
         <div className="hero-inner">
-          <span className="hero-pill">AI Coach</span>
-          <h1 className="hero-title">Analyze concurrency bugs before they ship.</h1>
+          <div className="hero-top-row">
+            <span className="hero-pill">{t.heroPill}</span>
+            <div className="hero-toggles">
+              <button type="button" className="lang-toggle" onClick={() => setTourActive(true)}>
+                <HelpCircle size={14} /> {t.tourStart}
+              </button>
+              <button type="button" className="lang-toggle icon-only" onClick={toggleTheme} title={theme === 'light' ? 'Dark mode' : 'Light mode'}>
+                {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+              </button>
+              <button type="button" className="lang-toggle" onClick={toggleLang}>
+                <Languages size={14} /> {lang === 'en' ? 'Tiếng Việt' : 'English'}
+              </button>
+            </div>
+          </div>
+          <h1 className="hero-title">{t.heroTitle}</h1>
           <p className="hero-sub">
-            Fine-tuned Qwen2.5-Coder-1.5B + BM25 retrieval pipeline, detecting real JavaScript race conditions.
-            This is a standalone demo replaying pre-computed results — see the <a href="https://github.com/ThreadLearn/ThreadLearn_AI_Trainning" target="_blank" rel="noreferrer">research repo</a> for the live system.
+            {t.heroSubPrefix} <a href="https://github.com/ThreadLearn/ThreadLearn_AI_Trainning" target="_blank" rel="noreferrer">{t.heroSubLink}</a> {t.heroSubSuffix}
           </p>
         </div>
       </motion.header>
@@ -147,38 +180,38 @@ export default function App() {
           {/* ── LEFT: editor + run + analyze ─────────────────── */}
           <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05 }} className="panel-white editor-panel">
             <div className="editor-controls">
-              <label className="sample-label">
-                <span className="sample-label-text">Sample code</span>
+              <label className="sample-label" data-tour="sample">
+                <span className="sample-label-text">{t.sampleCode}</span>
                 <select className="case-select" value={sampleIdx} onChange={(e) => handleSampleChange(Number(e.target.value))}>
                   {liveSamples.map((c, i) => <option key={i} value={i}>{c.title}</option>)}
                 </select>
               </label>
               <div className="editor-buttons">
-                <button type="button" className="btn-outline" disabled={!code.trim() || isRunning} onClick={handleRun}>
-                  <Terminal size={15} /> Run
+                <button type="button" className="btn-outline" data-tour="run" disabled={!code.trim() || isRunning} onClick={handleRun}>
+                  <Terminal size={15} /> {t.run}
                 </button>
-                <button type="button" className="btn-primary" disabled={!code.trim() || loading} onClick={runAnalysis}>
-                  <Send size={15} /> {loading ? 'Analyzing…' : 'Analyze code'}
+                <button type="button" className="btn-primary" data-tour="analyze" disabled={!code.trim() || loading} onClick={runAnalysis}>
+                  <Send size={15} /> {loading ? t.analyzing : t.analyzeCode}
                 </button>
               </div>
             </div>
 
-            <div className={`code-block ${hasRunOutput ? '' : 'grow'}`}>
+            <div className={`code-block ${hasRunOutput ? '' : 'grow'}`} data-tour="editor">
               <div className="code-block-header">
                 <div className="code-block-title">
                   <Code2 size={16} className="lime-icon" />
                   <div>
-                    <p className="code-block-kicker">ThreadLearn analyzer</p>
+                    <p className="code-block-kicker">{t.threadlearnAnalyzer}</p>
                     <p className="code-block-filename">javascript.snippet</p>
                   </div>
                 </div>
                 <div className="code-block-actions">
-                  <button type="button" className="icon-btn" disabled={!canUndo} title="Undo" onClick={undo}><Undo2 size={14} /></button>
-                  <button type="button" className="icon-btn" disabled={!canRedo} title="Redo" onClick={redo}><Redo2 size={14} /></button>
-                  <span className="live-api-pill"><Play size={13} /> Demo mode</span>
+                  <button type="button" className="icon-btn" disabled={!canUndo} title={t.undo} onClick={undo}><Undo2 size={14} /></button>
+                  <button type="button" className="icon-btn" disabled={!canRedo} title={t.redo} onClick={redo}><Redo2 size={14} /></button>
+                  <span className="live-api-pill"><Play size={13} /> {t.demoMode}</span>
                 </div>
               </div>
-              <CodeEditor value={code} onChange={handleCodeChange} placeholder="Paste your code here..." className={hasRunOutput ? 'h-fixed' : 'h-grow'} />
+              <CodeEditor value={code} onChange={handleCodeChange} placeholder={t.codeEditorPlaceholder} className={hasRunOutput ? 'h-fixed' : 'h-grow'} />
             </div>
 
             <RunOutput logs={runLogs} isRunning={isRunning} runError={runError} hasRun={hasRun} />
@@ -186,29 +219,29 @@ export default function App() {
 
           {/* ── RIGHT: About + Result ─────────────────────────── */}
           <aside className="ai-sidebar">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1 }} className="about-card">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1 }} className="about-card" data-tour="about">
               <Brain size={24} />
-              <h2>About this AI</h2>
+              <h2>{t.aboutTitle}</h2>
               <div className="about-list">
                 <div className="about-item">
                   <Cpu size={15} />
-                  <p><strong>Model:</strong> Qwen2.5-Coder-1.5B, fine-tuned with QLoRA (r=16, α=32) on race-condition patterns.</p>
+                  <p><strong>{t.aboutModel}</strong> {t.aboutModelText}</p>
                 </div>
                 <div className="about-item">
                   <Target size={15} />
-                  <p><strong>Training data:</strong> 892 labeled (buggy → fixed) pairs — 332 handcrafted + 560 template-generated. 73.3% score on a 30-case real-world benchmark.</p>
+                  <p><strong>{t.aboutData}</strong> {t.aboutDataText}</p>
                 </div>
                 <div className="about-item">
                   <BookOpen size={15} />
-                  <p><strong>Knowledge base:</strong> 2,050 reference docs retrieved via BM25 (RAG) to ground every fix in real concurrency patterns.</p>
+                  <p><strong>{t.aboutKb}</strong> {t.aboutKbText}</p>
                 </div>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.15 }} className="result-card">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.15 }} className="result-card" data-tour="result">
               <div className="result-card-header">
                 <Sparkles size={18} />
-                <h2>{loading ? 'Analyzing…' : 'Latest result'}</h2>
+                <h2>{loading ? t.analyzing : t.latestResult}</h2>
               </div>
 
               {error && <div className="error-banner visible">{error}</div>}
@@ -225,8 +258,8 @@ export default function App() {
                 </div>
               ) : (
                 <div className="result-placeholder">
-                  <p className="result-placeholder-kicker">Mock AI review</p>
-                  <p className="result-placeholder-text">Select a sample above and click <strong>Analyze code</strong> to see ThreadLearn detect and fix a real JavaScript concurrency bug.</p>
+                  <p className="result-placeholder-kicker">{t.mockAiReview}</p>
+                  <p className="result-placeholder-text">{t.resultPlaceholder} <strong>{t.analyzeCode}</strong> {t.resultPlaceholderSuffix}</p>
                 </div>
               )}
             </motion.div>
@@ -234,24 +267,28 @@ export default function App() {
         </div>
 
         {MOCK_HISTORY.length > 1 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.2 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.2 }} data-tour="trend">
             <HistoryTrendChart history={MOCK_HISTORY} />
           </motion.div>
         )}
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.25 }} className="panel-white history-panel">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.25 }} className="panel-white history-panel" data-tour="history">
           <div className="history-panel-header">
             <div>
-              <p className="history-panel-kicker">History</p>
-              <h2 className="history-panel-title">Analysis history</h2>
+              <p className="history-panel-kicker">{t.historyKicker}</p>
+              <h2 className="history-panel-title">{t.historyTitle}</h2>
             </div>
-            <span className="history-count-pill">{MOCK_HISTORY.length} records</span>
+            <span className="history-count-pill">{MOCK_HISTORY.length} {t.historyRecords}</span>
           </div>
           <HistoryList history={MOCK_HISTORY} />
         </motion.div>
 
-        <ResearchSection />
+        <div data-tour="research">
+          <ResearchSection />
+        </div>
       </div>
+
+      <SpotlightTour steps={TOUR_STEPS} active={tourActive} onClose={closeTour} />
     </div>
   );
 }
