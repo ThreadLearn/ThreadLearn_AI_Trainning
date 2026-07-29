@@ -215,11 +215,15 @@ def _load_local_model():
     print(f"[local_gpu] Loading {model_id} ...")
     print(f"[local_gpu] CUDA available={torch.cuda.is_available()}")
     _local_tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
+    # bfloat16 thay vì float16 — model 1.5B fine-tune dễ overflow/NaN ở fp16 trên
+    # GPU consumer với input dài (code + RAG context), sinh ra token rác/lặp vô hạn.
+    # bfloat16 cùng tốc độ trên GPU Ampere+ nhưng ổn định số học hơn (cùng exponent
+    # range với fp32, chỉ giảm mantissa).
     _local_model = AutoModelForCausalLM.from_pretrained(
         model_id,
         token=token,
         device_map="auto" if torch.cuda.is_available() else None,
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
     )
     if not torch.cuda.is_available():
         _local_model = _local_model.to("cpu")
