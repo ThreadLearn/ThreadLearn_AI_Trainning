@@ -87,3 +87,49 @@ Notebook eval v2 không-pipeline dùng đúng format training gốc (`"Convert t
 → **Chưa thể kết luận "pipeline không hợp với v2"**. Mới chỉ biết "1 cách nhét context cụ thể (chưa khớp format nào) làm hại v2". Cần test lại bằng đúng format `rag_pipeline.py` trước khi kết luận.
 
 Kế hoạch chi tiết: xem [`MIGRATION_PLAN_v2.md`](MIGRATION_PLAN_v2.md).
+
+---
+
+## Giai đoạn 4 — Mở rộng Knowledge Base cho pipeline (2055 → ~2150+ doc)
+
+**Vấn đề:** KB retrieval (BM25) cho pipeline chỉ có 2055 doc, phân bố lệch nặng —
+69% rơi vào category "patterns" chung chung, không map theo 18 `pattern_id` mà
+`race_detector.py` thực sự dùng. Một số pattern gần như trắng: `concurrent_write_array`,
+`context_loss_this`, `resource_exhaustion`, `missing_join` đều 0 doc; `zalgo`,
+`double_callback`, `promise_no_await`, `buffer_leak` dưới 10 doc.
+
+**Đã làm:**
+1. `tag_pattern_ids.py` — gán field `pattern_ids` cho 2055 doc cũ theo keyword rule bám
+   sát `race_detector.py` (814 doc match được, còn lại giữ nguyên category cũ, không đoán bừa).
+2. `add_gap_docs.py` (+8 doc) + `add_gap_docs_round2.py` (+4 doc) — bù 4 pattern trắng
+   bằng nguồn thật (GitHub Issues/PR), 4 pattern mỏng bằng viết tay dựa MDN/Node.js docs.
+3. `add_batch1_docs.py` (+45) + `add_batch2_docs.py` (+45) — viết tay mở rộng 6 pattern
+   mỏng nhất (zalgo, double_callback, promise_no_await, buffer_leak, concurrent_write_array,
+   context_loss_this), mỗi pattern 15 doc mới, mỗi doc là 1 tình huống code cụ thể khác
+   nhau (framework/API/context khác nhau: Express, cron, WebSocket, Electron IPC, GraphQL
+   resolver, Sequelize, Chart.js...) — không phải paraphrase 1 câu gốc.
+
+**Tradeoff quy mô vs chất lượng (quan trọng, tránh bị hỏi ngược khi phản biện):**
+
+User ban đầu đặt mục tiêu KB đạt 5000 doc (ngưỡng `auto_stopwords.py` tự chuyển
+sang IDF auto-stopwords). Tính toán thực tế: để mỗi doc mới thực sự riêng biệt
+(không phải đổi từ đồng nghĩa của cùng 1 câu — BM25 sẽ retrieve các doc gần giống
+nhau, không tăng thông tin thật), cần thiết kế ~270 tình huống code khác nhau MỖI
+pattern (bám 18 pattern) — vượt xa khả năng viết tay có kiểm soát trong 1 phiên làm
+việc. Đã thống nhất với user: **ưu tiên tính riêng biệt, hạ mục tiêu xuống ~400-500
+doc mới** (không chạm 5000), viết theo batch (mỗi batch 1 người tự viết nội dung
+thật cho 1 nhóm pattern, không dùng template rỗng ghép câu công thức).
+
+**Cập nhật (sau batch 9):** đã làm hết 18/18 pattern_id — mỗi pattern giờ có tối
+thiểu ~30 doc riêng biệt (trước đó nhiều pattern ở mức 0-9). KB hiện **2432 doc**
+(2055 → 2432, +377, qua 11 lượt: tag + gap + round2 + 9 batch). Phân bố còn lệch
+tự nhiên do 2 pattern gốc vốn đã dày sẵn (`shared_var_settimeout` 553,
+`shared_list_no_lock` 106) không cần thêm.
+
+**Kết luận cho báo cáo:** KB hiện 2432 doc, KHÔNG đạt ngưỡng 5000. Nếu ban giám
+khảo hỏi về quy mô KB, trả lời trung thực: ưu tiên chất lượng/tính đa dạng ngữ
+cảnh hơn số lượng thô — mỗi doc mới là 1 tình huống lỗi thực tế riêng biệt
+(framework/API/context khác nhau: Express, cron, WebSocket, Kafka, Lambda,
+worker_threads...), không phải nhân bản để đạt KPI số lượng. Muốn đạt 5000 đúng
+nghĩa cần thêm thời gian đáng kể (nhiều batch nữa) hoặc quy trình crawl/sinh có
+review tự động ở quy mô lớn hơn — chưa làm trong lần này.
